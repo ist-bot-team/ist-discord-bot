@@ -55,6 +55,11 @@
         "tagus":   true
     },
     {
+        "display": "Engenharia Mecânica                             (MEMec)",
+        "name":    "MEMec",
+        "tagus":   false
+    },
+    {
         "display": "Engenharia Geológica e de Minas                  (LEGM)",
         "name":    "LEGM",
         "tagus":   false
