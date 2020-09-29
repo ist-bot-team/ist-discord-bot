@@ -105,12 +105,40 @@ async def refresh(ctx):
     await ctx.message.channel.send('Feito')
 
 @bot.command(pass_context=True)
+async def refresh_roles(ctx):
+    if not has_perms(ctx.author.id):
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+
+    # Verificar se há membros que não são alunos que não tem role de turista
+    for member in guild.members:
+        if member.bot:
+            continue
+
+        is_aluno = False
+        for course in courses:
+            if course["role"] in member.roles:
+                if course["tagus"]:
+                    await member.remove_roles(role_alameda)
+                    await member.add_roles(role_tagus)
+                else:
+                    await member.remove_roles(role_tagus)
+                    await member.add_roles(role_alameda)
+                is_aluno = True
+                await member.add_roles(role_aluno)
+                continue
+        if not is_aluno:
+            await member.remove_roles(role_tagus, role_alameda, role_aluno)
+            await member.add_roles(role_turista)
+
+@bot.command(pass_context=True)
 async def admin(ctx):
     if not has_perms(ctx.author.id):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
     # Dar role de admin
+    # TODO
 
 @bot.event
 async def on_ready():
@@ -171,27 +199,6 @@ async def on_ready():
     # Senão estiverem todas, apaga todas as mensagens do canal e escreve de novo
     if found_count != len(courses):
         await rebuild()
-
-    # Verificar se há membros que não são alunos que não tem role de turista
-    for member in guild.members:
-        if member.bot:
-            continue
-
-        is_aluno = False
-        for course in courses:
-            if course["role"] in member.roles:
-                if course["tagus"]:
-                    await member.remove_roles(role_alameda)
-                    await member.add_roles(role_tagus)
-                else:
-                    await member.remove_roles(role_tagus)
-                    await member.add_roles(role_alameda)
-                is_aluno = True
-                await member.add_roles(role_aluno)
-                continue
-        if not is_aluno:
-            await member.remove_roles(role_tagus, role_alameda, role_aluno)
-            await member.add_roles(role_turista)
 
 @bot.event
 async def on_member_join(member):
