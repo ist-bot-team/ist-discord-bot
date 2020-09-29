@@ -32,7 +32,7 @@
     {
         "display": "Engenharia Eletrónica                             (LEE)",
         "name":    "LEE",
-        "tagus":   false
+        "tagus":   true
     },
     {
         "display": "Engenharia Física Tecnológica                    (MEFT)",
@@ -77,7 +77,7 @@
     {
         "display": "Engenharia de Telecomunicações e Informática     (LETI)",
         "name":    "LETI",
-        "tagus":   false
+        "tagus":   true
     },
     {
         "display": "Engenharia do Ambiente                         (MEAmbi)",
@@ -87,7 +87,7 @@
     {
         "display": "Engenharia e Gestão Industrial                   (LEGI)",
         "name":    "LEGI",
-        "tagus":   false
+        "tagus":   true
     },
     {
         "display": "Matemática Aplicada e Computação                 (LMAC)",
