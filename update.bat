@@ -10,8 +10,6 @@ if exist version (
     (echo 0)>version
 )
 
-python ./build.py --no-loop
-
 git add .
 git commit -am "Changes"
 git push origin dev
