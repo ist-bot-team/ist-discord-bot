@@ -11,7 +11,8 @@ import json
 
 # Carregar versão do bot
 with open('version', 'r') as file:
-    version = file.read().replace('\n', '')
+    version_number = file.read().replace('\n', '')
+    print("Version {}".format(version_number))
 
 # Informação dos cursos
 # "display": conteúdo da mensagem utilizada no curso
@@ -81,20 +82,35 @@ async def admin(ctx):
 async def rebuild():
     await roles_channel.purge()
 
-    #await roles_channel.send("""```
-#Bem vind@! Reage com um ✅ na mensagem que corresponde ao teu curso.
-#Se este não é o teu primeiro ano a estudar no técnico, fala com o <@227849349734989834> para ganhar a role de {}.
-    #```""".format(role_veterano.mention))
-
-    embed = Embed(title="Title", description="Desc", color=0x00ff00)
-    embed.add_field(name="Fiel1", value="hi", inline=False)
-    embed.add_field(name="Field2", value="hi2", inline=False)
+    embed = Embed(title="Bem vind@", description="Bem vind@ ao servidor de discord dos caloiros do IST.", color=0x00ff00)
+    embed.add_field(value="""
+        Reage com um ☑️ na mensagem que corresponder ao teu curso no IST.
+        Se não estudares no IST podes permanecer neste servidor como {}.
+        Se este não é o teu primeiro ano no IST podes pedir a role {} ao {}.
+    """.format(role_turista.mention, role_veterano.mention, "<@227849349734989834>"), name="Escolhe um curso")
     await roles_channel.send(embed=embed)
 
     for i in range(0, len(courses)):
         msg = await roles_channel.send("`{}`".format(courses[i]["display"]))
         await msg.add_reaction('☑️')
         courses[i]["msg_id"] = msg.id
+
+@bot.command(pass_context=True)
+async def refresh(ctx):
+    if not has_perms(ctx.author.id):
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+    await ctx.message.channel.send('A atualizar o bot...')
+    await rebuild()
+    await ctx.message.channel.send('Feito')
+
+@bot.command(pass_context=True)
+async def admin(ctx):
+    if not has_perms(ctx.author.id):
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+
+    # Dar role de admin
 
 @bot.event
 async def on_ready():
@@ -155,77 +171,55 @@ async def on_ready():
 @bot.event
 async def on_member_join(member):
     await welcome_channel.send('Bem vind@ {}! Escolhe o teu curso em {}.'.format(member.mention, roles_channel.mention))
-    member.add_roles(role_turista)
+    await member.add_roles(role_turista)
 
 @bot.command(pass_context=True)
 async def version(ctx):
-    await ctx.message.channel.send(version)
+    await ctx.message.channel.send("{}".format(version_number))
 
-"""
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.channel_id != CHANNEL_ID or payload.emoji.name != '✅':
+    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
         return
 
-    guild = bot.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
     
     if member.bot:
         return
 
     # Encontrar a mensagem correta
-    if payload.message_id == veterano:
-        role = get(guild.roles, name="Veterano")
-        print("Role de veterano adicionada ao membro {} | {}".format(member, role))
-        await member.add_roles(role)
-        return
-    elif payload.message_id == turista:
-        role = get(guild.roles, name="Turista")
-        print("Role de turista adicionada ao membro {} | {}".format(member, role))
-        await member.add_roles(role)
-        return
-
-    for curso in cursos:
-        if curso[1] == payload.message_id:
+    for course in courses:
+        if course["msg_id"] == payload.message_id:
             # Verificar se o membro já tem qualquer outra role de curso
-            for curso2 in cursos:
-                if curso == curso2:
+            for course_2 in courses:
+                if course == course_2:
                     continue
-                if get(member.roles, name=curso2[0]) != None:
+                if course_2["role"] in member.roles:
+                    msg = await roles_channel.fetch_message(payload.message_id)
+                    await msg.remove_reaction('☑️', member)
                     return
-            role = get(guild.roles, name=curso[0])
-            print("Role do curso {} adicionada ao membro {} | {}".format(curso[0], member, role))
-            await member.add_roles(role)
+            print("Role do curso {} adicionada ao membro {}".format(course["name"], member))
+            await member.remove_roles(role_turista)
+            await member.add_roles(course["role"], role_aluno)
             return
 
 @bot.event
 async def on_raw_reaction_remove(payload):
-    if payload.channel_id != CHANNEL_ID or payload.emoji.name != '✅':
+    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
         return
 
-    guild = bot.get_guild(payload.guild_id)
-    member = get(guild.members, id=payload.user_id)
-
+    member = guild.get_member(payload.user_id)
+    
     if member.bot:
         return
 
     # Encontrar a mensagem correta
-    if payload.message_id == veterano:
-        role = get(guild.roles, name="Veterano")
-        print("Role de veterano removida ao membro {} | {}".format(member, role))
-        await member.remove_roles(role)
-        return
-    elif payload.message_id == turista:
-        role = get(guild.roles, name="Turista")
-        print("Role de turista removida ao membro {} | {}".format(member, role))
-        await member.remove_roles(role)
-        return
-
-    for curso in cursos:
-        if curso[1] == payload.message_id:
-            role = get(guild.roles, name=curso[0])
-            await member.remove_roles(role)
-            print("Role do curso {} removida do membro {}".format(curso[0], member))
+    for course in courses:
+        if course["msg_id"] == payload.message_id:
+            if course["role"] in member.roles:
+                await member.remove_roles(course["role"], role_aluno)
+                await member.add_roles(role_turista)
+            print("Role do curso {} removida do membro {}".format(course["name"], member))
             return
-"""
+
 bot.run(os.environ['DISCORD_TOKEN'])
