@@ -10,88 +10,8 @@
         "tagus":   false
     },
     {
-        "display": "Engenharia Biológica                           (MEBiol)",
-        "name":    "MEBiol",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Biomédica                           (MEBiom)",
-        "name":    "MEBiom",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Civil                                  (MEC)",
-        "name":    "MEC",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Eletrotécnica e de Computadores       (MEEC)",
-        "name":    "MEEC",
-        "tagus":   false
-    },
-    {
         "display": "Engenharia Eletrónica                             (LEE)",
         "name":    "LEE",
         "tagus":   true
-    },
-    {
-        "display": "Engenharia Física Tecnológica                    (MEFT)",
-        "name":    "MEFT",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Geológica e de Minas                  (LEGM)",
-        "name":    "LEGM",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Informática e de Computadores       (LEIC-A)",
-        "name":    "LEIC-A",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Informática e de Computadores       (LEIC-T)",
-        "name":    "LEIC-T",
-        "tagus":   true
-    },
-    {
-        "display": "Engenharia Geológica e de Minas                  (LEGM)",
-        "name":    "LEGM",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Naval e Oceânica                      (LENO)",
-        "name":    "LENO",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia Química                                (MEQ)",
-        "name":    "MEQ",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia de Materiais                           (MEM)",
-        "name":    "MEM",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia de Telecomunicações e Informática     (LETI)",
-        "name":    "LETI",
-        "tagus":   true
-    },
-    {
-        "display": "Engenharia do Ambiente                         (MEAmbi)",
-        "name":    "MEAmbi",
-        "tagus":   false
-    },
-    {
-        "display": "Engenharia e Gestão Industrial                   (LEGI)",
-        "name":    "LEGI",
-        "tagus":   true
-    },
-    {
-        "display": "Matemática Aplicada e Computação                 (LMAC)",
-        "name":    "LMAC",
-        "tagus":   false
     }
 ]

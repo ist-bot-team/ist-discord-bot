@@ -1,3 +1,4 @@
+from discord import Embed
 from discord.ext import commands
 from discord.utils import get
 import os
@@ -17,7 +18,7 @@ with open('version', 'r') as file:
 # "name": nome da role do curso (tem de estar presente no "display")
 # "tagus": é um curso do Tagus Park?
 # "msg_id": indice da mensagem que foi enviada
-with open('courses.json', 'r') as file:
+with open('courses.json', 'r', encoding='utf-8') as file:
     courses = json.load(file)
 
 bot = commands.Bot(command_prefix='$')
@@ -77,6 +78,24 @@ async def admin(ctx):
     await ctx.message.channel.send(VERSION)
 """
 
+async def rebuild():
+    await roles_channel.purge()
+
+    #await roles_channel.send("""```
+#Bem vind@! Reage com um ✅ na mensagem que corresponde ao teu curso.
+#Se este não é o teu primeiro ano a estudar no técnico, fala com o <@227849349734989834> para ganhar a role de {}.
+    #```""".format(role_veterano.mention))
+
+    embed = Embed(title="Title", description="Desc", color=0x00ff00)
+    embed.add_field(name="Fiel1", value="hi", inline=False)
+    embed.add_field(name="Field2", value="hi2", inline=False)
+    await roles_channel.send(embed=embed)
+
+    for i in range(0, len(courses)):
+        msg = await roles_channel.send("`{}`".format(courses[i]["display"]))
+        await msg.add_reaction('☑️')
+        courses[i]["msg_id"] = msg.id
+
 @bot.event
 async def on_ready():
     print('Bot iniciado com o utilizador {0.user}'.format(bot))
@@ -97,6 +116,17 @@ async def on_ready():
     roles_channel = guild.text_channels[0]
     welcome_channel = guild.text_channels[1]
 
+    global role_turista
+    global role_aluno
+    global role_veterano
+    role_turista = get(guild.roles, name="Turista")
+    role_aluno = get(guild.roles, name="Aluno")
+    role_veterano = get(guild.roles, name="Veterano")
+
+    if role_turista is None or role_aluno is None or role_veterano is None:
+        print('O guild tem de ter uma role "Turista", uma role "Aluno" e uma role "Veterano')
+        exit(-1)
+
     # Associar cada curso a uma role
     for i in range(0, len(courses)):
         courses[i]["role"] = None
@@ -113,23 +143,19 @@ async def on_ready():
     roles_messages = await roles_channel.history().flatten()
     for msg in roles_messages:
         for course in courses:
-            if course["display"] in msg.content and msg.author == bot:
+            if course["display"] in msg.content and msg.author.bot:
                 course["msg_id"] = msg.id
                 found_count += 1
                 break
 
     # Senão estiverem todas, apaga todas as mensagens do canal e escreve de novo
     if found_count != len(courses):
-        await roles_channel.purge()
-
-        await roles_channel.send("Reage com um ")
-        for i in range(0, len(courses)):
-            msg = await roles_channel.send("`{}`".format(course[i]["display"]))
-            course[i]["msg_id"] = msg.id
+        await rebuild()
 
 @bot.event
 async def on_member_join(member):
     await welcome_channel.send('Bem vind@ {}! Escolhe o teu curso em {}.'.format(member.mention, roles_channel.mention))
+    member.add_roles(role_turista)
 
 @bot.command(pass_context=True)
 async def version(ctx):
