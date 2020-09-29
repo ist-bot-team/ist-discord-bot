@@ -135,12 +135,16 @@ async def on_ready():
     global role_turista
     global role_aluno
     global role_veterano
+    global role_tagus
+    global role_alameda
     role_turista = get(guild.roles, name="Turista")
     role_aluno = get(guild.roles, name="Aluno")
     role_veterano = get(guild.roles, name="Veterano")
+    role_tagus = get(guild.roles, name="Tagus Park")
+    role_alameda = get(guild.roles, name="Alameda")
 
-    if role_turista is None or role_aluno is None or role_veterano is None:
-        print('O guild tem de ter uma role "Turista", uma role "Aluno" e uma role "Veterano')
+    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None:
+        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park" e uma role "Alameda"')
         exit(-1)
 
     # Associar cada curso a uma role
@@ -167,6 +171,27 @@ async def on_ready():
     # Senão estiverem todas, apaga todas as mensagens do canal e escreve de novo
     if found_count != len(courses):
         await rebuild()
+
+    # Verificar se há membros que não são alunos que não tem role de turista
+    for member in guild.members:
+        if member.bot:
+            continue
+
+        is_aluno = False
+        for course in courses:
+            if course["role"] in member.roles:
+                if course["tagus"]:
+                    await member.remove_roles(role_alameda)
+                    await member.add_roles(role_tagus)
+                else:
+                    await member.remove_roles(role_tagus)
+                    await member.add_roles(role_alameda)
+                is_aluno = True
+                await member.add_roles(role_aluno)
+                continue
+        if not is_aluno:
+            await member.remove_roles(role_tagus, role_alameda, role_aluno)
+            await member.add_roles(role_turista)
 
 @bot.event
 async def on_member_join(member):
@@ -201,6 +226,10 @@ async def on_raw_reaction_add(payload):
             print("Role do curso {} adicionada ao membro {}".format(course["name"], member))
             await member.remove_roles(role_turista)
             await member.add_roles(course["role"], role_aluno)
+            if course["tagus"]:
+                await member.add_roles(role_tagus)
+            else:
+                await member.add_roles(role_alameda)
             return
 
 @bot.event
@@ -217,6 +246,10 @@ async def on_raw_reaction_remove(payload):
     for course in courses:
         if course["msg_id"] == payload.message_id:
             if course["role"] in member.roles:
+                if course["tagus"]:
+                    await member.remove_roles(role_tagus)
+                else:
+                    await member.remove_roles(role_alameda)
                 await member.remove_roles(course["role"], role_aluno)
                 await member.add_roles(role_turista)
             print("Role do curso {} removida do membro {}".format(course["name"], member))
