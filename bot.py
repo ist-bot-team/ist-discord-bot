@@ -137,9 +137,9 @@ async def admin(ctx):
         return
 
     if role_admin not in ctx.author.roles:
-        await member.add_roles(role_admin)
+        await ctx.author.add_roles(role_admin)
     else:
-        await member.remove_roles(role_admin)
+        await ctx.author.remove_roles(role_admin)
 
 @bot.event
 async def on_ready():
