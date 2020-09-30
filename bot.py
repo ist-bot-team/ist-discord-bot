@@ -24,9 +24,8 @@ with open('courses.json', 'r', encoding='utf-8') as file:
 
 bot = commands.Bot(command_prefix='$')
 
-def has_perms(user_id):
-    # To do: verificar se tem role de moderador
-    return True
+def has_perms(member):
+    return role_mod in member.roles
 
 """
 @bot.command(pass_context=True)
@@ -97,7 +96,7 @@ async def rebuild():
 
 @bot.command(pass_context=True)
 async def refresh(ctx):
-    if not has_perms(ctx.author.id):
+    if not has_perms(ctx.author):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
     await ctx.message.channel.send('A atualizar o bot...')
@@ -106,7 +105,7 @@ async def refresh(ctx):
 
 @bot.command(pass_context=True)
 async def refresh_roles(ctx):
-    if not has_perms(ctx.author.id):
+    if not has_perms(ctx.author):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
@@ -133,12 +132,14 @@ async def refresh_roles(ctx):
 
 @bot.command(pass_context=True)
 async def admin(ctx):
-    if not has_perms(ctx.author.id):
+    if not has_perms(ctx.author):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
-    # Dar role de admin
-    # TODO
+    if role_admin not in ctx.author.roles:
+        await member.add_roles(role_admin)
+    else:
+        await member.remove_roles(role_admin)
 
 @bot.event
 async def on_ready():
@@ -165,14 +166,18 @@ async def on_ready():
     global role_veterano
     global role_tagus
     global role_alameda
+    global role_mod
+    global role_admin
     role_turista = get(guild.roles, name="Turista")
     role_aluno = get(guild.roles, name="Aluno")
     role_veterano = get(guild.roles, name="Veterano")
     role_tagus = get(guild.roles, name="Tagus Park")
     role_alameda = get(guild.roles, name="Alameda")
+    role_mod = get(guild.roles, name="MOD")
+    role_admin = get(guild.roles, name="admin")
 
-    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None:
-        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park" e uma role "Alameda"')
+    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_mod is None or role_admin is None:
+        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "MOD" e uma role "admin".')
         exit(-1)
 
     # Associar cada curso a uma role
