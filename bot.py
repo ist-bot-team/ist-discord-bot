@@ -174,10 +174,10 @@ async def on_ready():
     role_tagus = get(guild.roles, name="Tagus Park")
     role_alameda = get(guild.roles, name="Alameda")
     role_mod = get(guild.roles, name="MOD")
-    role_admin = get(guild.roles, name="admin")
+    role_admin = get(guild.roles, name="Admin")
 
     if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_mod is None or role_admin is None:
-        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "MOD" e uma role "admin".')
+        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "MOD" e uma role "Admin".')
         exit(-1)
 
     # Associar cada curso a uma role
