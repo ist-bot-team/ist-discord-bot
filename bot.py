@@ -22,7 +22,7 @@ with open('version', 'r') as file:
 with open('courses.json', 'r', encoding='utf-8') as file:
     courses = json.load(file)
 
-# Embeds gerados pelo https://discohook.org/
+# O formato de embed pode ser gerado com ferramentas online e umas pequenas alterações.
 # De momento o parsing deste json apenas suporta:
 #   - title
 #   - description
@@ -34,7 +34,7 @@ with open('embeds.json', 'r', encoding='utf-8') as file:
 
 bot = commands.Bot(command_prefix='$')
 
-# embed: key respetiva ao embed que se pretend dar parse no dict embeds
+# embed: key do embed em embed.json a que se pretende aceder
 def parse_embed(embed):
     if embed not in embeds:
         print('Warning: the key {} isn\'t in embed.json'.format(embed))
