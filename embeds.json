@@ -1,0 +1,36 @@
+{
+    "error": {
+        "title": "Error",
+        "description": "This shouldn't happen, if you see this please ping a <@760174167223566416>"
+    },
+    "welcome-pt": {
+        "title": "Bem vind@",
+        "description": "Esta é uma comunidade de Caloiros (e Veteranos) do IST 2020, onde podes conhecer os teus colegas, partilhar apontamentos e conviver!",
+        "color": 7506394,
+        "fields": [
+            {
+                "name": "Escolhe um curso",
+                "value": "Reage com um :ballot_box_with_check: na mensagem que corresponder ao teu curso no IST. \nSe não estudares no IST és convidado a permanecer neste servidor como <@760061901106577470>."
+            },
+            {
+                "name": "Não sou caloiro",
+                "value": "Se este não é o teu primeiro ano no IST podes pedir a role <@759927254238101505> ao <@227849349734989834>."
+            }
+        ]
+    },
+    "welcome-en": {
+        "title": "Welcome",
+        "description": "This is an IST 2020's community for Freshmen (and Veterans) where you'll get to know your colleagues, share notes and hang out!",
+        "color": 7658098,
+        "fields": [
+            {
+                "name": "Pick a course",
+                "value": "React with :ballot_box_with_check: on the message corresponding to your IST course.\nIf you don't study on IST you're still invited to remain under the role of <@760061901106577470> (Tourist)"
+            },
+            {
+                "name": "I'm not a Freshman",
+                "value": "If this isn't your first year at IST you can ask <@227849349734989834> for the <@759927254238101505>"
+            }
+        ]
+    }
+}
