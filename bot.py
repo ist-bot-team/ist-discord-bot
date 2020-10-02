@@ -22,7 +22,29 @@ with open('version', 'r') as file:
 with open('courses.json', 'r', encoding='utf-8') as file:
     courses = json.load(file)
 
+# Embeds gerados pelo https://discohook.org/
+# De momento o parsing deste json apenas suporta:
+#   - title
+#   - description
+#   - color
+#   - fields com name e value (a propriedade inline é ignorada)
+# Caso se adicionem embeds mais complexos no json será necessário alterar parse_embed
+with open('embeds.json', 'r', encoding='utf-8') as file:
+    embeds = json.load(file)
+
 bot = commands.Bot(command_prefix='$')
+
+# embed: key respetiva ao embed que se pretend dar parse no dict embeds
+def parse_embed(embed):
+    if embed not in embeds:
+        print('Warning: the key {} isn\'t in embed.json'.format(embed))
+        return parse_embed('error')
+    
+    ret = Embed(title=embeds[embed]['title'], descritpion=embeds[embed]['description'], color=embeds[embed]['color'] )
+    for field in embeds[embed]['fields']:
+        ret.add_field(value=field['value'], name=field['name'])
+
+    return ret
 
 def has_perms(member):
     return role_mod in member.roles
@@ -30,13 +52,8 @@ def has_perms(member):
 async def rebuild():
     await roles_channel.purge()
 
-    embed = Embed(title="Bem vind@", description="Bem vind@ ao servidor de discord dos caloiros do IST.", color=0x00ff00)
-    embed.add_field(value="""
-        Reage com um ☑️ na mensagem que corresponder ao teu curso no IST.
-        Se não estudares no IST podes permanecer neste servidor como {}.
-        Se este não é o teu primeiro ano no IST podes pedir a role {} ao {}.
-    """.format(role_turista.mention, role_veterano.mention, "<@227849349734989834>"), name="Escolhe um curso")
-    await roles_channel.send(embed=embed)
+    await roles_channel.send(embed=parse_embed('welcome-pt'))
+    await roles_channel.send(embed=parse_embed('welcome-en'))
 
     for i in range(0, len(courses)):
         msg = await roles_channel.send("`{}`".format(courses[i]["display"]))
