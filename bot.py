@@ -27,57 +27,6 @@ bot = commands.Bot(command_prefix='$')
 def has_perms(member):
     return role_mod in member.roles
 
-"""
-@bot.command(pass_context=True)
-async def init(ctx):
-    global courses
-
-    if not has_perms(ctx.author.id):
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
-        return
-    await ctx.message.channel.send('A inicializar o bot...')
-
-    channel = bot.get_channel(CHANNEL_ID)
-    await channel.send('Reage com um ✅ na mensagem que corresponde ao teu curso.')
-
-    for i in range(0, len(cursos)):
-        msg = await channel.send(cursos[i][0])
-        await msg.add_reaction('✅')
-        cursos[i][1] = msg.id
-
-    msg = await channel.send('Se este não é o teu primeiro ano no técnico reage com um ✅ a esta mensagem.')
-    await msg.add_reaction('✅')
-    veterano = msg.id
-
-    msg = await channel.send('Se não estudares no técnico reage com um ✅ a esta mensagem.')
-    await msg.add_reaction('✅')
-    turista = msg.id
-
-    await ctx.message.channel.send('Feito!')
-
-@bot.command(pass_context=True)
-async def clear(ctx):
-    if ctx.author.id != OWNER_ID:
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
-        return
-    await ctx.message.channel.send('A limpar o canal do bot...')
-    channel = bot.get_channel(CHANNEL_ID)
-    await channel.purge()
-
-@bot.command(pass_context=True)
-async def ping(ctx):
-    await ctx.message.channel.send('pong')
-
-@bot.command(pass_context=True)
-async def admin(ctx):
-    if ctx.author.id != OWNER_ID:
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
-        return
-    
-        
-    await ctx.message.channel.send(VERSION)
-"""
-
 async def rebuild():
     await roles_channel.purge()
 
@@ -170,7 +119,7 @@ async def on_ready():
     global role_admin
     role_turista = get(guild.roles, name="Turista")
     role_aluno = get(guild.roles, name="Aluno")
-    role_veterano = get(guild.roles, name="Veterano")
+    role_veterano = get(guild.roles, name="Veterano/a")
     role_tagus = get(guild.roles, name="Tagus Park")
     role_alameda = get(guild.roles, name="Alameda")
     role_mod = get(guild.roles, name="Mod")
