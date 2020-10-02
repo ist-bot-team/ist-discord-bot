@@ -42,7 +42,7 @@ def parse_embed(embed):
     
     ret = Embed(title=embeds[embed]['title'], descritpion=embeds[embed]['description'], color=embeds[embed]['color'] )
     for field in embeds[embed]['fields']:
-        ret.add_field(value=field['value'], name=field['name'])
+        ret.add_field(value=field['value'], name=field['name'], inline=False)
 
     return ret
 
