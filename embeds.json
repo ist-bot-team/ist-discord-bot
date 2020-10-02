@@ -1,7 +1,7 @@
 {
     "error": {
         "title": "Error",
-        "description": "This shouldn't happen, if you see this please ping a <@760174167223566416>"
+        "description": "This shouldn't happen, if you see this please ping a @Mod"
     },
     "welcome-pt": {
         "title": "Bem vind@",
@@ -10,11 +10,11 @@
         "fields": [
             {
                 "name": "Escolhe um curso",
-                "value": "Reage com um :ballot_box_with_check: na mensagem que corresponder ao teu curso no IST. \nSe não estudares no IST és convidado a permanecer neste servidor como <@760061901106577470>."
+                "value": "Reage com um :ballot_box_with_check: na mensagem que corresponder ao teu curso no IST. \nSe não estudares no IST és convidado a permanecer neste servidor como @Turista."
             },
             {
                 "name": "Não sou caloiro",
-                "value": "Se este não é o teu primeiro ano no IST podes pedir a role <@759927254238101505> ao <@227849349734989834>."
+                "value": "Se este não é o teu primeiro ano no IST podes pedir a role @Veterano/a ao <@227849349734989834>."
             }
         ]
     },
@@ -25,11 +25,11 @@
         "fields": [
             {
                 "name": "Pick a course",
-                "value": "React with :ballot_box_with_check: on the message corresponding to your IST course.\nIf you don't study on IST you're still invited to remain under the role of <@760061901106577470> (Tourist)"
+                "value": "React with :ballot_box_with_check: on the message corresponding to your IST course.\nIf you don't study on IST you're still invited to remain under the role of Turista (Tourist)."
             },
             {
                 "name": "I'm not a Freshman",
-                "value": "If this isn't your first year at IST you can ask <@227849349734989834> for the <@759927254238101505>"
+                "value": "If this isn't your first year at IST you can ask <@227849349734989834> for the @Veterano/a role."
             }
         ]
     }
