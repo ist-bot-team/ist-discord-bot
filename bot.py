@@ -42,7 +42,7 @@ def parse_embed(embed):
     
     ret = Embed(
         title=embeds[embed]['title'],
-        descritpion=embeds[embed]['description'],
+        description=embeds[embed]['description'],
         color=embeds[embed]['color']
     )
 
