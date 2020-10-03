@@ -40,9 +40,16 @@ def parse_embed(embed):
         print('Warning: the key {} isn\'t in embed.json'.format(embed))
         return parse_embed('error')
     
-    ret = Embed(title=embeds[embed]['title'], descritpion=embeds[embed]['description'], color=embeds[embed]['color'] )
+    ret = Embed(
+        title=embeds[embed]['title'],
+        descritpion=embeds[embed]['description'],
+        color=embeds[embed]['color']
+    )
+
     for field in embeds[embed]['fields']:
         ret.add_field(value=field['value'], name=field['name'], inline=False)
+
+    ret.set_thumbnail(url='https://upload.wikimedia.org/wikipedia/pt/e/ed/IST_Logo.png')
 
     return ret
 
