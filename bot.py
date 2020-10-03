@@ -42,7 +42,7 @@ def parse_embed(embed):
     
     ret = Embed(
         title=embeds[embed]['title'],
-        description=embeds[embed]['description'],
+        description=embeds[embed]['description'].replace('$veterano', role_veterano.mention),
         color=embeds[embed]['color']
     )
 

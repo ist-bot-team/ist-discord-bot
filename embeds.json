@@ -14,7 +14,7 @@
             },
             {
                 "name": "Não sou caloiro",
-                "value": "Se este não é o teu primeiro ano no IST podes pedir a role @Veterano/a ao <@227849349734989834>."
+                "value": "Se este não é o teu primeiro ano no IST podes pedir a role $veterano ao <@227849349734989834>."
             }
         ]
     },
@@ -29,7 +29,7 @@
             },
             {
                 "name": "I'm not a Freshman",
-                "value": "If this isn't your first year at IST you can ask <@227849349734989834> for the @Veterano/a role."
+                "value": "If this isn't your first year at IST you can ask <@227849349734989834> for the $veterano role."
             }
         ]
     }
