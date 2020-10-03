@@ -42,12 +42,16 @@ def parse_embed(embed):
     
     ret = Embed(
         title=embeds[embed]['title'],
-        description=embeds[embed]['description'].replace('$veterano', role_veterano.mention),
+        description=embeds[embed]['description'],
         color=embeds[embed]['color']
     )
 
     for field in embeds[embed]['fields']:
-        ret.add_field(value=field['value'], name=field['name'], inline=False)
+        ret.add_field(
+            value=field['value'].replace('$veterano', role_veterano.mention).replace('$turista', role_turista.mention),
+            name=field['name'],
+            inline=False
+        )
 
     ret.set_thumbnail(url='https://upload.wikimedia.org/wikipedia/pt/e/ed/IST_Logo.png')
 
