@@ -10,7 +10,7 @@
         "fields": [
             {
                 "name": "Escolhe um curso",
-                "value": "Reage com um :ballot_box_with_check: na mensagem que corresponder ao teu curso no IST. \nSe não estudares no IST és convidado a permanecer neste servidor como $turista."
+                "value": "Reage com o número que corresponde ao teu ano na mensagem que corresponder ao teu curso no IST. \nSe não estudares no IST és convidado a permanecer neste servidor como $turista."
             },
             {
                 "name": "Não sou caloiro",
@@ -25,7 +25,7 @@
         "fields": [
             {
                 "name": "Pick a course",
-                "value": "React with :ballot_box_with_check: on the message corresponding to your IST course.\nIf you don't study on IST you're still invited to remain under the role of $turista (Tourist)."
+                "value": "React with the number that matches your year on the message corresponding to your IST course.\nIf you don't study on IST you're still invited to remain under the role of $turista (Tourist)."
             },
             {
                 "name": "I'm not a Freshman",
