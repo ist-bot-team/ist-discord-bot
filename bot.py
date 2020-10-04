@@ -108,6 +108,24 @@ async def refresh_roles(ctx):
             await member.add_roles(role_turista)
 
 @bot.command(pass_context=True)
+async def refresh_role_anos(ctx):
+    if not has_perms(ctx.author):
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+
+    last_i = 0
+    for i, member in guild.members:
+        if member.bot:
+            continue
+        if role_aluno in member.roles and role_veterano not in member.roles:
+            await member.add_roles(role_anos[0])
+        if (i - last_i) > len(guild.members) / 10:
+            await ctx.message.channel.send('{}/{}'.format(i, len(guild.members)))
+            last_i = i
+            
+    await ctx.message.channel.send('Feito!')
+
+@bot.command(pass_context=True)
 async def admin(ctx):
     if not has_perms(ctx.author):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
