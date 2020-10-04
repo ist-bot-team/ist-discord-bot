@@ -239,6 +239,8 @@ async def on_raw_reaction_add(payload):
                 await member.add_roles(role_tagus)
             else:
                 await member.add_roles(role_alameda)
+            if year > 0:
+                await member.add_roles(role_veterano)
             return
 
 @bot.event
@@ -272,7 +274,7 @@ async def on_raw_reaction_remove(payload):
                     await member.remove_roles(role_tagus)
                 else:
                     await member.remove_roles(role_alameda)
-                await member.remove_roles(course["role"], role_aluno, role_anos[year])
+                await member.remove_roles(course["role"], role_aluno, role_anos[year], role_veterano)
                 await member.add_roles(role_turista)
             print("Role do curso {} removida do membro {}".format(course["name"], member))
             return
