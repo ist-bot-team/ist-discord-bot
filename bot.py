@@ -117,6 +117,8 @@ async def refresh_role_anos(ctx):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
+    await ctx.message.channel.send('A atualizar as roles dos anos...')
+    
     last_i = 0
     for i, member in guild.members:
         if member.bot:
@@ -248,8 +250,6 @@ async def on_raw_reaction_add(payload):
         if course["msg_id"] == payload.message_id:
             # Verificar se o membro já tem qualquer outra role de curso
             for course_2 in courses:
-                if course == course_2:
-                    continue
                 if course_2["role"] in member.roles:
                     msg = await roles_channel.fetch_message(payload.message_id)
                     await msg.remove_reaction(payload.emoji.name, member)
