@@ -68,7 +68,11 @@ async def rebuild():
 
     for i in range(0, len(courses)):
         msg = await roles_channel.send("`{}`".format(courses[i]["display"]))
-        await msg.add_reaction('☑️')
+        await msg.add_reaction('1️⃣')
+        await msg.add_reaction('2️⃣')
+        await msg.add_reaction('3️⃣')
+        await msg.add_reaction('4️⃣')
+        await msg.add_reaction('5️⃣')
         courses[i]["msg_id"] = msg.id
 
 @bot.command(pass_context=True)
@@ -225,7 +229,7 @@ async def on_raw_reaction_add(payload):
     
     if member.bot:
         return
-    
+
     if payload.emoji.name == '1️⃣':
         year = 0
     elif payload.emoji.name == '2️⃣':
