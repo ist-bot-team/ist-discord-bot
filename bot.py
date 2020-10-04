@@ -120,7 +120,7 @@ async def refresh_role_anos(ctx):
     await ctx.message.channel.send('A atualizar as roles dos anos...')
     
     last_i = 0
-    for i, member in guild.members:
+    for i, member in enumerate(guild.members):
         if member.bot:
             continue
         if role_aluno in member.roles and role_veterano not in member.roles:
