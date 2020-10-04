@@ -14,7 +14,7 @@
             },
             {
                 "name": "Não sou caloiro",
-                "value": "Se este não é o teu primeiro ano no IST podes pedir a role $veterano ao <@227849349734989834>."
+                "value": "Este servidor não é exclusivo para caloiros, por isso também tens lugar aqui!"
             }
         ]
     },
@@ -29,7 +29,7 @@
             },
             {
                 "name": "I'm not a Freshman",
-                "value": "If this isn't your first year at IST you can ask <@227849349734989834> for the $veterano role."
+                "value": "This server is not exclusive to freshmen, so you still have a place here!"
             }
         ]
     }

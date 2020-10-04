@@ -34,7 +34,7 @@ with open('embeds.json', 'r', encoding='utf-8') as file:
 
 bot = commands.Bot(command_prefix='$')
 
-# embed: key do embed em embed.json a que se pretende aceder
+# embed: key do embed no embed.json a que se pretende aceder
 def parse_embed(embed):
     if embed not in embeds:
         print('Warning: the key {} isn\'t in embed.json'.format(embed))
@@ -108,6 +108,24 @@ async def refresh_roles(ctx):
             await member.add_roles(role_turista)
 
 @bot.command(pass_context=True)
+async def refresh_role_anos(ctx):
+    if not has_perms(ctx.author):
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+
+    last_i = 0
+    for i, member in guild.members:
+        if member.bot:
+            continue
+        if role_aluno in member.roles and role_veterano not in member.roles:
+            await member.add_roles(role_anos[0])
+        if (i - last_i) > len(guild.members) / 10:
+            await ctx.message.channel.send('{}/{}'.format(i, len(guild.members)))
+            last_i = i
+            
+    await ctx.message.channel.send('Feito!')
+
+@bot.command(pass_context=True)
 async def admin(ctx):
     if not has_perms(ctx.author):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
@@ -145,6 +163,7 @@ async def on_ready():
     global role_alameda
     global role_mod
     global role_admin
+    global role_anos
     role_turista = get(guild.roles, name="Turista")
     role_aluno = get(guild.roles, name="Aluno")
     role_veterano = get(guild.roles, name="Veterano/a")
@@ -152,6 +171,12 @@ async def on_ready():
     role_alameda = get(guild.roles, name="Alameda")
     role_mod = get(guild.roles, name="Mod")
     role_admin = get(guild.roles, name="Admin")
+    role_anos = list()
+    for i in range(1, 6):
+        role_anos.append(get(guild.roles, name=(str(i) + "º ano")))
+        if role_anos[i - 1] is None:
+            print('O guild tem de ter uma role para cada ano, 1, 2, 3, 4 e 5 (xº ano)')
+            exit(-1)
 
     if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_mod is None or role_admin is None:
         print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Mod" e uma role "Admin".')
@@ -193,12 +218,25 @@ async def version(ctx):
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
+    if payload.channel_id != roles_channel.id:
         return
 
     member = guild.get_member(payload.user_id)
     
     if member.bot:
+        return
+    
+    if payload.emoji.name == '1️⃣':
+        year = 0
+    elif payload.emoji.name == '2️⃣':
+        year = 1
+    elif payload.emoji.name == '3️⃣':
+        year = 2
+    elif payload.emoji.name == '4️⃣':
+        year = 3
+    elif payload.emoji.name == '5️⃣':
+        year = 4
+    else:
         return
 
     # Encontrar a mensagem correta
@@ -210,25 +248,40 @@ async def on_raw_reaction_add(payload):
                     continue
                 if course_2["role"] in member.roles:
                     msg = await roles_channel.fetch_message(payload.message_id)
-                    await msg.remove_reaction('☑️', member)
+                    await msg.remove_reaction(payload.emoji.name, member)
                     return
             print("Role do curso {} adicionada ao membro {}".format(course["name"], member))
             await member.remove_roles(role_turista)
-            await member.add_roles(course["role"], role_aluno)
+            await member.add_roles(course["role"], role_aluno, role_anos[year])
             if course["tagus"]:
                 await member.add_roles(role_tagus)
             else:
                 await member.add_roles(role_alameda)
+            if year > 0:
+                await member.add_roles(role_veterano)
             return
 
 @bot.event
 async def on_raw_reaction_remove(payload):
-    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
+    if payload.channel_id != roles_channel.id:
         return
 
     member = guild.get_member(payload.user_id)
     
     if member.bot:
+        return
+
+    if payload.emoji.name == '1️⃣':
+        year = 0
+    elif payload.emoji.name == '2️⃣':
+        year = 1
+    elif payload.emoji.name == '3️⃣':
+        year = 2
+    elif payload.emoji.name == '4️⃣':
+        year = 3
+    elif payload.emoji.name == '5️⃣':
+        year = 4
+    else:
         return
 
     # Encontrar a mensagem correta
@@ -239,7 +292,7 @@ async def on_raw_reaction_remove(payload):
                     await member.remove_roles(role_tagus)
                 else:
                     await member.remove_roles(role_alameda)
-                await member.remove_roles(course["role"], role_aluno)
+                await member.remove_roles(course["role"], role_aluno, role_anos[year], role_veterano)
                 await member.add_roles(role_turista)
             print("Role do curso {} removida do membro {}".format(course["name"], member))
             return
