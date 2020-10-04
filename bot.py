@@ -156,7 +156,7 @@ async def on_ready():
     role_anos = list()
     for i in range(1, 6):
         role_anos.append(get(guild.roles, name=(str(i) + "º ano")))
-        if role_anos[i] is None:
+        if role_anos[i - 1] is None:
             print('O guild tem de ter uma role para cada ano, 1, 2, 3, 4 e 5 (xº ano)')
             exit(-1)
 
