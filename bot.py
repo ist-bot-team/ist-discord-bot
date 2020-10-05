@@ -258,16 +258,15 @@ async def on_raw_reaction_add(payload):
                     return
             print("Role do curso {} adicionada ao membro {}".format(course["name"], member))
 
-            lock.acquire()
-            await member.remove_roles(role_turista)
-            await member.add_roles(course["role"], role_aluno, role_anos[year])
-            if course["tagus"]:
-                await member.add_roles(role_tagus)
-            else:
-                await member.add_roles(role_alameda)
-            if year > 0:
-                await member.add_roles(role_veterano)
-            lock.release()
+            with lock:
+                await member.remove_roles(role_turista)
+                await member.add_roles(course["role"], role_aluno, role_anos[year])
+                if course["tagus"]:
+                    await member.add_roles(role_tagus)
+                else:
+                    await member.add_roles(role_alameda)
+                if year > 0:
+                    await member.add_roles(role_veterano)
             return
 
 @bot.event
@@ -284,14 +283,13 @@ async def on_raw_reaction_remove(payload):
     for course in courses:
         if course["msg_id"] == payload.message_id:
             if course["role"] in member.roles:
-                lock.acquire()
-                if course["tagus"]:
-                    await member.remove_roles(role_tagus)
-                else:
-                    await member.remove_roles(role_alameda)
-                await member.remove_roles(course["role"], role_aluno, role_anos[0], role_anos[1], role_anos[2], role_anos[3], role_anos[4], role_veterano)
-                await member.add_roles(role_turista)
-                lock.release()
+                with lock:
+                    if course["tagus"]:
+                        await member.remove_roles(role_tagus)
+                    else:
+                        await member.remove_roles(role_alameda)
+                    await member.remove_roles(course["role"], role_aluno, role_anos[0], role_anos[1], role_anos[2], role_anos[3], role_anos[4], role_veterano)
+                    await member.add_roles(role_turista)
                 print("Role do curso {} removida do membro {}".format(course["name"], member))
             return
 
