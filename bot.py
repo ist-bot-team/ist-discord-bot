@@ -258,7 +258,7 @@ async def on_raw_reaction_add(payload):
                     return
             print("Role do curso {} adicionada ao membro {}".format(course["name"], member))
 
-            with lock:
+            async with lock:
                 await member.remove_roles(role_turista)
                 await member.add_roles(course["role"], role_aluno, role_anos[year])
                 if course["tagus"]:
@@ -283,7 +283,7 @@ async def on_raw_reaction_remove(payload):
     for course in courses:
         if course["msg_id"] == payload.message_id:
             if course["role"] in member.roles:
-                with lock:
+                async with lock:
                     if course["tagus"]:
                         await member.remove_roles(role_tagus)
                     else:
