@@ -1,6 +1,7 @@
 from discord import Embed
 from discord.ext import commands
 from discord.utils import get
+from threading import Lock
 import os
 import json
 
@@ -33,6 +34,7 @@ with open('embeds.json', 'r', encoding='utf-8') as file:
     embeds = json.load(file)
 
 bot = commands.Bot(command_prefix='$')
+lock = Lock()
 
 # embed: key do embed no embed.json a que se pretende aceder
 def parse_embed(embed):
@@ -255,6 +257,8 @@ async def on_raw_reaction_add(payload):
                     await msg.remove_reaction(payload.emoji.name, member)
                     return
             print("Role do curso {} adicionada ao membro {}".format(course["name"], member))
+
+            lock.acquire()
             await member.remove_roles(role_turista)
             await member.add_roles(course["role"], role_aluno, role_anos[year])
             if course["tagus"]:
@@ -263,6 +267,7 @@ async def on_raw_reaction_add(payload):
                 await member.add_roles(role_alameda)
             if year > 0:
                 await member.add_roles(role_veterano)
+            lock.release()
             return
 
 @bot.event
@@ -275,30 +280,19 @@ async def on_raw_reaction_remove(payload):
     if member.bot:
         return
 
-    if payload.emoji.name == '1️⃣':
-        year = 0
-    elif payload.emoji.name == '2️⃣':
-        year = 1
-    elif payload.emoji.name == '3️⃣':
-        year = 2
-    elif payload.emoji.name == '4️⃣':
-        year = 3
-    elif payload.emoji.name == '5️⃣':
-        year = 4
-    else:
-        return
-
     # Encontrar a mensagem correta
     for course in courses:
         if course["msg_id"] == payload.message_id:
             if course["role"] in member.roles:
+                lock.acquire()
                 if course["tagus"]:
                     await member.remove_roles(role_tagus)
                 else:
                     await member.remove_roles(role_alameda)
-                await member.remove_roles(course["role"], role_aluno, role_anos[year], role_veterano)
+                await member.remove_roles(course["role"], role_aluno, role_anos[0], role_anos[1], role_anos[2], role_anos[3], role_anos[4], role_veterano)
                 await member.add_roles(role_turista)
-            print("Role do curso {} removida do membro {}".format(course["name"], member))
+                lock.release()
+                print("Role do curso {} removida do membro {}".format(course["name"], member))
             return
 
 bot.run(os.environ['DISCORD_TOKEN'])
