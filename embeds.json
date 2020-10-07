@@ -10,11 +10,7 @@
         "fields": [
             {
                 "name": "Escolhe um curso",
-                "value": "Manda uma mensagem este canal com o nome do curso que frequentas no IST.\nSe não estudares no IST és convidado a permanecer neste servidor como 'turista' (para isso basta enviar 'turista')."
-            },
-            {
-                "name": "Lista de cursos",
-                "value": "$courses"
+                "value": "Manda uma mensagem este canal com o nome do curso que frequentas no IST (LEIC-A, MEEC, por exemplo).\nSe não estudares no IST és convidado a permanecer neste servidor como 'turista' (para isso basta enviar 'turista')."
             },
             {
                 "name": "Não sou caloiro",
@@ -29,11 +25,7 @@
         "fields": [
             {
                 "name": "Pick a degree",
-                "value": "Send a message in this channel with the name of the degree you're on in IST.\nIf you don't study on IST you are invited to stay on this server as a 'tourist' (in that case you only need to send 'turista')"
-            },
-            {
-                "name": "Degree list",
-                "value": "$courses"
+                "value": "Send a message in this channel with the name of the degree you're on in IST (MEEC, LEIC-A for example).\nIf you don't study on IST you are invited to stay on this server as a 'tourist' (in that case you only need to send 'turista')"
             },
             {
                 "name": "I'm not a Freshman",

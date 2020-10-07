@@ -50,7 +50,7 @@ def parse_embed(embed):
 
     for field in embeds[embed]['fields']:
         ret.add_field(
-            value=field['value'].replace('$veterano', role_veterano.mention).replace('$turista', role_turista.mention).replace('$courses', courses_info_msg),
+            value=field['value'].replace('$veterano', role_veterano.mention).replace('$turista', role_turista.mention),
             name=field['name'],
             inline=False
         )
