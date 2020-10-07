@@ -50,7 +50,7 @@ def parse_embed(embed):
 
     for field in embeds[embed]['fields']:
         ret.add_field(
-            value=field['value'].replace('$veterano', role_veterano.mention).replace('$turista', role_turista.mention),
+            value=field['value'].replace('$veterano', role_veterano.mention).replace('$turista', role_turista.mention).replace('$courses', courses_info_msg),
             name=field['name'],
             inline=False
         )
@@ -110,6 +110,11 @@ async def on_ready():
         if courses[i]["role"] is None:
             print("A role com o nome {} nao existe".format(courses[i]["name"]))
             exit(-1)
+
+    global courses_info_msg
+    courses_info_msg = ""
+    for course in courses:
+        courses_info_msg += course["display"] + '\n'
 
 @bot.event
 async def on_member_join(member):
