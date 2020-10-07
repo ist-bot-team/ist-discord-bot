@@ -89,21 +89,6 @@ async def rebuild_course_channels():
             await course_channel.edit(overwrites=permissions)
 
 
-async def rebuild():
-    await roles_channel.purge()
-
-    await roles_channel.send(embed=parse_embed('welcome-pt'))
-    await roles_channel.send(embed=parse_embed('welcome-en'))
-
-    for i in range(0, len(courses)):
-        msg = await roles_channel.send("`{}`".format(courses[i]["display"]))
-        await msg.add_reaction('1️⃣')
-        await msg.add_reaction('2️⃣')
-        await msg.add_reaction('3️⃣')
-        await msg.add_reaction('4️⃣')
-        await msg.add_reaction('5️⃣')
-        courses[i]["msg_id"] = msg.id
-
 # Events
 
 
@@ -138,7 +123,6 @@ async def on_ready():
     global role_alameda
     global role_mod
     global role_admin
-    global role_anos
     role_turista = get(guild.roles, name="TurISTa")
     role_aluno = get(guild.roles, name="Aluno")
     role_veterano = get(guild.roles, name="Veterano/a")
@@ -146,16 +130,13 @@ async def on_ready():
     role_alameda = get(guild.roles, name="Alameda")
     role_mod = get(guild.roles, name="Mod")
     role_admin = get(guild.roles, name="Admin")
-    role_anos = list()
-
-    for i in range(1, 6):
-        role_anos.append(get(guild.roles, name=(str(i) + "º ano")))
-        if role_anos[i - 1] is None:
-            print('O guild tem de ter uma role para cada ano, 1, 2, 3, 4 e 5 (xº ano)')
-            exit(-1)
 
     if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_mod is None or role_admin is None:
         print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Mod" e uma role "Admin".')
+        exit(-1)
+
+    if courses_category is None:
+        print('O guild tem de ter uma categoria "Cadeiras".')
         exit(-1)
 
     # Associar cada curso a uma role
@@ -169,35 +150,89 @@ async def on_ready():
             print("A role com o nome {} nao existe".format(courses[i]["name"]))
             exit(-1)
 
-    if courses_category is None:
-        print('O guild tem de ter uma categoria "Cadeiras".')
-        exit(-1)
+    global courses_info_msg
+    courses_info_msg = ""
+    for course in courses:
+        courses_info_msg += course["display"] + '\n'
 
 
 @bot.event
 async def on_member_join(member):
+    global state
+
     await welcome_channel.send('Bem vind@ {}! Verifica as tuas DMs, vais receber uma mensagem com as instruções a seguir.'.format(member.mention))
     await member.add_roles(role_turista)
 
     # Enviar DM
     channel = await member.create_dm()
-    await channel.send("Hey Hey")
+    await channel.send(embed=parse_embed('welcome-pt'))
+    await channel.send(embed=parse_embed('welcome-en'))
+    state[member.id] = {"stage": 1}
+    print("{} entrou".format(member.id))
 
 
 @bot.event
 async def on_message(msg):
+    if msg.author.bot:
+        return
+
     global state
 
     await bot.process_commands(msg)
     if not msg.guild:
-        print('Received a DM from {}'.format(msg.author))
-        stage = 1
-        if msg.author.id in state:
-            stage = state[msg.author.id]["stage"] + 1
+        print('Mensagem recebida de {}'.format(msg.author.id))
 
-        state[msg.author.id]["stage"] = stage
+        if msg.author.id not in state:
+            return
 
-# Commands
+        if state[msg.author.id]["stage"] == 1:
+            # Verificar se o curso existe e adicioná-lo ao utilizador
+            print("Curso {}".format(msg.content))
+            found = False
+            for course in courses:
+                if course["name"].lower() == msg.content.lower():
+                    # Adiciona role ao utilizador
+                    member = guild.get_member(msg.author.id)
+                    if course["tagus"]:
+                        await member.add_roles(course["role"], role_aluno, role_tagus)
+                        await member.remove_roles(role_turista)
+                    else:
+                        await member.add_roles(course["role"], role_aluno, role_alameda)
+                        await member.remove_roles(role_turista)
+                    await msg.channel.send("Curso {} escolhido. Este é o teu primeiro ano no técnico? Responde com [yes] ou [no].".format(course["name"]))
+                    await msg.channel.send("Degree {} chosen. Is this your first year on IST? Answer with [yes] or [no].".format(course["name"]))
+                    state[msg.author.id]["stage"] = 2
+                    found = True
+                    print("Adicionada role do curso {} ao user {}".format(
+                        course["name"], msg.author))
+                    break
+
+            if msg.content.lower() == "turista":
+                state[msg.author.id]["stage"] = 3
+                await msg.channel.send(embed=parse_embed('finish-pt'))
+                await msg.channel.send(embed=parse_embed('finish-en'))
+            elif not found:
+                await msg.channel.send("Esse curso não existe! Por favor tenta outra vez. Se estiveres preso, pede ajuda a um moderador no servidor (@Mods)")
+                await msg.channel.send("That degree doesn't exist! Please try again. If you are stuck, ask a mod for help on the server (@Mods)")
+        elif state[msg.author.id]["stage"] == 2:
+            if msg.content.lower() == "yes":
+                await msg.channel.send(embed=parse_embed('finish-pt'))
+                await msg.channel.send(embed=parse_embed('finish-en'))
+                state[msg.author.id]["stage"] = 3
+            elif msg.content.lower() == "no":
+                await msg.channel.send(embed=parse_embed('finish-pt'))
+                await msg.channel.send(embed=parse_embed('finish-en'))
+                member.add_roles(role_veterano)
+                state[msg.author.id]["stage"] = 3
+            else:
+                await msg.channel.send("Resposta inválida, por favor responde apenas com [yes] ou [no]")
+        else:
+            # O curso já foi adicionado, diz para pedir ajuda a um moderador
+            await msg.channel.send(embed=parse_embed('help-pt'))
+            await msg.channel.send(embed=parse_embed('help-en'))
+            print("Mensagem de ajuda")
+
+# Comandos
 
 
 @bot.command(pass_context=True)
@@ -223,7 +258,6 @@ async def refresh(ctx):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
     await ctx.message.channel.send('A atualizar o bot...')
-    await rebuild()
     await rebuild_course_channels()
     await ctx.message.channel.send('Feito')
 
