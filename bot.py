@@ -149,7 +149,7 @@ async def on_message(msg):
             print("Curso {}".format(msg.content))
             found = False
             for course in courses:
-                if course["name"].lower() in msg.content.lower():
+                if course["name"].lower() == msg.content.lower():
                     # Adiciona role ao utilizador
                     member = guild.get_member(msg.author.id)
                     if course["tagus"]:
