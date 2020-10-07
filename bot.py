@@ -34,7 +34,7 @@ with open('embeds.json', 'r', encoding='utf-8') as file:
     embeds = json.load(file)
 
 bot = commands.Bot(command_prefix='$')
-lock = Lock()
+state = {}
 
 # embed: key do embed no embed.json a que se pretende aceder
 def parse_embed(embed):
@@ -59,9 +59,6 @@ def parse_embed(embed):
 
     return ret
 
-def has_perms(member):
-    return role_mod in member.roles
-
 async def rebuild():
     await roles_channel.purge()
 
@@ -77,72 +74,7 @@ async def rebuild():
         await msg.add_reaction('5️⃣')
         courses[i]["msg_id"] = msg.id
 
-@bot.command(pass_context=True)
-async def refresh(ctx):
-    if not has_perms(ctx.author):
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
-        return
-    await ctx.message.channel.send('A atualizar o bot...')
-    await rebuild()
-    await ctx.message.channel.send('Feito')
-
-@bot.command(pass_context=True)
-async def refresh_roles(ctx):
-    if not has_perms(ctx.author):
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
-        return
-
-    # Verificar se há membros que não são alunos que não tem role de turista
-    for member in guild.members:
-        if member.bot:
-            continue
-
-        is_aluno = False
-        for course in courses:
-            if course["role"] in member.roles:
-                if course["tagus"]:
-                    await member.remove_roles(role_alameda)
-                    await member.add_roles(role_tagus)
-                else:
-                    await member.remove_roles(role_tagus)
-                    await member.add_roles(role_alameda)
-                is_aluno = True
-                await member.add_roles(role_aluno)
-                continue
-        if not is_aluno:
-            await member.remove_roles(role_tagus, role_alameda, role_aluno)
-            await member.add_roles(role_turista)
-
-@bot.command(pass_context=True)
-async def refresh_role_anos(ctx):
-    if not has_perms(ctx.author):
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
-        return
-
-    await ctx.message.channel.send('A atualizar as roles dos anos...')
-    
-    last_i = 0
-    for i, member in enumerate(guild.members):
-        if member.bot:
-            continue
-        if role_aluno in member.roles and role_veterano not in member.roles:
-            await member.add_roles(role_anos[0])
-        if (i - last_i) > len(guild.members) / 10:
-            await ctx.message.channel.send('{}/{}'.format(i, len(guild.members)))
-            last_i = i
-            
-    await ctx.message.channel.send('Feito!')
-
-@bot.command(pass_context=True)
-async def admin(ctx):
-    if not has_perms(ctx.author):
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
-        return
-
-    if role_admin not in ctx.author.roles:
-        await ctx.author.add_roles(role_admin)
-    else:
-        await ctx.author.remove_roles(role_admin)
+# Events
 
 @bot.event
 async def on_ready():
@@ -172,7 +104,7 @@ async def on_ready():
     global role_mod
     global role_admin
     global role_anos
-    role_turista = get(guild.roles, name="Turista")
+    role_turista = get(guild.roles, name="TurISTa")
     role_aluno = get(guild.roles, name="Aluno")
     role_veterano = get(guild.roles, name="Veterano/a")
     role_tagus = get(guild.roles, name="Tagus Park")
@@ -180,6 +112,7 @@ async def on_ready():
     role_mod = get(guild.roles, name="Mod")
     role_admin = get(guild.roles, name="Admin")
     role_anos = list()
+
     for i in range(1, 6):
         role_anos.append(get(guild.roles, name=(str(i) + "º ano")))
         if role_anos[i - 1] is None:
@@ -201,96 +134,52 @@ async def on_ready():
             print("A role com o nome {} nao existe".format(courses[i]["name"]))
             exit(-1)
 
-    # Verificar se as mensagens de entrada já estão no canal certo
-    found_count = 0
-    roles_messages = await roles_channel.history().flatten()
-    for msg in roles_messages:
-        for course in courses:
-            if course["display"] in msg.content and msg.author.bot:
-                course["msg_id"] = msg.id
-                found_count += 1
-                break
-
-    # Senão estiverem todas, apaga todas as mensagens do canal e escreve de novo
-    if found_count != len(courses):
-        await rebuild()
-
 @bot.event
 async def on_member_join(member):
-    await welcome_channel.send('Bem vind@ {}! Escolhe o teu curso em {}.'.format(member.mention, roles_channel.mention))
+    await welcome_channel.send('Bem vind@ {}! Verifica as tuas DMs, vais receber uma mensagem com as instruções a seguir.'.format(member.mention))
     await member.add_roles(role_turista)
+
+    # Enviar DM
+    channel = await member.create_dm()
+    await channel.send("Hey Hey")
+
+@bot.event
+async def on_message(msg):
+    global state
+
+    await bot.process_commands(msg)
+    if not msg.guild:
+        print('Received a DM from {}'.format(msg.author))
+        stage = 1
+        if msg.author.id in state:
+            stage = state[msg.author.id]["stage"] + 1
+        
+        state[msg.author.id]["stage"] = stage
+
+# Commands
 
 @bot.command(pass_context=True)
 async def version(ctx):
     await ctx.message.channel.send("{}".format(version_number))
 
-@bot.event
-async def on_raw_reaction_add(payload):
-    if payload.channel_id != roles_channel.id:
+@bot.command(pass_context=True)
+async def admin(ctx):
+    if not role_mod in ctx.author.roles:
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
-    member = guild.get_member(payload.user_id)
-    
-    if member.bot:
-        return
-
-    if payload.emoji.name == '1️⃣':
-        year = 0
-    elif payload.emoji.name == '2️⃣':
-        year = 1
-    elif payload.emoji.name == '3️⃣':
-        year = 2
-    elif payload.emoji.name == '4️⃣':
-        year = 3
-    elif payload.emoji.name == '5️⃣':
-        year = 4
+    if role_admin not in ctx.author.roles:
+        await ctx.author.add_roles(role_admin)
     else:
+        await ctx.author.remove_roles(role_admin)
+
+@bot.command(pass_context=True)
+async def refresh(ctx):
+    if not role_mod in ctx.author.roles:
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
-
-    # Encontrar a mensagem correta
-    for course in courses:
-        if course["msg_id"] == payload.message_id:
-            # Verificar se o membro já tem qualquer outra role de curso
-            for course_2 in courses:
-                if course_2["role"] in member.roles:
-                    msg = await roles_channel.fetch_message(payload.message_id)
-                    await msg.remove_reaction(payload.emoji.name, member)
-                    return
-            print("Role do curso {} adicionada ao membro {}".format(course["name"], member))
-
-            async with lock:
-                await member.remove_roles(role_turista)
-                await member.add_roles(course["role"], role_aluno, role_anos[year])
-                if course["tagus"]:
-                    await member.add_roles(role_tagus)
-                else:
-                    await member.add_roles(role_alameda)
-                if year > 0:
-                    await member.add_roles(role_veterano)
-            return
-
-@bot.event
-async def on_raw_reaction_remove(payload):
-    if payload.channel_id != roles_channel.id:
-        return
-
-    member = guild.get_member(payload.user_id)
-    
-    if member.bot:
-        return
-
-    # Encontrar a mensagem correta
-    for course in courses:
-        if course["msg_id"] == payload.message_id:
-            if course["role"] in member.roles:
-                async with lock:
-                    if course["tagus"]:
-                        await member.remove_roles(role_tagus)
-                    else:
-                        await member.remove_roles(role_alameda)
-                    await member.remove_roles(course["role"], role_aluno, role_anos[0], role_anos[1], role_anos[2], role_anos[3], role_anos[4], role_veterano)
-                    await member.add_roles(role_turista)
-                print("Role do curso {} removida do membro {}".format(course["name"], member))
-            return
+    await ctx.message.channel.send('A atualizar o bot...')
+    await rebuild()
+    await ctx.message.channel.send('Feito')
 
 bot.run(os.environ['DISCORD_TOKEN'])
