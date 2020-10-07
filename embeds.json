@@ -10,7 +10,11 @@
         "fields": [
             {
                 "name": "Escolhe um curso",
-                "value": "Reage com o número que corresponde ao teu ano na mensagem que corresponder ao teu curso no IST. \nSe não estudares no IST és convidado a permanecer neste servidor como $turista."
+                "value": "Manda uma mensagem este canal com o nome do curso que frequentas no IST.\nSe não estudares no IST és convidado a permanecer neste servidor como 'turista' (para isso basta enviar 'turista')."
+            },
+            {
+                "name": "Lista de cursos",
+                "value": "$courses"
             },
             {
                 "name": "Não sou caloiro",
@@ -24,12 +28,60 @@
         "color": 7658098,
         "fields": [
             {
-                "name": "Pick a course",
-                "value": "React with the number that matches your year on the message corresponding to your IST course.\nIf you don't study on IST you're still invited to remain under the role of $turista (Tourist)."
+                "name": "Pick a degree",
+                "value": "Send a message in this channel with the name of the degree you're on in IST.\nIf you don't study on IST you are invited to stay on this server as a 'tourist' (in that case you only need to send 'turista')"
+            },
+            {
+                "name": "Degree list",
+                "value": "$courses"
             },
             {
                 "name": "I'm not a Freshman",
                 "value": "This server is not exclusive to freshmen, so you still have a place here!"
+            }
+        ]
+    },
+    "help-pt": {
+        "title": "Ajuda",
+        "description": "Podes pedir ajuda aos moderadores!",
+        "color": 7506394,
+        "fields": [
+            {
+                "name": "A ter problemas?",
+                "value": "Se alguma coisa correu mal dá ping aos @Mods no servidor."
+            }
+        ]
+    },
+    "help-en": {
+        "title": "Help",
+        "description": "You can ask the moderators for help!",
+        "color": 7658098,
+        "fields": [
+            {
+                "name": "Having problems?",
+                "value": "If something went wrong ping the @Mods on the server."
+            }
+        ]
+    },
+    "finish-pt": {
+        "title": "Feito",
+        "description": "Acabaste o teu registo!",
+        "color": 7506394,
+        "fields": [
+            {
+                "name": "Introduz-te",
+                "value": "Podes começar por te introduzir no #geral!"
+            }
+        ]
+    },
+    "finish-en": {
+        "title": "Done",
+        "description": "You finished your registration",
+        "color": 7658098,
+        "fields": [
+            {
+                "name": "Introduce yourself",
+                "value": "You can start by introducing yourself in #international"
             }
         ]
     }
