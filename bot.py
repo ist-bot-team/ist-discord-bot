@@ -1,4 +1,4 @@
-from discord import Embed
+from discord import Embed, PermissionOverwrite
 from discord.ext import commands
 from discord.utils import get
 from asyncio import Lock
@@ -33,15 +33,20 @@ with open('courses.json', 'r', encoding='utf-8') as file:
 with open('embeds.json', 'r', encoding='utf-8') as file:
     embeds = json.load(file)
 
+with open('courses_by_degree.json', 'r', encoding='utf-8') as file:
+    courses_by_degree = json.load(file)
+
 bot = commands.Bot(command_prefix='$')
 state = {}
 
 # embed: key do embed no embed.json a que se pretende aceder
+
+
 def parse_embed(embed):
     if embed not in embeds:
         print('Warning: the key {} isn\'t in embed.json'.format(embed))
         return parse_embed('error')
-    
+
     ret = Embed(
         title=embeds[embed]['title'],
         description=embeds[embed]['description'],
@@ -50,36 +55,66 @@ def parse_embed(embed):
 
     for field in embeds[embed]['fields']:
         ret.add_field(
-            value=field['value'].replace('$veterano', role_veterano.mention).replace('$turista', role_turista.mention),
+            value=field['value'].replace('$veterano', role_veterano.mention).replace(
+                '$turista', role_turista.mention),
             name=field['name'],
             inline=False
         )
 
-    ret.set_thumbnail(url='https://upload.wikimedia.org/wikipedia/pt/e/ed/IST_Logo.png')
+    ret.set_thumbnail(
+        url='https://upload.wikimedia.org/wikipedia/pt/e/ed/IST_Logo.png')
 
     return ret
 
+
+async def rebuild_course_channels():
+    channels = courses_category.text_channels
+
+    for course in courses_by_degree:
+        permissions = {
+            guild.default_role: PermissionOverwrite(read_messages=False)
+        }
+        for degree in courses_by_degree[course]:
+            degree_obj = next(
+                (item for item in courses if item["name"] == degree), None)
+            if degree_obj is not None:
+                permissions[degree_obj["role"]] = PermissionOverwrite(
+                    read_messages=True)
+
+        course_channel = get(courses_category.text_channels,
+                             name=course.lower())
+        if course_channel is None:
+            await courses_category.create_text_channel(course.lower(), overwrites=permissions)
+        else:
+            await course_channel.edit(overwrites=permissions)
+
+
 # Events
+
 
 @bot.event
 async def on_ready():
     print('Bot iniciado com o utilizador {0.user}'.format(bot))
 
     if len(bot.guilds) != 1:
-        print('O bot tem de estar em exatamente um guild, no entanto está em {} guilds'.format(len(bot.guilds)))
+        print('O bot tem de estar em exatamente um guild, no entanto está em {} guilds'.format(
+            len(bot.guilds)))
         exit(-1)
 
     global guild
     guild = bot.guilds[0]
-    
+
     if len(guild.text_channels) < 2:
         print('O guild tem de ter pelo menos dois canais de texto')
         exit(-1)
-    
+
     global roles_channel
     global welcome_channel
     roles_channel = guild.text_channels[0]
     welcome_channel = guild.text_channels[1]
+
+    global courses_category
+    courses_category = get(guild.categories, name="Cadeiras")
 
     global role_turista
     global role_aluno
@@ -100,6 +135,10 @@ async def on_ready():
         print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Mod" e uma role "Admin".')
         exit(-1)
 
+    if courses_category is None:
+        print('O guild tem de ter uma categoria "Cadeiras".')
+        exit(-1)
+
     # Associar cada curso a uma role
     for i in range(0, len(courses)):
         courses[i]["role"] = None
@@ -116,6 +155,7 @@ async def on_ready():
     for course in courses:
         courses_info_msg += course["display"] + '\n'
 
+
 @bot.event
 async def on_member_join(member):
     global state
@@ -127,8 +167,9 @@ async def on_member_join(member):
     channel = await member.create_dm()
     await channel.send(embed=parse_embed('welcome-pt'))
     await channel.send(embed=parse_embed('welcome-en'))
-    state[member.id] = { "stage": 1 }
+    state[member.id] = {"stage": 1}
     print("{} entrou".format(member.id))
+
 
 @bot.event
 async def on_message(msg):
@@ -143,7 +184,7 @@ async def on_message(msg):
 
         if msg.author.id not in state:
             return
-        
+
         if state[msg.author.id]["stage"] == 1:
             # Verificar se o curso existe e adicioná-lo ao utilizador
             print("Curso {}".format(msg.content))
@@ -162,7 +203,8 @@ async def on_message(msg):
                     await msg.channel.send("Degree {} chosen. Is this your first year on IST? Answer with [yes] or [no].".format(course["name"]))
                     state[msg.author.id]["stage"] = 2
                     found = True
-                    print("Adicionada role do curso {} ao user {}".format(course["name"], msg.author))
+                    print("Adicionada role do curso {} ao user {}".format(
+                        course["name"], msg.author))
                     break
 
             if msg.content.lower() == "turista":
@@ -192,9 +234,11 @@ async def on_message(msg):
 
 # Comandos
 
+
 @bot.command(pass_context=True)
 async def version(ctx):
     await ctx.message.channel.send("{}".format(version_number))
+
 
 @bot.command(pass_context=True)
 async def admin(ctx):
@@ -207,13 +251,14 @@ async def admin(ctx):
     else:
         await ctx.author.remove_roles(role_admin)
 
+
 @bot.command(pass_context=True)
 async def refresh(ctx):
     if not role_mod in ctx.author.roles:
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
     await ctx.message.channel.send('A atualizar o bot...')
-    # ??? o que é que se faz agora
+    await rebuild_course_channels()
     await ctx.message.channel.send('Feito')
 
 bot.run(os.environ['DISCORD_TOKEN'])
