@@ -154,6 +154,7 @@ async def on_message(msg):
                         await member.add_roles(course["role"], role_aluno, role_alameda)
                         await member.remove_roles(role_turista)
                     await msg.channel.send("Curso {} escolhido. Este é o teu primeiro ano no técnico? Responde com [yes] ou [no].".format(course["name"]))
+                    await msg.channel.send("Degree {} chosen. Is this your first year on IST? Answer with [yes] or [no].".format(course["name"]))
                     state[msg.author.id]["stage"] = 2
                     found = True
                     print("Adicionada role do curso {} ao user {}".format(course["name"], msg.author))
@@ -161,24 +162,19 @@ async def on_message(msg):
 
             if msg.content.lower() == "turista":
                 state[msg.author.id]["stage"] = 3
-                await msg.channel.send("""
-Completaste a tua 'inscrição', apresenta-te no #geral!
-Recomendamos que uses o teu nome real como nickname para facilitar a comunicação.
-                """) # TODO: tirar esta repetiçao toda
+                await msg.channel.send(embed=parse_embed('finish-pt'))
+                await msg.channel.send(embed=parse_embed('finish-en'))
             elif not found:
                 await msg.channel.send("Esse curso não existe! Por favor tenta outra vez. Se estiveres preso, pede ajuda a um moderador no servidor (@Mods)")
+                await msg.channel.send("That degree doesn't exist! Please try again. If you are stuck, ask a mod for help on the server (@Mods)")
         elif state[msg.author.id]["stage"] == 2:
             if msg.content.lower() == "yes":
-                await msg.channel.send("""
-Completaste a tua 'inscrição', apresenta-te no #geral!
-Recomendamos que uses o teu nome real como nickname para facilitar a comunicação.
-                """) # TODO: tirar esta repetiçao toda
+                await msg.channel.send(embed=parse_embed('finish-pt'))
+                await msg.channel.send(embed=parse_embed('finish-en'))
                 state[msg.author.id]["stage"] = 3
             elif msg.content.lower() == "no":
-                await msg.channel.send("""
-Completaste a tua 'inscrição', apresenta-te no #geral!
-Recomendamos que uses o teu nome real como nickname para facilitar a comunicação.
-                """) # TODO: tirar esta repetiçao toda
+                await msg.channel.send(embed=parse_embed('finish-pt'))
+                await msg.channel.send(embed=parse_embed('finish-en'))
                 member.add_roles(role_veterano)
                 state[msg.author.id]["stage"] = 3
             else:
