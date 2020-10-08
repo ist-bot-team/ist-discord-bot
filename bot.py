@@ -264,4 +264,24 @@ async def refresh(ctx):
     await rebuild_course_channels()
     await ctx.message.channel.send('Feito')
 
+@bot.command(pass_context=True)
+async def make_leaderboard(ctx):
+    # Este comando cria uma leaderboard com os utilizadores que mais falaram no servidor.
+    visible_user_count = 10
+    leaderboard = {}
+
+    for channel in guild.text_channels:
+        await ctx.message.channel.send('A ler canal {}'.format(channel.name))
+        async for msg in channel.history(limit=None):
+            if msg.author.id in leaderboard:
+                leaderboard[msg.author.id] += 1
+            else:
+                leaderboard[msg.author.id] = 1 
+
+    leaderboard_msg = "```"
+    for user_id in sorted(leaderboard, key=leaderboard.get, reverse=True)[:visible_user_count]:
+        leaderboard_msg += '{} - {}\n'.format(guild.get_member(user_id), leaderboard[user_id])
+    leaderboard_msg += "```"
+    await ctx.message.channel.send('{}'.format(leaderboard_msg))
+
 bot.run(os.environ['DISCORD_TOKEN'])
