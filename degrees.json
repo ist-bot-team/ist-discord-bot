@@ -1,0 +1,97 @@
+[
+    {
+        "display": "(MA)     Arquitetura",
+        "name":    "MA",
+        "tagus":   false
+    },
+    {
+        "display": "(MEAer)  Engenharia Aeroespacial",
+        "name":    "MEAer",
+        "tagus":   false
+    },
+    {
+        "display": "(MEBiol) Engenharia Biológica",
+        "name":    "MEBiol",
+        "tagus":   false
+    },
+    {
+        "display": "(MEBiom) Engenharia Biomédica",
+        "name":    "MEBiom",
+        "tagus":   false
+    },
+    {
+        "display": "(MEC)    Engenharia Civil",
+        "name":    "MEC",
+        "tagus":   false
+    },
+    {
+        "display": "(MEEC)   Engenharia Eletrotécnica e de Computadores",
+        "name":    "MEEC",
+        "tagus":   false
+    },
+    {
+        "display": "(LEE)    Engenharia Eletrónica",
+        "name":    "LEE",
+        "tagus":   true
+    },
+    {
+        "display": "(MEFT)   Engenharia Física Tecnológica",
+        "name":    "MEFT",
+        "tagus":   false
+    },
+    {
+        "display": "(LEGM)   Engenharia Geológica e de Minas",
+        "name":    "LEGM",
+        "tagus":   false
+    },
+    {
+        "display": "(LEIC-A) Engenharia Informática e de Computadores",
+        "name":    "LEIC-A",
+        "tagus":   false
+    },
+    {
+        "display": "(LEIC-T) Engenharia Informática e de Computadores",
+        "name":    "LEIC-T",
+        "tagus":   true
+    },
+    {
+        "display": "(MEMec)  Engenharia Mecânica",
+        "name":    "MEMec",
+        "tagus":   false
+    },
+    {
+        "display": "(LENO)   Engenharia Naval e Oceânica",
+        "name":    "LENO",
+        "tagus":   false
+    },
+    {
+        "display": "(MEQ)    Engenharia Química",
+        "name":    "MEQ",
+        "tagus":   false
+    },
+    {
+        "display": "(MEM)    Engenharia de Materiais",
+        "name":    "MEM",
+        "tagus":   false
+    },
+    {
+        "display": "(LETI)   Engenharia de Telecomunicações e Informática",
+        "name":    "LETI",
+        "tagus":   true
+    },
+    {
+        "display": "(MEAmbi) Engenharia do Ambiente",
+        "name":    "MEAmbi",
+        "tagus":   false
+    },
+    {
+        "display": "(LEGI)   Engenharia e Gestão Industrial",
+        "name":    "LEGI",
+        "tagus":   true
+    },
+    {
+        "display": "(LMAC)   Matemática Aplicada e Computação",
+        "name":    "LMAC",
+        "tagus":   false
+    }
+]
