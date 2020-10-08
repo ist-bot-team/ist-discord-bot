@@ -222,9 +222,10 @@ async def on_message(msg):
                 await msg.channel.send(embed=parse_embed('finish-en'))
                 state[msg.author.id]["stage"] = 3
             elif msg.content.lower() == "no":
+                member = guild.get_member(msg.author.id)
                 await msg.channel.send(embed=parse_embed('finish-pt'))
                 await msg.channel.send(embed=parse_embed('finish-en'))
-                member.add_roles(role_veterano)
+                await member.add_roles(role_veterano)
                 state[msg.author.id]["stage"] = 3
             else:
                 await msg.channel.send("Resposta inválida, por favor responde apenas com [yes] ou [no]")
