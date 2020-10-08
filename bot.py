@@ -116,9 +116,7 @@ async def on_ready():
         print('O guild tem de ter pelo menos dois canais de texto')
         exit(-1)
 
-    global roles_channel
     global welcome_channel
-    roles_channel = guild.text_channels[0]
     welcome_channel = guild.text_channels[1]
 
     global courses_category
@@ -224,9 +222,10 @@ async def on_message(msg):
                 await msg.channel.send(embed=parse_embed('finish-en'))
                 state[msg.author.id]["stage"] = 3
             elif msg.content.lower() == "no":
+                member = guild.get_member(msg.author.id)
                 await msg.channel.send(embed=parse_embed('finish-pt'))
                 await msg.channel.send(embed=parse_embed('finish-en'))
-                member.add_roles(role_veterano)
+                await member.add_roles(role_veterano)
                 state[msg.author.id]["stage"] = 3
             else:
                 await msg.channel.send("Resposta inválida, por favor responde apenas com [yes] ou [no]")
