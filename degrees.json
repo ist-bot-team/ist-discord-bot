@@ -1,96 +1,96 @@
 [
     {
-        "display": "Arquitetura                                        (MA)",
+        "display": "(MA)     Arquitetura",
         "name":    "MA",
         "tagus":   false
     },
     {
-        "display": "Engenharia Aeroespacial                         (MEAer)",
+        "display": "(MEAer)  Engenharia Aeroespacial",
         "name":    "MEAer",
         "tagus":   false
     },
     {
-        "display": "Engenharia Biológica                           (MEBiol)",
+        "display": "(MEBiol) Engenharia Biológica",
         "name":    "MEBiol",
         "tagus":   false
     },
     {
-        "display": "Engenharia Biomédica                           (MEBiom)",
+        "display": "(MEBiom) Engenharia Biomédica",
         "name":    "MEBiom",
         "tagus":   false
     },
     {
-        "display": "Engenharia Civil                                  (MEC)",
+        "display": "(MEC)    Engenharia Civil",
         "name":    "MEC",
         "tagus":   false
     },
     {
-        "display": "Engenharia Eletrotécnica e de Computadores       (MEEC)",
+        "display": "(MEEC)   Engenharia Eletrotécnica e de Computadores",
         "name":    "MEEC",
         "tagus":   false
     },
     {
-        "display": "Engenharia Eletrónica                             (LEE)",
+        "display": "(LEE)    Engenharia Eletrónica",
         "name":    "LEE",
         "tagus":   true
     },
     {
-        "display": "Engenharia Física Tecnológica                    (MEFT)",
+        "display": "(MEFT)   Engenharia Física Tecnológica",
         "name":    "MEFT",
         "tagus":   false
     },
     {
-        "display": "Engenharia Geológica e de Minas                  (LEGM)",
+        "display": "(LEGM)   Engenharia Geológica e de Minas",
         "name":    "LEGM",
         "tagus":   false
     },
     {
-        "display": "Engenharia Informática e de Computadores       (LEIC-A)",
+        "display": "(LEIC-A) Engenharia Informática e de Computadores",
         "name":    "LEIC-A",
         "tagus":   false
     },
     {
-        "display": "Engenharia Informática e de Computadores       (LEIC-T)",
+        "display": "(LEIC-T) Engenharia Informática e de Computadores",
         "name":    "LEIC-T",
         "tagus":   true
     },
     {
-        "display": "Engenharia Mecânica                             (MEMec)",
+        "display": "(MEMec)  Engenharia Mecânica",
         "name":    "MEMec",
         "tagus":   false
     },
     {
-        "display": "Engenharia Naval e Oceânica                      (LENO)",
+        "display": "(LENO)   Engenharia Naval e Oceânica",
         "name":    "LENO",
         "tagus":   false
     },
     {
-        "display": "Engenharia Química                                (MEQ)",
+        "display": "(MEQ)    Engenharia Química",
         "name":    "MEQ",
         "tagus":   false
     },
     {
-        "display": "Engenharia de Materiais                           (MEM)",
+        "display": "(MEM)    Engenharia de Materiais",
         "name":    "MEM",
         "tagus":   false
     },
     {
-        "display": "Engenharia de Telecomunicações e Informática     (LETI)",
+        "display": "(LETI)   Engenharia de Telecomunicações e Informática",
         "name":    "LETI",
         "tagus":   true
     },
     {
-        "display": "Engenharia do Ambiente                         (MEAmbi)",
+        "display": "(MEAmbi) Engenharia do Ambiente",
         "name":    "MEAmbi",
         "tagus":   false
     },
     {
-        "display": "Engenharia e Gestão Industrial                   (LEGI)",
+        "display": "(LEGI)   Engenharia e Gestão Industrial",
         "name":    "LEGI",
         "tagus":   true
     },
     {
-        "display": "Matemática Aplicada e Computação                 (LMAC)",
+        "display": "(LMAC)   Matemática Aplicada e Computação",
         "name":    "LMAC",
         "tagus":   false
     }

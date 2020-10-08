@@ -55,6 +55,40 @@
             }
         ]
     },
+    "first-year-pt": {
+        "title": "Curso escolhido",
+        "description": "Curso escolhido com sucesso! Este é o teu primeiro ano no técnico? Se sim responde com [yes], caso contrário com [no].",
+        "color": 7506394,
+        "fields": []
+    },
+    "first-year-en": {
+        "title": "Degree chosen",
+        "description": "Your degree was chosen successfully! Is this your first year on IST? If so, answer with [yes], otherwise with [no].",
+        "color": 7658098,
+        "fields": []
+    },
+    "invalid-degree-pt": {
+        "title": "Curso inválido",
+        "description": "Esse curso não existe! Tenta procurar o teu curso na lista e responder com a abreviação correspondente (LEIC-A, por exemplo).",
+        "color": 7506394,
+        "fields": [
+            {
+                "name": "Precisas de ajuda?",
+                "value": "Se não consegues escolher o teu curso dá ping aos @Mods no servidor."
+            }
+        ]
+    },
+    "invalid-degree-en": {
+        "title": "Invalid degree",
+        "description": "That degree doesn't exist! Try searching for your degree on the list and answer with the correct abbreviation (LEIC-A, for example)",
+        "color": 7658098,
+        "fields": [
+            {
+                "name": "Need help?",
+                "value": "If you can't choose your degree ping the @Mods on the server."
+            }
+        ]
+    },
     "finish-pt": {
         "title": "Feito",
         "description": "Acabaste o teu registo!",

@@ -76,7 +76,7 @@ async def rebuild_course_channels():
         }
         for degree in courses_by_degree[course]:
             degree_obj = next(
-                (item for item in courses if item["name"] == degree), None)
+                (item for item in degrees if item["name"] == degree), None)
             if degree_obj is not None:
                 permissions[degree_obj["role"]] = PermissionOverwrite(
                     read_messages=True)
@@ -89,8 +89,16 @@ async def rebuild_course_channels():
             await course_channel.edit(overwrites=permissions)
 
 
-# Events
+async def assign_role_to_member(member):
+    # Enviar DM
+    channel = await member.create_dm()
+    await channel.send(embed=parse_embed('welcome-pt'))
+    await channel.send(embed=parse_embed('welcome-en'))
+    await channel.send("```" + degrees_info_msg + "```")
+    state[member.id] = {"stage": 1}
+    print("{} entrou".format(member.id))
 
+# Events
 
 @bot.event
 async def on_ready():
@@ -151,25 +159,17 @@ async def on_ready():
             exit(-1)
 
     global degrees_info_msg
-    degrees_info_msg = ""
+    degrees_info_msg = "Lista de cursos / Degree list\n"
     for degree in degrees:
         degrees_info_msg += degree["display"] + '\n'
-
 
 @bot.event
 async def on_member_join(member):
     global state
+    global degrees_info_msg
 
     await welcome_channel.send('Bem vind@ {}! Verifica as tuas DMs, vais receber uma mensagem com as instruções a seguir.'.format(member.mention))
-    await member.add_roles(role_turista)
-
-    # Enviar DM
-    channel = await member.create_dm()
-    await channel.send(embed=parse_embed('welcome-pt'))
-    await channel.send(embed=parse_embed('welcome-en'))
-    state[member.id] = {"stage": 1}
-    print("{} entrou".format(member.id))
-
+    await assign_role_to_member(member)
 
 @bot.event
 async def on_message(msg):
@@ -199,8 +199,8 @@ async def on_message(msg):
                     else:
                         await member.add_roles(degree["role"], role_aluno, role_alameda)
                         await member.remove_roles(role_turista)
-                    await msg.channel.send("Curso {} escolhido. Este é o teu primeiro ano no técnico? Responde com [yes] ou [no].".format(degree["name"]))
-                    await msg.channel.send("Degree {} chosen. Is this your first year on IST? Answer with [yes] or [no].".format(degree["name"]))
+                    await msg.channel.send(embed=parse_embed('first-year-pt'))
+                    await msg.channel.send(embed=parse_embed('first-year-en'))
                     state[msg.author.id]["stage"] = 2
                     found = True
                     print("Adicionada role do curso {} ao user {}".format(degree["name"], msg.author))
@@ -210,22 +210,13 @@ async def on_message(msg):
                 state[msg.author.id]["stage"] = 3
                 await msg.channel.send(embed=parse_embed('finish-pt'))
                 await msg.channel.send(embed=parse_embed('finish-en'))
+                await member.add_roles(role_turista)
             elif not found:
-                await msg.channel.send("Esse curso não existe! Por favor tenta outra vez. Se estiveres preso, pede ajuda a um moderador no servidor (@Mods)")
-                await msg.channel.send("That degree doesn't exist! Please try again. If you are stuck, ask a mod for help on the server (@Mods)")
-                
+                await msg.channel.send(embed=parse_embed('invalid-degree-pt'))
+                await msg.channel.send(embed=parse_embed('invalid-degree-en'))
+
                 # Escrever lista de cursos
-                text = "```"
-                for line in degrees_info_msg.splitlines():
-                    if len(text) + len(text) >= 1000:
-                        text += "```"
-                        await msg.channel.send(text)
-                        text = "```"
-                    else:
-                        text += line
-                if len(text) > 3:
-                    text += "```"
-                    await msg.channel.send(text)
+                await msg.channel.send("```" + degrees_info_msg + "```")
 
         elif state[msg.author.id]["stage"] == 2:
             if msg.content.lower() == "yes":
