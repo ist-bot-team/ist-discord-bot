@@ -116,9 +116,7 @@ async def on_ready():
         print('O guild tem de ter pelo menos dois canais de texto')
         exit(-1)
 
-    global roles_channel
     global welcome_channel
-    roles_channel = guild.text_channels[0]
     welcome_channel = guild.text_channels[1]
 
     global courses_category
