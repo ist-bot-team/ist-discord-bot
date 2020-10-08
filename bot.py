@@ -132,7 +132,7 @@ async def on_ready():
     global role_mod
     global role_admin
     role_turista = get(guild.roles, name="TurISTa")
-    role_aluno = get(guild.roles, name="Aluno")
+    role_aluno = get(guild.roles, name="Aluno/a")
     role_veterano = get(guild.roles, name="Veterano/a")
     role_tagus = get(guild.roles, name="Tagus Park")
     role_alameda = get(guild.roles, name="Alameda")
