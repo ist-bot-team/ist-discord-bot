@@ -20,8 +20,8 @@ with open('version', 'r') as file:
 # "name": nome da role do curso (tem de estar presente no "display")
 # "tagus": é um curso do Tagus Park?
 # "msg_id": indice da mensagem que foi enviada
-with open('courses.json', 'r', encoding='utf-8') as file:
-    courses = json.load(file)
+with open('degrees.json', 'r', encoding='utf-8') as file:
+    degrees = json.load(file)
 
 # O formato de embed pode ser gerado com ferramentas online e umas pequenas alterações.
 # De momento o parsing deste json apenas suporta:
@@ -140,20 +140,20 @@ async def on_ready():
         exit(-1)
 
     # Associar cada curso a uma role
-    for i in range(0, len(courses)):
-        courses[i]["role"] = None
+    for i in range(0, len(degrees)):
+        degrees[i]["role"] = None
         for role in guild.roles:
-            if role.name == courses[i]["name"]:
-                courses[i]["role"] = role
+            if role.name == degrees[i]["name"]:
+                degrees[i]["role"] = role
                 break
-        if courses[i]["role"] is None:
-            print("A role com o nome {} nao existe".format(courses[i]["name"]))
+        if degrees[i]["role"] is None:
+            print("A role com o nome {} nao existe".format(degrees[i]["name"]))
             exit(-1)
 
-    global courses_info_msg
-    courses_info_msg = ""
-    for course in courses:
-        courses_info_msg += course["display"] + '\n'
+    global degrees_info_msg
+    degrees_info_msg = ""
+    for degree in degrees:
+        degrees_info_msg += degree["display"] + '\n'
 
 
 @bot.event
@@ -189,18 +189,18 @@ async def on_message(msg):
             # Verificar se o curso existe e adicioná-lo ao utilizador
             print("Curso {}".format(msg.content))
             found = False
-            for course in courses:
-                if course["name"].lower() == msg.content.lower():
+            for degree in degrees:
+                if degree["name"].lower() == msg.content.lower():
                     # Adiciona role ao utilizador
                     member = guild.get_member(msg.author.id)
-                    if course["tagus"]:
-                        await member.add_roles(course["role"], role_aluno, role_tagus)
+                    if degree["tagus"]:
+                        await member.add_roles(degree["role"], role_aluno, role_tagus)
                         await member.remove_roles(role_turista)
                     else:
-                        await member.add_roles(course["role"], role_aluno, role_alameda)
+                        await member.add_roles(degree["role"], role_aluno, role_alameda)
                         await member.remove_roles(role_turista)
-                    await msg.channel.send("Curso {} escolhido. Este é o teu primeiro ano no técnico? Responde com [yes] ou [no].".format(course["name"]))
-                    await msg.channel.send("Degree {} chosen. Is this your first year on IST? Answer with [yes] or [no].".format(course["name"]))
+                    await msg.channel.send("Curso {} escolhido. Este é o teu primeiro ano no técnico? Responde com [yes] ou [no].".format(degree["name"]))
+                    await msg.channel.send("Degree {} chosen. Is this your first year on IST? Answer with [yes] or [no].".format(degree["name"]))
                     state[msg.author.id]["stage"] = 2
                     found = True
                     print("Adicionada role do curso {} ao user {}".format(
@@ -214,6 +214,20 @@ async def on_message(msg):
             elif not found:
                 await msg.channel.send("Esse curso não existe! Por favor tenta outra vez. Se estiveres preso, pede ajuda a um moderador no servidor (@Mods)")
                 await msg.channel.send("That degree doesn't exist! Please try again. If you are stuck, ask a mod for help on the server (@Mods)")
+                
+                # Escrever lista de cursos
+                text = "```"
+                for line in degrees_info_msg.splitlines():
+                    if len(text) + len(text) >= 1000:
+                        text += "```"
+                        await msg.channel.send(text)
+                        text = "```"
+                    else:
+                        text += line
+                if len(text) > 3:
+                    text += "```"
+                    await msg.channel.send(text)
+
         elif state[msg.author.id]["stage"] == 2:
             if msg.content.lower() == "yes":
                 await msg.channel.send(embed=parse_embed('finish-pt'))
