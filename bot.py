@@ -203,8 +203,7 @@ async def on_message(msg):
                     await msg.channel.send("Degree {} chosen. Is this your first year on IST? Answer with [yes] or [no].".format(degree["name"]))
                     state[msg.author.id]["stage"] = 2
                     found = True
-                    print("Adicionada role do curso {} ao user {}".format(
-                        course["name"], msg.author))
+                    print("Adicionada role do curso {} ao user {}".format(degree["name"], msg.author))
                     break
 
             if msg.content.lower() == "turista":
