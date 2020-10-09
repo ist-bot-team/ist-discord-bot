@@ -1,8 +1,8 @@
 {
   "MExp": ["LMAC"],
   "Har": ["MA"],
-  "CPro": ["LEAN", "LEGM", "MEC", "MEBiol", "MEAmbi", "MEQ", "MEM", "MEMec"],
-  "ALin": [
+  "CP": ["LEAN", "LEGM", "MEC", "MEBiol", "MEAmbi", "MEQ", "MEM", "MEMec"],
+  "AL": [
     "LMAC",
     "LERC",
     "LEAN",
@@ -26,7 +26,7 @@
   "Mat-I": ["MA"],
   "SDig": ["LERC", "LEE", "MEEC"],
   "LIFE": ["MEFT"],
-  "FPro": ["LERC", "LEIC-A", "LEIC-T"],
+  "FP": ["LERC", "LEIC-A", "LEIC-T"],
   "EQBS": ["MEQ"],
   "PArq-I": ["MA"],
   "DTec": ["MEC"],
