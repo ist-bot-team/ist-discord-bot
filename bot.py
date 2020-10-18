@@ -1,14 +1,8 @@
 from discord import Embed, PermissionOverwrite
 from discord.ext import commands
 from discord.utils import get
-from asyncio import Lock
 import os
 import json
-
-# Funcionalidades:
-# - comando para dar administrador temporariamente aos mods
-# - receber novos membros
-# - permitir a escolha de curso
 
 # Carregar versão do bot
 with open('version', 'r') as file:
@@ -37,11 +31,8 @@ with open('courses_by_degree.json', 'r', encoding='utf-8') as file:
     courses_by_degree = json.load(file)
 
 bot = commands.Bot(command_prefix='$')
-state = {}
 
 # embed: key do embed no embed.json a que se pretende aceder
-
-
 def parse_embed(embed):
     if embed not in embeds:
         print('Warning: the key {} isn\'t in embed.json'.format(embed))
@@ -66,7 +57,6 @@ def parse_embed(embed):
 
     return ret
 
-
 async def rebuild_course_channels():
     channels = courses_category.text_channels
 
@@ -88,15 +78,21 @@ async def rebuild_course_channels():
         else:
             await course_channel.edit(overwrites=permissions)
 
+async def rebuild_role_pickers():
+    await roles_channel.purge()
 
-async def assign_role_to_member(member):
-    # Enviar DM
-    channel = await member.create_dm()
-    await channel.send(embed=parse_embed('welcome-pt'))
-    await channel.send(embed=parse_embed('welcome-en'))
-    await channel.send("```" + degrees_info_msg + "```")
-    state[member.id] = {"stage": 1}
-    print("{} entrou".format(member.id))
+    await roles_channel.send(embed=parse_embed('welcome-pt'))
+    await roles_channel.send(embed=parse_embed('welcome-en'))
+
+    for i in range(0, len(degrees)):
+        msg = await roles_channel.send("`{}`".format(degrees[i]["display"]))
+        await msg.add_reaction('☑️')
+        degrees[i]["msg_id"] = msg.id
+
+    msg = await roles_channel.send("`Não é o meu primeiro ano no IST`")
+    await msg.add_reaction('☑️')
+    global veterano_msg_id
+    veterano_msg_id = msg.id
 
 # Events
 
@@ -116,8 +112,10 @@ async def on_ready():
         print('O guild tem de ter pelo menos dois canais de texto')
         exit(-1)
 
+    global roles_channel
     global welcome_channel
-    welcome_channel = guild.text_channels[1]
+    roles_channel = get(guild.text_channels, name="escolhe-o-teu-curso")
+    welcome_channel = get(guild.text_channels, name="entradas")
 
     global courses_category
     courses_category = get(guild.categories, name="Cadeiras")
@@ -156,92 +154,94 @@ async def on_ready():
             print("A role com o nome {} nao existe".format(degrees[i]["name"]))
             exit(-1)
 
-    global degrees_info_msg
-    degrees_info_msg = "Lista de cursos / Degree list\n"
-    for degree in degrees:
-        degrees_info_msg += degree["display"] + '\n'
+    # Verificar se as mensagens de entrada já estão no canal certo
+    found_count = 0
+    roles_messages = await roles_channel.history().flatten()
+    for msg in roles_messages:
+        for degree in degrees:
+            if degree["display"] in msg.content and msg.author.bot:
+                degree["msg_id"] = msg.id
+                found_count += 1
+                break
+        if "Não é o meu primeiro ano no IST" in msg.content and msg.author.bot:
+            global veterano_msg_id
+            veterano_msg_id = msg.id
+            found_count += 1
+
+    # Senão estiverem todas, apaga todas as mensagens do canal e escreve de novo
+    if found_count != len(degrees) + 1:
+        await rebuild_role_pickers()
 
 @bot.event
 async def on_member_join(member):
-    global state
-    global degrees_info_msg
-
-    await welcome_channel.send('Bem vind@ {}! Verifica as tuas DMs, vais receber uma mensagem com as instruções a seguir.'.format(member.mention))
-    await assign_role_to_member(member)
+    await welcome_channel.send('Bem vind@ {}! Vai ao canal {} para escolheres o teu curso.'.format(member.mention, roles_channel.mention))
 
 @bot.event
-async def on_message(msg):
-    if msg.author.bot:
+async def on_raw_reaction_add(payload):
+    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
         return
 
-    global state
+    member = guild.get_member(payload.user_id)
+    
+    if member.bot:
+        return
 
-    await bot.process_commands(msg)
-    if not msg.guild:
-        print('Mensagem recebida de {}'.format(msg.author.id))
+    # Encontrar a mensagem correta
+    if veterano_msg_id == payload.message_id:
+        await member.add_roles(role_veterano)
+        return
 
-        if msg.author.id not in state:
+    for degree in degrees:
+        if degree["msg_id"] == payload.message_id:
+            # Verificar se o membro já tem qualquer outra role de curso
+            for degree_2 in degrees:
+                if degree == degree_2:
+                    continue
+                if degree_2["role"] in member.roles:
+                    msg = await roles_channel.fetch_message(payload.message_id)
+                    await msg.remove_reaction('☑️', member)
+                    return
+            print("Role do curso {} adicionada ao membro {}".format(degree["name"], member))
+            await member.remove_roles(role_turista)
+            await member.add_roles(degree["role"], role_aluno)
+            if degree["tagus"]:
+                await member.add_roles(role_tagus)
+            else:
+                await member.add_roles(role_alameda)
             return
 
-        if state[msg.author.id]["stage"] == 1:
-            # Verificar se o curso existe e adicioná-lo ao utilizador
-            print("Curso {}".format(msg.content))
-            found = False
-            for degree in degrees:
-                if degree["name"].lower() == msg.content.lower():
-                    # Adiciona role ao utilizador
-                    member = guild.get_member(msg.author.id)
-                    if degree["tagus"]:
-                        await member.add_roles(degree["role"], role_aluno, role_tagus)
-                        await member.remove_roles(role_turista)
-                    else:
-                        await member.add_roles(degree["role"], role_aluno, role_alameda)
-                        await member.remove_roles(role_turista)
-                    await msg.channel.send(embed=parse_embed('first-year-pt'))
-                    await msg.channel.send(embed=parse_embed('first-year-en'))
-                    state[msg.author.id]["stage"] = 2
-                    found = True
-                    print("Adicionada role do curso {} ao user {}".format(degree["name"], msg.author))
-                    break
+@bot.event
+async def on_raw_reaction_remove(payload):
+    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
+        return
 
-            if msg.content.lower() == "turista":
-                state[msg.author.id]["stage"] = 3
-                await msg.channel.send(embed=parse_embed('finish-pt'))
-                await msg.channel.send(embed=parse_embed('finish-en'))
+    member = guild.get_member(payload.user_id)
+    
+    if member.bot:
+        return
+
+    # Encontrar a mensagem correta
+    if veterano_msg_id == payload.message_id:
+        await member.remove_roles(role_veterano)
+        return
+
+    for degree in degrees:
+        if degree["msg_id"] == payload.message_id:
+            if degree["role"] in member.roles:
+                if degree["tagus"]:
+                    await member.remove_roles(role_tagus)
+                else:
+                    await member.remove_roles(role_alameda)
+                await member.remove_roles(degree["role"], role_aluno)
                 await member.add_roles(role_turista)
-            elif not found:
-                await msg.channel.send(embed=parse_embed('invalid-degree-pt'))
-                await msg.channel.send(embed=parse_embed('invalid-degree-en'))
-
-                # Escrever lista de cursos
-                await msg.channel.send("```" + degrees_info_msg + "```")
-
-        elif state[msg.author.id]["stage"] == 2:
-            if msg.content.lower() == "yes":
-                await msg.channel.send(embed=parse_embed('finish-pt'))
-                await msg.channel.send(embed=parse_embed('finish-en'))
-                state[msg.author.id]["stage"] = 3
-            elif msg.content.lower() == "no":
-                member = guild.get_member(msg.author.id)
-                await msg.channel.send(embed=parse_embed('finish-pt'))
-                await msg.channel.send(embed=parse_embed('finish-en'))
-                await member.add_roles(role_veterano)
-                state[msg.author.id]["stage"] = 3
-            else:
-                await msg.channel.send("Resposta inválida, por favor responde apenas com [yes] ou [no]")
-        else:
-            # O curso já foi adicionado, diz para pedir ajuda a um moderador
-            await msg.channel.send(embed=parse_embed('help-pt'))
-            await msg.channel.send(embed=parse_embed('help-en'))
-            print("Mensagem de ajuda")
+            print("Role do curso {} removida do membro {}".format(degree["name"], member))
+            return
 
 # Comandos
-
 
 @bot.command(pass_context=True)
 async def version(ctx):
     await ctx.message.channel.send("{}".format(version_number))
-
 
 @bot.command(pass_context=True)
 async def admin(ctx):
@@ -254,20 +254,19 @@ async def admin(ctx):
     else:
         await ctx.author.remove_roles(role_admin)
 
-
 @bot.command(pass_context=True)
 async def refresh(ctx):
     if not role_mod in ctx.author.roles:
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
     await ctx.message.channel.send('A atualizar o bot...')
-    await rebuild_course_channels()
+    await rebuild_role_pickers()
     await ctx.message.channel.send('Feito')
 
 @bot.command(pass_context=True)
 async def make_leaderboard(ctx):
     # Este comando cria uma leaderboard com os utilizadores que mais falaram no servidor.
-    visible_user_count = 10
+    visible_user_count = 50
     leaderboard = {}
 
     for channel in guild.text_channels:
@@ -281,7 +280,12 @@ async def make_leaderboard(ctx):
     leaderboard_msg = "```"
     for user_id in sorted(leaderboard, key=leaderboard.get, reverse=True)[:visible_user_count]:
         leaderboard_msg += '{} - {}\n'.format(guild.get_member(user_id), leaderboard[user_id])
+        if len(leaderboard_msg) > 500:
+            leaderboard_msg += "```"
+            await ctx.message.channel.send('{}'.format(leaderboard_msg))
+            leaderboard_msg = "```"
     leaderboard_msg += "```"
-    await ctx.message.channel.send('{}'.format(leaderboard_msg))
+    if len(leaderboard_msg) > 6:
+        await ctx.message.channel.send('{}'.format(leaderboard_msg))
 
 bot.run(os.environ['DISCORD_TOKEN'])
