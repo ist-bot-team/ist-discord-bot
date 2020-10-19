@@ -273,8 +273,6 @@ async def rebuild_course_channels(ctx):
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
-    channels = courses_category.text_channels
-
     for course in courses_by_degree:
         permissions = {
             guild.default_role: PermissionOverwrite(read_messages=False)
