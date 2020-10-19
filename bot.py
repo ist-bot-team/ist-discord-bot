@@ -57,27 +57,6 @@ def parse_embed(embed):
 
     return ret
 
-async def rebuild_course_channels():
-    channels = courses_category.text_channels
-
-    for course in courses_by_degree:
-        permissions = {
-            guild.default_role: PermissionOverwrite(read_messages=False)
-        }
-        for degree in courses_by_degree[course]:
-            degree_obj = next(
-                (item for item in degrees if item["name"] == degree), None)
-            if degree_obj is not None:
-                permissions[degree_obj["role"]] = PermissionOverwrite(
-                    read_messages=True)
-
-        course_channel = get(courses_category.text_channels,
-                             name=course.lower())
-        if course_channel is None:
-            await courses_category.create_text_channel(course.lower(), overwrites=permissions)
-        else:
-            await course_channel.edit(overwrites=permissions)
-
 async def rebuild_role_pickers():
     await roles_channel.purge()
 
@@ -287,5 +266,31 @@ async def make_leaderboard(ctx):
     leaderboard_msg += "```"
     if len(leaderboard_msg) > 6:
         await ctx.message.channel.send('{}'.format(leaderboard_msg))
+
+@bot.command(pass_context=True)
+async def rebuild_course_channels(ctx):
+    if not role_mod in ctx.author.roles:
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+
+    channels = courses_category.text_channels
+
+    for course in courses_by_degree:
+        permissions = {
+            guild.default_role: PermissionOverwrite(read_messages=False)
+        }
+        for degree in courses_by_degree[course]:
+            degree_obj = next(
+                (item for item in degrees if item["name"] == degree), None)
+            if degree_obj is not None:
+                permissions[degree_obj["role"]] = PermissionOverwrite(
+                    read_messages=True)
+
+        course_channel = get(courses_category.text_channels,
+                             name=course.lower())
+        if course_channel is None:
+            await courses_category.create_text_channel(course.lower(), overwrites=permissions)
+        else:
+            await course_channel.edit(overwrites=permissions)
 
 bot.run(os.environ['DISCORD_TOKEN'])

@@ -6,13 +6,19 @@ import json
 # Provavelmente nada robusto mas há que ter fé
 since = [1,1]
 until = [1,2]
+
+subs = {
+    "LERC": "LETI",
+    "fpro": "fp",
+    "alin": "al"
+}
     
 def make_short(name):
     words = name.split()
     words = list(filter(lambda w: w not in ['de','do','da','e','à','com','para'], words))
     num=''
     if words[-1] in ['I','II','III','IV','V','VI','1','2','3','4','5','6']:
-        num=words[-1]
+        num='-'+words[-1]
         words=words[:-1]
 
     short = ''
@@ -25,7 +31,7 @@ def make_short(name):
         for word in words:
             short+=word[0]
     
-    return short+num
+    return (short+num).lower()
 
 def clean_str(x):
     ret = ''
@@ -78,10 +84,9 @@ for course in courses:
     cs=[]
     for degree in degree_courses:
         if course in degree_courses[degree]:
-            cs.append(degree)
-    out[course] = cs
+            cs.append(degree if degree not in subs else subs[degree]) # ffs LETI...
+    out[course if course not in subs else subs[course]] = cs
 
-print(len(out))
-with open('../courses_by_degree.json','wb') as file:
-    file.write(json.dumps(out,ensure_ascii=False).encode('utf-8'))
+with open('courses_by_degree.json','wb') as file:
+    file.write(json.dumps(out,ensure_ascii=False,sort_keys=True).encode('utf-8'))
     file.close()
