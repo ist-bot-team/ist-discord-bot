@@ -224,7 +224,11 @@ async def on_raw_reaction_remove(payload):
 
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
-    for member in ctx.message.server.members:
+    if not role_mod in ctx.author.roles:
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+
+    for member in guild.members:
         if role_admin_plus in member.roles:
             await member.remove_roles(role_admin_plus)
 
