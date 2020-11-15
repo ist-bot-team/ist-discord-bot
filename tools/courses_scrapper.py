@@ -9,6 +9,7 @@ until = [1,2]
 
 subs = {
     "LERC": "LETI",
+    "LEAN": "LENO",
     "fpro": "fp",
     "alin": "al"
 }
