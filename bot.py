@@ -223,6 +223,12 @@ async def on_raw_reaction_remove(payload):
 # Comandos
 
 @bot.command(pass_context=True)
+async def reset_admin(ctx):
+    for member in ctx.message.server.members:
+        if role_admin_plus in member.roles:
+            await member.remove_roles(role_admin_plus)
+
+@bot.command(pass_context=True)
 async def version(ctx):
     await ctx.message.channel.send("{}".format(version_number))
 
