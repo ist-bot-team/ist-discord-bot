@@ -1,4 +1,4 @@
-from discord import Embed, PermissionOverwrite
+from discord import Embed, PermissionOverwrite, Intents
 from discord.ext import commands
 from discord.utils import get
 import os
@@ -30,7 +30,11 @@ with open('embeds.json', 'r', encoding='utf-8') as file:
 with open('courses_by_degree.json', 'r', encoding='utf-8') as file:
     courses_by_degree = json.load(file)
 
-bot = commands.Bot(command_prefix='$')
+intents = Intents.default()
+intents.typing = False
+intents.presences = True
+intents.members = True
+bot = commands.Bot(command_prefix='$', intents=intents)
 
 # embed: key do embed no embed.json a que se pretende aceder
 def parse_embed(embed):
@@ -105,17 +109,17 @@ async def on_ready():
     global role_tagus
     global role_alameda
     global role_mod
-    global role_admin
+    global role_admin_plus
     role_turista = get(guild.roles, name="TurISTa")
     role_aluno = get(guild.roles, name="Aluno/a")
     role_veterano = get(guild.roles, name="Veterano/a")
     role_tagus = get(guild.roles, name="Tagus Park")
     role_alameda = get(guild.roles, name="Alameda")
     role_mod = get(guild.roles, name="Mod")
-    role_admin = get(guild.roles, name="Admin")
+    role_admin_plus = get(guild.roles, name="Admin+")
 
-    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_mod is None or role_admin is None:
-        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Mod" e uma role "Admin".')
+    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_mod is None or role_admin_plus is None:
+        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Mod" e uma role "Admin+".')
         exit(-1)
 
     if courses_category is None:
@@ -159,7 +163,7 @@ async def on_member_join(member):
 async def on_raw_reaction_add(payload):
     if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
         return
-
+    
     member = guild.get_member(payload.user_id)
     
     if member.bot:
@@ -219,19 +223,29 @@ async def on_raw_reaction_remove(payload):
 # Comandos
 
 @bot.command(pass_context=True)
-async def version(ctx):
-    await ctx.message.channel.send("{}".format(version_number))
-
-@bot.command(pass_context=True)
-async def admin(ctx):
+async def reset_admin(ctx):
     if not role_mod in ctx.author.roles:
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
-    if role_admin not in ctx.author.roles:
-        await ctx.author.add_roles(role_admin)
+    for member in guild.members:
+        if role_admin_plus in member.roles:
+            await member.remove_roles(role_admin_plus)
+
+@bot.command(pass_context=True)
+async def version(ctx):
+    await ctx.message.channel.send("{}".format(version_number))
+
+@bot.command(pass_context=True)
+async def sudo(ctx):
+    if not role_mod in ctx.author.roles:
+        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        return
+
+    if role_admin_plus not in ctx.author.roles:
+        await ctx.author.add_roles(role_admin_plus)
     else:
-        await ctx.author.remove_roles(role_admin)
+        await ctx.author.remove_roles(role_admin_plus)
 
 @bot.command(pass_context=True)
 async def refresh(ctx):
