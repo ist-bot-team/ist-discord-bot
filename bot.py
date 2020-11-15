@@ -108,18 +108,18 @@ async def on_ready():
     global role_veterano
     global role_tagus
     global role_alameda
-    global role_mod
+    global role_admin
     global role_admin_plus
     role_turista = get(guild.roles, name="TurISTa")
     role_aluno = get(guild.roles, name="Aluno/a")
     role_veterano = get(guild.roles, name="Veterano/a")
     role_tagus = get(guild.roles, name="Tagus Park")
     role_alameda = get(guild.roles, name="Alameda")
-    role_mod = get(guild.roles, name="Mod")
+    role_admin = get(guild.roles, name="Admin")
     role_admin_plus = get(guild.roles, name="Admin+")
 
-    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_mod is None or role_admin_plus is None:
-        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Mod" e uma role "Admin+".')
+    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_admin is None or role_admin_plus is None:
+        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Admin" e uma role "Admin+".')
         exit(-1)
 
     if courses_category is None:
@@ -224,7 +224,7 @@ async def on_raw_reaction_remove(payload):
 
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
-    if not role_mod in ctx.author.roles:
+    if not role_admin in ctx.author.roles:
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
@@ -238,7 +238,7 @@ async def version(ctx):
 
 @bot.command(pass_context=True)
 async def sudo(ctx):
-    if not role_mod in ctx.author.roles:
+    if not role_admin in ctx.author.roles:
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
@@ -249,7 +249,7 @@ async def sudo(ctx):
 
 @bot.command(pass_context=True)
 async def refresh(ctx):
-    if not role_mod in ctx.author.roles:
+    if not role_admin in ctx.author.roles:
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
     await ctx.message.channel.send('A atualizar o bot...')
@@ -283,7 +283,7 @@ async def make_leaderboard(ctx):
 
 @bot.command(pass_context=True)
 async def rebuild_course_channels(ctx):
-    if not role_mod in ctx.author.roles:
+    if not role_admin in ctx.author.roles:
         await ctx.message.channel.send('Não tens permissão para usar este comando')
         return
 
