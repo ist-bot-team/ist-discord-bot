@@ -263,12 +263,13 @@ async def make_leaderboard(ctx):
     leaderboard = {}
 
     for channel in guild.text_channels:
-        await ctx.message.channel.send('A ler canal {}'.format(channel.name))
-        async for msg in channel.history(limit=None):
-            if msg.author.id in leaderboard:
-                leaderboard[msg.author.id] += len(msg.content)
-            else:
-                leaderboard[msg.author.id] = len(msg.content) 
+        if channel.name != 'bot-spam':
+            await ctx.message.channel.send('A ler canal {}'.format(channel.name))
+            async for msg in channel.history(limit=None):
+                if msg.author.id in leaderboard:
+                    leaderboard[msg.author.id] += len(msg.content)
+                else:
+                    leaderboard[msg.author.id] = len(msg.content) 
 
     leaderboard_msg = "```"
     for user_id in sorted(leaderboard, key=leaderboard.get, reverse=True)[:visible_user_count]:
