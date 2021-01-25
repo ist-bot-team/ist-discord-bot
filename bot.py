@@ -222,11 +222,14 @@ async def on_raw_reaction_remove(payload):
 
 # Comandos
 
+def get_no_permission_msg(display_name):
+    display_name = display_name.replace('@', '@\u200B').replace('#', '#\u200B')
+    return '{} is not in the sudoers file. This incident will be reported.'.format(display_name)
+
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(
-            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
         return
 
     for member in guild.members:
@@ -240,8 +243,7 @@ async def version(ctx):
 @bot.command(pass_context=True)
 async def sudo(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(
-            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
         return
 
     if role_admin_plus not in ctx.author.roles:
@@ -252,8 +254,7 @@ async def sudo(ctx):
 @bot.command(pass_context=True)
 async def refresh(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(
-            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
         return
     await ctx.message.channel.send('A atualizar o bot...')
     await rebuild_role_pickers()
@@ -288,8 +289,7 @@ async def make_leaderboard(ctx):
 @bot.command(pass_context=True)
 async def rebuild_course_channels(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(
-            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
         return
 
     for course in courses_by_degree:
