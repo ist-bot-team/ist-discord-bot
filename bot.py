@@ -225,7 +225,8 @@ async def on_raw_reaction_remove(payload):
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send('You do not have permission. This will be reported to the admins.')
+        await ctx.message.channel.send(
+            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
         return
 
     for member in guild.members:
@@ -239,7 +240,8 @@ async def version(ctx):
 @bot.command(pass_context=True)
 async def sudo(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send('You do not have permission. This will be reported to the admins.')
+        await ctx.message.channel.send(
+            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
         return
 
     if role_admin_plus not in ctx.author.roles:
@@ -250,7 +252,8 @@ async def sudo(ctx):
 @bot.command(pass_context=True)
 async def refresh(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send('You do not have permission. This will be reported to the admins.')
+        await ctx.message.channel.send(
+            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
         return
     await ctx.message.channel.send('A atualizar o bot...')
     await rebuild_role_pickers()
@@ -285,7 +288,8 @@ async def make_leaderboard(ctx):
 @bot.command(pass_context=True)
 async def rebuild_course_channels(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send('Não tens permissão para usar este comando')
+        await ctx.message.channel.send(
+            '{} is not in the sudoers file. This incident will be reported.'.format(ctx.author.display_name))
         return
 
     for course in courses_by_degree:
