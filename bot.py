@@ -119,10 +119,10 @@ async def on_ready():
     role_admin_plus = get(guild.roles, name="Admin+")
 
     if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_admin is None or role_admin_plus is None:
-        print('O guild tem de ter uma role "Turista", uma role "Aluno", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Admin" e uma role "Admin+".')
+        print('O guild tem de ter uma role "TurISTa", uma role "Aluno/a", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Admin" e uma role "Admin+" (sensível a maísculas e minúsculas)')
         exit(-1)
 
-    if courses_category is None:
+    if courses_category is None:    
         print('O guild tem de ter uma categoria "Cadeiras".')
         exit(-1)
 
@@ -222,14 +222,13 @@ async def on_raw_reaction_remove(payload):
 
 # Comandos
 
-def get_no_permission_msg(display_name):
-    display_name = display_name.replace('@', '@\u200B').replace('#', '#\u200B')
-    return '{} is not in the sudoers file. This incident will be reported.'.format(display_name)
+def get_no_permission_msg(user_id):
+    return '<@{}> is not in the sudoers file. This incident will be reported.'.format(user_id)
 
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
 
     for member in guild.members:
@@ -243,7 +242,7 @@ async def version(ctx):
 @bot.command(pass_context=True)
 async def sudo(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
 
     if role_admin_plus not in ctx.author.roles:
@@ -254,7 +253,7 @@ async def sudo(ctx):
 @bot.command(pass_context=True)
 async def refresh(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
     await ctx.message.channel.send('A atualizar o bot...')
     await rebuild_role_pickers()
@@ -267,9 +266,10 @@ async def make_leaderboard(ctx):
     leaderboard = {}
 
     for channel in guild.text_channels:
-        if channel.name != 'bot-spam':
-            await ctx.message.channel.send('A ler canal {}'.format(channel.name))
-            async for msg in channel.history(limit=None):
+        await ctx.message.channel.send('A ler canal {}'.format(channel.name))
+        async for msg in channel.history(limit=None):
+            #Filtrar mensagens com caracteres ZWSP
+            if not "\u200b" in msg.content:
                 if msg.author.id in leaderboard:
                     leaderboard[msg.author.id] += len(msg.content)
                 else:
@@ -289,7 +289,7 @@ async def make_leaderboard(ctx):
 @bot.command(pass_context=True)
 async def rebuild_course_channels(ctx):
     if not role_admin in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.display_name))
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
 
     for course in courses_by_degree:
