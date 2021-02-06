@@ -261,6 +261,10 @@ async def refresh(ctx):
 
 @bot.command(pass_context=True)
 async def make_leaderboard(ctx):
+    if not role_admin in ctx.author.roles:
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        return
+    
     # Este comando cria uma leaderboard com os utilizadores que mais falaram no servidor.
     visible_user_count = 50
     leaderboard = {}
