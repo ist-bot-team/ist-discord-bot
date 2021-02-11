@@ -225,8 +225,12 @@ async def on_voice_state_update(user,vc_before,vc_after):
    global guild
    #remove permissions from previous channel first
    if vc_before.channel != None:
+        #Skip non join/leave/switch vc channel events
+        if vc_before.channel == vc_after.channel:
+            return
         vc_txt_before = vc_before.channel.name.lower()
         vc_txt_before = vc_txt_before.replace(" ", "-") + "-vc"
+        vc_txt_before = vc_txt_before.replace("+", "plus") + "-vc"
         channel = get(vc_before.channel.category.text_channels, name=vc_txt_before)
         #Txt Channel might not exist the first few times
         if channel != None:
@@ -235,6 +239,11 @@ async def on_voice_state_update(user,vc_before,vc_after):
    if vc_after.channel != None:
         vc_txt_after = vc_after.channel.name.lower()
         vc_txt_after = vc_txt_after.replace(" ", "-") + "-vc"
+
+        #VC rooms with non valid chars for txt rooms will still fail and create
+        #multiple txt channels for each user join
+        #Nevertheless, fix VC rooms with a '+' in their name
+        vc_txt_after = vc_txt_after.replace("+", "plus")
 
         channel = get(vc_after.channel.category.text_channels, name=vc_txt_after)
         if channel == None:
