@@ -230,7 +230,7 @@ async def on_voice_state_update(user,vc_before,vc_after):
             return
         vc_txt_before = vc_before.channel.name.lower()
         vc_txt_before = vc_txt_before.replace(" ", "-") + "-vc"
-        vc_txt_before = vc_txt_before.replace("+", "plus") + "-vc"
+        vc_txt_before = vc_txt_before.replace("+", "plus")
         channel = get(vc_before.channel.category.text_channels, name=vc_txt_before)
         #Txt Channel might not exist the first few times
         if channel != None:
