@@ -151,7 +151,7 @@ async def on_ready():
             veterano_msg_id = msg.id
             found_count += 1
 
-    # Senão estiverem todas, apaga todas as mensagens do canal e escreve de novo
+    # Se não estiverem todas, apaga todas as mensagens do canal e escreve de novo
     if found_count != len(degrees) + 1:
         await rebuild_role_pickers()
 
@@ -220,11 +220,36 @@ async def on_raw_reaction_remove(payload):
             print("Role do curso {} removida do membro {}".format(degree["name"], member))
             return
 
-# Comandos
+@bot.event
+async def on_voice_state_update(user,vc_before,vc_after):
+   global guild
+   #remove permissions from previous channel first
+   if vc_before.channel != None:
+        vc_txt_before = vc_before.channel.name.lower()
+        vc_txt_before = vc_txt_before.replace(" ", "-") + "-vc"
+        channel = get(vc_before.channel.category.text_channels, name=vc_txt_before)
+        #Txt Channel might not exist the first few times
+        if channel != None:
+            await channel.set_permissions(user, read_messages=False)
+
+   if vc_after.channel != None:
+        vc_txt_after = vc_after.channel.name.lower()
+        vc_txt_after = vc_txt_after.replace(" ", "-") + "-vc"
+
+        channel = get(vc_after.channel.category.text_channels, name=vc_txt_after)
+        if channel == None:
+            channel = await vc_after.channel.category.create_text_channel(
+                name=vc_txt_after)
+            await channel.set_permissions(
+                guild.default_role, read_messages=False,
+                 read_message_history=False)
+        await channel.set_permissions(user, read_messages=True)
+
 
 def get_no_permission_msg(user_id):
     return '<@{}> is not in the sudoers file. This incident will be reported.'.format(user_id)
-
+    
+# Comandos
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
     if not role_admin in ctx.author.roles:
