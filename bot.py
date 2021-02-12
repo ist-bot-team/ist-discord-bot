@@ -234,7 +234,10 @@ async def on_voice_state_update(user,vc_before,vc_after):
         channel = get(vc_before.channel.category.text_channels, name=vc_txt_before)
         #Txt Channel might not exist the first few times
         if channel != None:
-            await channel.set_permissions(user, read_messages=False)
+            if len(vc_before.channel.members) == 0:
+                await channel.delete()
+            else:
+                await channel.set_permissions(user, read_messages=False)
 
    if vc_after.channel != None:
         vc_txt_after = vc_after.channel.name.lower()
@@ -247,12 +250,14 @@ async def on_voice_state_update(user,vc_before,vc_after):
 
         channel = get(vc_after.channel.category.text_channels, name=vc_txt_after)
         if channel == None:
+            overwrites = {
+                guild.default_role: PermissionOverwrite(read_messages=False),
+                user: PermissionOverwrite(read_messages=True)
+            }
             channel = await vc_after.channel.category.create_text_channel(
-                name=vc_txt_after)
-            await channel.set_permissions(
-                guild.default_role, read_messages=False,
-                 read_message_history=False)
-        await channel.set_permissions(user, read_messages=True)
+                name=vc_txt_after, overwrites=overwrites)
+        else:
+            await channel.set_permissions(user, read_messages=True)
 
 
 def get_no_permission_msg(user_id):
