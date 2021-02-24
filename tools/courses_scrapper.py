@@ -55,8 +55,8 @@ for degree in degrees:
     for course in courses:
         acronym = course_acronym_map[course]
         if acronym not in degree_courses:
-            degree_courses[acronym] = []
-        degree_courses[acronym].append(degree['acronym'])
+            degree_courses[acronym] = {'name': course, 'degrees': []}
+        degree_courses[acronym]['degrees'].append(degree['acronym'])
 
 with open('courses_by_degree.json', 'wb') as file:
     file.write(

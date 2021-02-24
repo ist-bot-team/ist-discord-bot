@@ -335,7 +335,7 @@ async def rebuild_course_channels(ctx):
         permissions = {
             guild.default_role: PermissionOverwrite(read_messages=False)
         }
-        for degree in courses_by_degree[course]:
+        for degree in courses_by_degree[course]['degrees']:
             degree_obj = next(
                 (item for item in degrees if item["name"] == degree), None)
             if degree_obj is not None:
@@ -345,8 +345,8 @@ async def rebuild_course_channels(ctx):
         course_channel = get(courses_category.text_channels,
                              name=course.lower())
         if course_channel is None:
-            await courses_category.create_text_channel(course.lower(), overwrites=permissions)
+            await courses_category.create_text_channel(course.lower(), overwrites=permissions, topic=courses_by_degree[course]['name'])
         else:
-            await course_channel.edit(overwrites=permissions)
+            await course_channel.edit(overwrites=permissions, topic=courses_by_degree[course]['name'])
 
 bot.run(os.environ['DISCORD_TOKEN'])
