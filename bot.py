@@ -77,6 +77,13 @@ async def rebuild_role_pickers():
     global veterano_msg_id
     veterano_msg_id = msg.id
 
+    #Hora do porco
+    msg = await roles_channel.send("`Hora do porco`:pig:")
+    await msg.add_reaction('☑️')
+    global porco_msg_id
+    porco_msg_id = msg.id
+
+
 # Events
 
 @bot.event
@@ -110,6 +117,8 @@ async def on_ready():
     global role_alameda
     global role_admin
     global role_admin_plus
+    global role_porco
+
     role_turista = get(guild.roles, name="TurISTa")
     role_aluno = get(guild.roles, name="Aluno/a")
     role_veterano = get(guild.roles, name="Veterano/a")
@@ -117,9 +126,10 @@ async def on_ready():
     role_alameda = get(guild.roles, name="Alameda")
     role_admin = get(guild.roles, name="Admin")
     role_admin_plus = get(guild.roles, name="Admin+")
+    role_porco = get(guild.roles, name="Hora do Porco")
 
-    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_admin is None or role_admin_plus is None:
-        print('O guild tem de ter uma role "TurISTa", uma role "Aluno/a", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Admin" e uma role "Admin+" (sensível a maísculas e minúsculas)')
+    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_admin is None or role_admin_plus is None or role_porco is None:
+        print('O guild tem de ter uma role "TurISTa", uma role "Aluno/a", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Admin", uma role "Admin+" e uma role "Hora do Porco" (sensível a maísculas e minúsculas)')
         exit(-1)
 
     if courses_category is None:    
@@ -151,8 +161,13 @@ async def on_ready():
             veterano_msg_id = msg.id
             found_count += 1
 
+        if "Hora do porco" in msg.content and msg.author.bot:
+            global porco_msg_id
+            porco_msg_id = msg.id
+            found_count += 1
+
     # Se não estiverem todas, apaga todas as mensagens do canal e escreve de novo
-    if found_count != len(degrees) + 1:
+    if found_count != len(degrees) + 2:
         await rebuild_role_pickers()
 
 @bot.event
@@ -172,6 +187,9 @@ async def on_raw_reaction_add(payload):
     # Encontrar a mensagem correta
     if veterano_msg_id == payload.message_id:
         await member.add_roles(role_veterano)
+        return
+    if porco_msg_id == payload.message_id:
+        await member.add_roles(role_porco)
         return
 
     for degree in degrees:
@@ -206,6 +224,9 @@ async def on_raw_reaction_remove(payload):
     # Encontrar a mensagem correta
     if veterano_msg_id == payload.message_id:
         await member.remove_roles(role_veterano)
+        return
+    if porco_msg_id == payload.message_id:
+        await member.remove_roles(role_porco)
         return
 
     for degree in degrees:
