@@ -157,7 +157,6 @@ async def on_ready():
     #Self roles
     for self_role in self_roles["roles"]:
         self_role_ids[self_role] = get(guild.roles, name=self_role)
-        #print(self_role_ids[self_role])
         if self_role_ids[self_role] is None:
             print(f"O guild tem de ter uma self_role '{self_role}'")
 
@@ -201,9 +200,6 @@ async def on_ready():
             if self_role_msg == msg.content:
                 self_role_msg_ids[self_role] = msg.id
                 self_roles_found_count +=1
-            else:
-                print(self_role_msg)
-
     if self_roles_found_count != len(self_roles["roles"]):
         await rebuild_self_roles()
 
@@ -224,7 +220,6 @@ async def on_raw_reaction_add(payload):
 
     allowed_channel_ids = [channels["escolhe-o-teu-curso"].id,channels["self-roles"].id]
     if payload.channel_id not in allowed_channel_ids or payload.emoji.name != '☑️':
-        print("channel id filter test failed")
         return
     
 
@@ -247,8 +242,6 @@ async def on_raw_reaction_add(payload):
                 await member.add_roles(roles["alameda"])
             
     for role in self_role_msg_ids:
-        print(f"payload msg id:{payload.message_id}")
-        print(f"payload self_role_msg_ids[role]:{self_role_msg_ids[role]}")
         if payload.message_id == self_role_msg_ids[role]:
             await member.add_roles(self_role_ids[role])
 @bot.event

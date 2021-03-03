@@ -2,7 +2,16 @@
     "groups": {
         "geral": {
             "msg": "Roles Gerais",
-            "roles": ["Veterano/a", "TurISTa","Hora do Porco"]
+            "roles": [
+                "Veterano/a",
+                "TurISTa"
+            ]
+        },
+        "eventos": {
+            "msg": "Eventos do Servidor",
+            "roles": [
+                "Hora do Porco"
+            ]
         },
         "leic-a": {
             "msg": "Roles de LEIC-A",
@@ -20,7 +29,6 @@
         "Veterano/a": "`Não é o meu primeiro ano no IST`",
         "TurISTa": "`Não sou do IST`",
         "Hora do Porco": "`Hora do Porco`:pig:",
-
         "LEIC-A CDI-I": "`Receber pings de anúncios de CDI-I`",
         "LEIC-A CDI-II": "`Receber pings de anúncios de CDI-II`",
         "LEIC-A IAED": "`Receber pings de anúncios de IAED`",
