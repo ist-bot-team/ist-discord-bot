@@ -27,6 +27,9 @@ with open('degrees.json', 'r', encoding='utf-8') as file:
 with open('embeds.json', 'r', encoding='utf-8') as file:
     embeds = json.load(file)
 
+with open("self_roles.json", "r", encoding="utf-8") as file:
+    self_roles = json.load(file)
+
 with open('courses_by_degree.json', 'r', encoding='utf-8') as file:
     courses_by_degree = json.load(file)
 
@@ -50,8 +53,8 @@ def parse_embed(embed):
 
     for field in embeds[embed]['fields']:
         ret.add_field(
-            value=field['value'].replace('$veterano', role_veterano.mention).replace(
-                '$turista', role_turista.mention),
+            value=field['value'].replace('$veterano', roles["veterano"].mention).replace(
+                '$turista', roles["turista"].mention),
             name=field['name'],
             inline=False
         )
@@ -61,27 +64,38 @@ def parse_embed(embed):
 
     return ret
 
-async def rebuild_role_pickers():
-    await roles_channel.purge()
+async def rebuild_self_roles():
+    global channels
+    await channels["self-roles"].purge()
 
-    await roles_channel.send(embed=parse_embed('welcome-pt'))
-    await roles_channel.send(embed=parse_embed('welcome-en'))
+    #print(self_roles)
+    #print(self_roles["groups"])
+    #exit(-1)
+    for group in self_roles["groups"]:
+        #print(group["msg"])
+        await channels["self-roles"].send(self_roles["groups"][group]["msg"])
+        for role in self_roles["groups"][group]["roles"]:
+            msg = await channels["self-roles"].send(self_roles["roles"][role])
+            await msg.add_reaction('☑️')
+            self_role_msg_ids[role] = msg.id
+    #print(self_role_msg_ids)
+
+
+
+    
+async def rebuild_role_pickers():
+    global roles
+    global channels
+    await channels["escolhe-o-teu-curso"].purge()
+
+    await channels["escolhe-o-teu-curso"].send(embed=parse_embed('welcome-pt'))
+    await channels["escolhe-o-teu-curso"].send(embed=parse_embed('welcome-en'))
 
     for i in range(0, len(degrees)):
-        msg = await roles_channel.send("`{}`".format(degrees[i]["display"]))
+        msg = await channels["escolhe-o-teu-curso"].send("`{}`".format(degrees[i]["display"]))
         await msg.add_reaction('☑️')
         degrees[i]["msg_id"] = msg.id
 
-    msg = await roles_channel.send("`Não é o meu primeiro ano no IST`")
-    await msg.add_reaction('☑️')
-    global veterano_msg_id
-    veterano_msg_id = msg.id
-
-    #Hora do porco
-    msg = await roles_channel.send("`Hora do porco`:pig:")
-    await msg.add_reaction('☑️')
-    global porco_msg_id
-    porco_msg_id = msg.id
 
 
 # Events
@@ -89,6 +103,7 @@ async def rebuild_role_pickers():
 @bot.event
 async def on_ready():
     print('Bot iniciado com o utilizador {0.user}'.format(bot))
+
 
     if len(bot.guilds) != 1:
         print('O bot tem de estar em exatamente um guild, no entanto está em {} guilds'.format(
@@ -102,35 +117,53 @@ async def on_ready():
         print('O guild tem de ter pelo menos dois canais de texto')
         exit(-1)
 
-    global roles_channel
-    global welcome_channel
-    roles_channel = get(guild.text_channels, name="escolhe-o-teu-curso")
-    welcome_channel = get(guild.text_channels, name="entradas")
+    global self_roles
 
+    global roles
+
+    global self_roles
+    global self_role_ids
+    global self_role_msg_ids
+
+    global channels
+    global categories
     global courses_category
+    roles, channels, categories, self_role_ids, self_role_msg_ids = {}, {}, {}, {}, {}
+
+    channels["escolhe-o-teu-curso"] = get(guild.text_channels, name="escolhe-o-teu-curso")
+
+    channels["entradas"] = get(guild.text_channels, name="entradas")
+
+    channels["self-roles"] = get(guild.text_channels, name="self-roles")    
+
     courses_category = get(guild.categories, name="Cadeiras")
 
-    global role_turista
-    global role_aluno
-    global role_veterano
-    global role_tagus
-    global role_alameda
-    global role_admin
-    global role_admin_plus
-    global role_porco
+    roles["turista"] = get(guild.roles, name="TurISTa")
+    roles["aluno"] = get(guild.roles, name="Aluno/a")
+    roles["veterano"] = get(guild.roles, name="Veterano/a")
+    roles["tagus"] = get(guild.roles, name="Tagus Park")
+    roles["alameda"] = get(guild.roles, name="Alameda")
+    roles["admin"] = get(guild.roles, name="Admin")
+    roles["admin_plus"] = get(guild.roles, name="Admin+")
 
-    role_turista = get(guild.roles, name="TurISTa")
-    role_aluno = get(guild.roles, name="Aluno/a")
-    role_veterano = get(guild.roles, name="Veterano/a")
-    role_tagus = get(guild.roles, name="Tagus Park")
-    role_alameda = get(guild.roles, name="Alameda")
-    role_admin = get(guild.roles, name="Admin")
-    role_admin_plus = get(guild.roles, name="Admin+")
-    role_porco = get(guild.roles, name="Hora do Porco")
 
-    if role_turista is None or role_aluno is None or role_veterano is None or role_tagus is None or role_alameda is None or role_admin is None or role_admin_plus is None or role_porco is None:
-        print('O guild tem de ter uma role "TurISTa", uma role "Aluno/a", uma role "Veterano", uma role "Tagus Park", uma role "Alameda", uma role "Admin", uma role "Admin+" e uma role "Hora do Porco" (sensível a maísculas e minúsculas)')
-        exit(-1)
+    for channel in channels:
+        if channels[channel] is None:
+
+            print(f"O guild tem de ter um channel '#{channel}'")
+            exit(-1)
+
+    for role in roles:
+        if roles[role] is None:
+            print(f"O guild tem de ter uma role '{role}'")
+            exit(-1)
+
+    #Self roles
+    for self_role in self_roles["roles"]:
+        self_role_ids[self_role] = get(guild.roles, name=self_role)
+        #print(self_role_ids[self_role])
+        if self_role_ids[self_role] is None:
+            print(f"O guild tem de ter uma self_role '{self_role}'")
 
     if courses_category is None:    
         print('O guild tem de ter uma categoria "Cadeiras".')
@@ -149,48 +182,61 @@ async def on_ready():
 
     # Verificar se as mensagens de entrada já estão no canal certo
     found_count = 0
-    roles_messages = await roles_channel.history().flatten()
+    roles_messages = await channels["escolhe-o-teu-curso"].history().flatten()
     for msg in roles_messages:
         for degree in degrees:
             if degree["display"] in msg.content and msg.author.bot:
                 degree["msg_id"] = msg.id
                 found_count += 1
                 break
-        if "Não é o meu primeiro ano no IST" in msg.content and msg.author.bot:
-            global veterano_msg_id
-            veterano_msg_id = msg.id
-            found_count += 1
 
-        if "Hora do porco" in msg.content and msg.author.bot:
-            global porco_msg_id
-            porco_msg_id = msg.id
-            found_count += 1
+
 
     # Se não estiverem todas, apaga todas as mensagens do canal e escreve de novo
-    if found_count != len(degrees) + 2:
+    if found_count != len(degrees):
         await rebuild_role_pickers()
+
+    #Verificar se as mensagens do #self-roles já existem
+    self_roles_messages = await channels["self-roles"].history().flatten()
+    self_roles_found_count = 0
+    for self_role in self_roles["roles"]:
+        self_role_msg = self_roles["roles"][self_role]
+        for msg in self_roles_messages:
+            if self_role_msg == msg.content:
+                self_roles_found_count +=1
+            else:
+                print(self_role_msg)
+                #print(self_roles_messages)
+
+    #for msg in self_roles_messages:
+     #   if msg == self_roles["roles"]:
+     #       self_roles_found_count +=1
+
+    print(f"self_roles_found_count: {self_roles_found_count}\n len(self_roles['roles']) = {len(self_roles['roles'])}")
+    if self_roles_found_count != len(self_roles["roles"]):
+        await rebuild_self_roles()
+
+
 
 @bot.event
 async def on_member_join(member):
-    await welcome_channel.send('Bem vind@ {}! Vai ao canal {} para escolheres o teu curso.'.format(member.mention, roles_channel.mention))
+    await channels["entradas"].send(
+        'Bem vind@ {}! Vai ao canal {} para escolheres o teu curso e a {} para escolheres outras roles.'.format(
+            member.mention, channels["escolhe-o-teu-curso"].mention, channels["self-roles"].mention))
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
-        return
-    
     member = guild.get_member(payload.user_id)
-    
     if member.bot:
         return
 
-    # Encontrar a mensagem correta
-    if veterano_msg_id == payload.message_id:
-        await member.add_roles(role_veterano)
+    #print(channels)       
+    allowed_channel_ids = [channels["escolhe-o-teu-curso"].id,channels["self-roles"].id]
+    #print(allowed_channel_ids)
+    if payload.channel_id not in allowed_channel_ids or payload.emoji.name != '☑️':
+        print("channel id filter test failed")
         return
-    if porco_msg_id == payload.message_id:
-        await member.add_roles(role_porco)
-        return
+    
 
     for degree in degrees:
         if degree["msg_id"] == payload.message_id:
@@ -199,47 +245,54 @@ async def on_raw_reaction_add(payload):
                 if degree == degree_2:
                     continue
                 if degree_2["role"] in member.roles:
-                    msg = await roles_channel.fetch_message(payload.message_id)
+                    msg = await channels["escolhe-o-teu-curso"].fetch_message(payload.message_id)
                     await msg.remove_reaction('☑️', member)
                     return
             print("Role do curso {} adicionada ao membro {}".format(degree["name"], member))
-            await member.remove_roles(role_turista)
-            await member.add_roles(degree["role"], role_aluno)
+            await member.remove_roles(roles["turista"])
+            await member.add_roles(degree["role"], roles["aluno"])
             if degree["tagus"]:
-                await member.add_roles(role_tagus)
+                await member.add_roles(roles["tagus"])
             else:
-                await member.add_roles(role_alameda)
+                await member.add_roles(roles["alameda"])
             return
+
+    #Check for self roles
+    for role in self_role_msg_ids:
+        #print(self_role_msg_ids[role])
+        if payload.message_id == self_role_msg_ids[role]:
+            await member.add_roles(self_role_ids[role])
 
 @bot.event
 async def on_raw_reaction_remove(payload):
-    if payload.channel_id != roles_channel.id or payload.emoji.name != '☑️':
-        return
-
     member = guild.get_member(payload.user_id)
     
     if member.bot:
         return
+    #print(channels)       
+    allowed_channel_ids = [channels["escolhe-o-teu-curso"].id,channels["self-roles"].id]
+    #print(allowed_channel_ids)
+    if payload.channel_id not in allowed_channel_ids or payload.emoji.name != '☑️':
+        print("channel id filter test failed")
+        return
 
-    # Encontrar a mensagem correta
-    if veterano_msg_id == payload.message_id:
-        await member.remove_roles(role_veterano)
-        return
-    if porco_msg_id == payload.message_id:
-        await member.remove_roles(role_porco)
-        return
 
     for degree in degrees:
         if degree["msg_id"] == payload.message_id:
             if degree["role"] in member.roles:
                 if degree["tagus"]:
-                    await member.remove_roles(role_tagus)
+                    await member.remove_roles(roles["tagus"])
                 else:
-                    await member.remove_roles(role_alameda)
-                await member.remove_roles(degree["role"], role_aluno)
-                await member.add_roles(role_turista)
+                    await member.remove_roles(roles["alameda"])
+                await member.remove_roles(degree["role"], roles["aluno"])
+                await member.add_roles(roles["turista"])
             print("Role do curso {} removida do membro {}".format(degree["name"], member))
             return
+        #Check for self roles
+    for role in self_role_msg_ids:
+        #print(self_role_msg_ids[role])
+        if payload.message_id == self_role_msg_ids[role]:
+            await member.remove_roles(self_role_ids[role])
 
 @bot.event
 async def on_voice_state_update(user,vc_before,vc_after):
@@ -287,13 +340,13 @@ def get_no_permission_msg(user_id):
 # Comandos
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
-    if not role_admin in ctx.author.roles:
+    if not roles["admin"] in ctx.author.roles:
         await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
 
     for member in guild.members:
-        if role_admin_plus in member.roles:
-            await member.remove_roles(role_admin_plus)
+        if roles["admin_plus"] in member.roles:
+            await member.remove_roles(roles["admin_plus"])
 
 @bot.command(pass_context=True)
 async def version(ctx):
@@ -301,18 +354,18 @@ async def version(ctx):
 
 @bot.command(pass_context=True)
 async def sudo(ctx):
-    if not role_admin in ctx.author.roles:
+    if not roles["admin"] in ctx.author.roles:
         await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
 
-    if role_admin_plus not in ctx.author.roles:
-        await ctx.author.add_roles(role_admin_plus)
+    if roles["admin_plus"] not in ctx.author.roles:
+        await ctx.author.add_roles(roles["admin_plus"])
     else:
-        await ctx.author.remove_roles(role_admin_plus)
+        await ctx.author.remove_roles(roles["admin_plus"])
 
 @bot.command(pass_context=True)
 async def refresh(ctx):
-    if not role_admin in ctx.author.roles:
+    if not roles["admin"] in ctx.author.roles:
         await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
     await ctx.message.channel.send('A atualizar o bot...')
@@ -321,7 +374,7 @@ async def refresh(ctx):
 
 @bot.command(pass_context=True)
 async def make_leaderboard(ctx):
-    if not role_admin in ctx.author.roles:
+    if not roles["admin"] in ctx.author.roles:
         await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
     
@@ -352,7 +405,7 @@ async def make_leaderboard(ctx):
 
 @bot.command(pass_context=True)
 async def rebuild_course_channels(ctx):
-    if not role_admin in ctx.author.roles:
+    if not roles["admin"] in ctx.author.roles:
         await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
         return
 
