@@ -1,0 +1,31 @@
+{
+    "groups": {
+        "geral": {
+            "msg": "Roles Gerais",
+            "roles": ["Veterano/a", "TurISTa","Hora do Porco"]
+        },
+        "leic-a": {
+            "msg": "Roles de LEIC-A",
+            "roles": [
+                "LEIC-A CDI-I",
+                "LEIC-A CDI-II",
+                "LEIC-A IAED",
+                "LEIC-A LP",
+                "LEIC-A MD",
+                "Resumos de LEIC"
+            ]
+        }
+    },
+    "roles": {
+        "Veterano/a": "`Não é o meu primeiro ano no IST`",
+        "TurISTa": "`Não sou do IST`",
+        "Hora do Porco": "`Hora do Porco`:pig:",
+
+        "LEIC-A CDI-I": "`Receber pings de anúncios de CDI-I`",
+        "LEIC-A CDI-II": "`Receber pings de anúncios de CDI-II`",
+        "LEIC-A IAED": "`Receber pings de anúncios de IAED`",
+        "LEIC-A LP": "`Receber pings de anúncios de LP`",
+        "LEIC-A MD": "`Receber pings de anúncios de MD`",
+        "Resumos de LEIC": "`Receber pings sobre resumos de LEIC`"
+    }
+}

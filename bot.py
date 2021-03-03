@@ -68,17 +68,13 @@ async def rebuild_self_roles():
     global channels
     await channels["self-roles"].purge()
 
-    #print(self_roles)
-    #print(self_roles["groups"])
-    #exit(-1)
     for group in self_roles["groups"]:
-        #print(group["msg"])
         await channels["self-roles"].send(self_roles["groups"][group]["msg"])
         for role in self_roles["groups"][group]["roles"]:
             msg = await channels["self-roles"].send(self_roles["roles"][role])
             await msg.add_reaction('☑️')
             self_role_msg_ids[role] = msg.id
-    #print(self_role_msg_ids)
+
 
 
 
@@ -203,16 +199,11 @@ async def on_ready():
         self_role_msg = self_roles["roles"][self_role]
         for msg in self_roles_messages:
             if self_role_msg == msg.content:
+                self_role_msg_ids[self_role] = msg.id
                 self_roles_found_count +=1
             else:
                 print(self_role_msg)
-                #print(self_roles_messages)
 
-    #for msg in self_roles_messages:
-     #   if msg == self_roles["roles"]:
-     #       self_roles_found_count +=1
-
-    print(f"self_roles_found_count: {self_roles_found_count}\n len(self_roles['roles']) = {len(self_roles['roles'])}")
     if self_roles_found_count != len(self_roles["roles"]):
         await rebuild_self_roles()
 
@@ -230,9 +221,8 @@ async def on_raw_reaction_add(payload):
     if member.bot:
         return
 
-    #print(channels)       
+
     allowed_channel_ids = [channels["escolhe-o-teu-curso"].id,channels["self-roles"].id]
-    #print(allowed_channel_ids)
     if payload.channel_id not in allowed_channel_ids or payload.emoji.name != '☑️':
         print("channel id filter test failed")
         return
@@ -255,25 +245,22 @@ async def on_raw_reaction_add(payload):
                 await member.add_roles(roles["tagus"])
             else:
                 await member.add_roles(roles["alameda"])
-            return
-
-    #Check for self roles
+            
     for role in self_role_msg_ids:
-        #print(self_role_msg_ids[role])
+        print(f"payload msg id:{payload.message_id}")
+        print(f"payload self_role_msg_ids[role]:{self_role_msg_ids[role]}")
         if payload.message_id == self_role_msg_ids[role]:
             await member.add_roles(self_role_ids[role])
-
 @bot.event
 async def on_raw_reaction_remove(payload):
     member = guild.get_member(payload.user_id)
     
     if member.bot:
         return
-    #print(channels)       
+       
     allowed_channel_ids = [channels["escolhe-o-teu-curso"].id,channels["self-roles"].id]
-    #print(allowed_channel_ids)
+
     if payload.channel_id not in allowed_channel_ids or payload.emoji.name != '☑️':
-        print("channel id filter test failed")
         return
 
 
@@ -290,7 +277,6 @@ async def on_raw_reaction_remove(payload):
             return
         #Check for self roles
     for role in self_role_msg_ids:
-        #print(self_role_msg_ids[role])
         if payload.message_id == self_role_msg_ids[role]:
             await member.remove_roles(self_role_ids[role])
 
@@ -370,6 +356,7 @@ async def refresh(ctx):
         return
     await ctx.message.channel.send('A atualizar o bot...')
     await rebuild_role_pickers()
+    await rebuild_self_roles()
     await ctx.message.channel.send('Feito')
 
 @bot.command(pass_context=True)
