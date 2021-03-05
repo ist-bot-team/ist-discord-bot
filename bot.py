@@ -3,8 +3,8 @@ from discord.ext import commands
 from discord.utils import get
 import os
 import json
-
 from asyncio import sleep
+
 # Carregar versão do bot
 with open('version', 'r') as file:
     version_number = file.read().replace('\n', '')
@@ -221,7 +221,7 @@ async def on_message(msg):
 @bot.command(pass_context=True)
 async def clean_no_context(ctx):
     if not roles["admin_plus"] in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        await handle_no_permissions(ctx)
         return
     await ctx.channel.send("A limpar o histórico do #no-context...")
     global channels
@@ -339,55 +339,68 @@ async def on_voice_state_update(user,vc_before,vc_after):
             await channel.set_permissions(user, read_messages=True)
 
 
-def get_no_permission_msg(user_id):
-    return '<@{}> is not in the sudoers file. This incident will be reported.'.format(user_id)
-    
+async def handle_no_permissions(ctx):
+    msg = await ctx.channel.send(f'{ctx.author.mention} is not in the sudoers file. This incident will be reported.')
+    await sleep(60)
+    await ctx.message.delete()
+    await msg.delete()
+
+
 # Comandos
 @bot.command(pass_context=True)
 async def reset_admin(ctx):
     if not roles["admin"] in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        await handle_no_permissions(ctx)
         return
-
     for member in guild.members:
         if roles["admin_plus"] in member.roles:
             await member.remove_roles(roles["admin_plus"])
+    await ctx.message.add_reaction('✅')
+    await sleep(60)
+    await ctx.message.delete()
 
 @bot.command(pass_context=True)
 async def version(ctx):
-    await ctx.message.channel.send("{}".format(version_number))
+    msg = await ctx.message.channel.send("{}".format(version_number))
+    await sleep(60)
+    await msg.delete()
+    await ctx.message.delete()
 
 @bot.command(pass_context=True)
 async def sudo(ctx):
     if not roles["admin"] in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        await handle_no_permissions(ctx)
         return
-
+    await ctx.message.add_reaction('✅')
     if roles["admin_plus"] not in ctx.author.roles:
         await ctx.author.add_roles(roles["admin_plus"])
     else:
         await ctx.author.remove_roles(roles["admin_plus"])
 
-    await ctx.message.add_reaction('✅')
     await sleep(15)
     await ctx.message.delete()
 
 @bot.command(pass_context=True)
 async def refresh(ctx):
     if not roles["admin"] in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        await handle_no_permissions(ctx)
         return
-    await ctx.message.channel.send('A atualizar o bot...')
+    await ctx.message.add_reaction('✅')
     await rebuild_role_pickers()
     await rebuild_self_roles()
-    await ctx.message.channel.send('Feito')
+    msg = await ctx.message.channel.send(f'{ctx.author.mention} Feito')
+
+    await sleep(60)
+    await msg.delete()
+    await ctx.message.delete()
+
 
 @bot.command(pass_context=True)
 async def make_leaderboard(ctx):
     if not roles["admin"] in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        await handle_no_permissions(ctx)
         return
-    
+    await ctx.message.add_reaction('✅')
     # Este comando cria uma leaderboard com os utilizadores que mais falaram no servidor.
     visible_user_count = 50
     leaderboard = {}
@@ -412,13 +425,14 @@ async def make_leaderboard(ctx):
     leaderboard_msg += "```"
     if len(leaderboard_msg) > 6:
         await ctx.message.channel.send('{}'.format(leaderboard_msg))
+    await ctx.channel.send(f"{ctx.author.mention} Feito")
 
 @bot.command(pass_context=True)
 async def rebuild_course_channels(ctx):
     if not roles["admin"] in ctx.author.roles:
-        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        await handle_no_permissions(ctx)
         return
-
+    await ctx.message.add_reaction('✅')
     for course in courses_by_degree:
         permissions = {
             guild.default_role: PermissionOverwrite(read_messages=False)
