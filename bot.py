@@ -4,6 +4,7 @@ from discord.utils import get
 import os
 import json
 
+from asyncio import sleep
 # Carregar versão do bot
 with open('version', 'r') as file:
     version_number = file.read().replace('\n', '')
@@ -127,8 +128,8 @@ async def on_ready():
 
     channels["entradas"] = get(guild.text_channels, name="entradas")
 
-    channels["self-roles"] = get(guild.text_channels, name="self-roles")    
-
+    channels["self-roles"] = get(guild.text_channels, name="self-roles")
+    channels["no-context"] = get(guild.text_channels, name="no-context")
     courses_category = get(guild.categories, name="Cadeiras")
 
     roles["turista"] = get(guild.roles, name="TurISTa")
@@ -200,7 +201,35 @@ async def on_ready():
     if self_roles_found_count != len(self_roles["roles"]):
         await rebuild_self_roles()
 
+#Only allow media messages on #no-context
+@bot.event
+async def on_message(msg):
+    global channels
+    if channels["no-context"] != msg.channel or msg.author.bot:
+        await bot.process_commands(msg)
+        return
+    if not((msg.attachments or "https://" in msg.content) or roles["admin"] in msg.author.roles ):
+        bot_msg = await msg.channel.send(f"{msg.author.mention} não podes enviar mensagens sem imagens/links aqui.\n Este canal é para meter screenshots do que os vossos colegas dizem no discord e que provavelmente nao quereriam quoted sem contexto.")
+        await msg.delete()
+        await sleep(60)
+        await bot_msg.delete()
+        return
+    await bot.process_commands(msg)
+    return
 
+#Temporary command to clean the channel
+@bot.command(pass_context=True)
+async def clean_no_context(ctx):
+    if not roles["admin_plus"] in ctx.author.roles:
+        await ctx.message.channel.send(get_no_permission_msg(ctx.author.id))
+        return
+    await ctx.channel.send("A limpar o histórico do #no-context...")
+    global channels
+    msgs = await channels["no-context"].history().flatten()
+    for msg in msgs:
+        if not(msg.attachments or "https://" in msg.content):
+            await msg.delete()
+    await ctx.channel.send("Feito.")
 
 @bot.event
 async def on_member_join(member):
@@ -338,6 +367,10 @@ async def sudo(ctx):
         await ctx.author.add_roles(roles["admin_plus"])
     else:
         await ctx.author.remove_roles(roles["admin_plus"])
+
+    await ctx.message.add_reaction('✅')
+    await sleep(15)
+    await ctx.message.delete()
 
 @bot.command(pass_context=True)
 async def refresh(ctx):
