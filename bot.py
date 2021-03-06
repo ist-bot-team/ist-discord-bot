@@ -209,7 +209,7 @@ async def on_message(msg):
         await bot.process_commands(msg)
         return
     if not((msg.attachments or "https://" in msg.content) or roles["admin"] in msg.author.roles ):
-        bot_msg = await msg.channel.send(f"{msg.author.mention} não podes enviar mensagens sem imagens/links aqui.\n Este canal é para meter screenshots do que os vossos colegas dizem no discord e que provavelmente nao quereriam quoted sem contexto.")
+        bot_msg = await msg.channel.send(f"{msg.author.mention} não podes enviar mensagens sem imagens/links aqui.\n Este canal é para meter screenshots do que os vossos colegas dizem no discord e que provavelmente não quereriam quoted sem contexto.")
         await msg.delete()
         await sleep(60)
         await bot_msg.delete()
