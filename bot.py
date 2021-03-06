@@ -225,11 +225,11 @@ async def clean_no_context(ctx):
         return
     await ctx.channel.send("A limpar o histórico do #no-context...")
     global channels
-    msgs = await channels["no-context"].history().flatten()
+    msgs = await channels["no-context"].history(limit=None).flatten()
     for msg in msgs:
         if not(msg.attachments or "https://" in msg.content):
             await msg.delete()
-    await ctx.channel.send("Feito.")
+    await ctx.channel.send(f"{ctx.author.mention} Feito.")
 
 @bot.event
 async def on_member_join(member):
