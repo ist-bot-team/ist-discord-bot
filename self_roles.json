@@ -21,6 +21,7 @@
                 "LEIC-A IAED",
                 "LEIC-A LP",
                 "LEIC-A MD",
+                "LEIC-A Eventos",
                 "Resumos de LEIC"
             ]
         }
@@ -34,6 +35,7 @@
         "LEIC-A IAED": "`Receber pings de anúncios de IAED`",
         "LEIC-A LP": "`Receber pings de anúncios de LP`",
         "LEIC-A MD": "`Receber pings de anúncios de MD`",
-        "Resumos de LEIC": "`Receber pings sobre resumos de LEIC`"
+        "Resumos de LEIC": "`Receber pings sobre resumos de LEIC-A`",
+        "LEIC-A Eventos": "`Receber pings sobre eventos de LEIC-A`"
     }
 }
