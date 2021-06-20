@@ -1,8 +1,10 @@
-from discord import Embed, PermissionOverwrite, Intents
+from discord import Embed, PermissionOverwrite, Intents, DiscordException
 from discord.ext import commands
 from discord.utils import get
 import os
 import json
+import asyncio
+import time
 from asyncio import sleep
 
 # Carregar versão do bot
@@ -141,26 +143,29 @@ async def on_ready():
     roles["admin_plus"] = get(guild.roles, name="Admin+")
 
 
+    will_exit = False
     for channel in channels:
         if channels[channel] is None:
 
             print(f"O guild tem de ter um channel '#{channel}'")
-            exit(-1)
+            will_exit = True
 
     for role in roles:
         if roles[role] is None:
             print(f"O guild tem de ter uma role '{role}'")
-            exit(-1)
+            will_exit = True
 
     #Self roles
     for self_role in self_roles["roles"]:
         self_role_ids[self_role] = get(guild.roles, name=self_role)
         if self_role_ids[self_role] is None:
             print(f"O guild tem de ter uma self_role '{self_role}'")
+            will_exit = True
 
     if courses_category is None:    
         print('O guild tem de ter uma categoria "Cadeiras".')
-        exit(-1)
+        will_exit = True
+
 
     # Associar cada curso a uma role
     for i in range(0, len(degrees)):
@@ -171,7 +176,10 @@ async def on_ready():
                 break
         if degrees[i]["role"] is None:
             print("A role com o nome {} nao existe".format(degrees[i]["name"]))
-            exit(-1)
+            will_exit = True
+
+    if will_exit:
+        exit(-1)
 
     # Verificar se as mensagens de entrada já estão no canal certo
     found_count = 0
@@ -299,6 +307,18 @@ async def on_raw_reaction_remove(payload):
         if payload.message_id == self_role_msg_ids[role]:
             await member.remove_roles(self_role_ids[role])
 
+def get_channel_name(name):
+    name = name.lower()
+    name = name.replace(" ", "-")
+    #Non-exhaustive list of disallowed characters in text channel names, might be missing a few
+    disallowed_characters = "|\\!\"#$%&/()=?'"
+    for char in disallowed_characters:
+        if char in name:
+            name = name.replace(char, "")
+    name = name.replace("---","-").replace("--","-")
+    name += "-vc"
+    return name
+
 @bot.event
 async def on_voice_state_update(user,vc_before,vc_after):
    global guild
@@ -307,9 +327,9 @@ async def on_voice_state_update(user,vc_before,vc_after):
         #Skip non join/leave/switch vc channel events
         if vc_before.channel == vc_after.channel:
             return
-        vc_txt_before = vc_before.channel.name.lower()
-        vc_txt_before = vc_txt_before.replace(" ", "-") + "-vc"
-        vc_txt_before = vc_txt_before.replace("+", "plus")
+
+        vc_txt_before = get_channel_name(vc_before.channel.name)
+
         channel = get(vc_before.channel.category.text_channels, name=vc_txt_before)
         #Txt Channel might not exist the first few times
         if channel != None:
@@ -319,14 +339,7 @@ async def on_voice_state_update(user,vc_before,vc_after):
                 await channel.set_permissions(user, read_messages=False)
 
    if vc_after.channel != None:
-        vc_txt_after = vc_after.channel.name.lower()
-        vc_txt_after = vc_txt_after.replace(" ", "-") + "-vc"
-
-        #VC rooms with non valid chars for txt rooms will still fail and create
-        #multiple txt channels for each user join
-        #Nevertheless, fix VC rooms with a '+' in their name
-        vc_txt_after = vc_txt_after.replace("+", "plus")
-
+        vc_txt_after = get_channel_name(vc_after.channel.name)
         channel = get(vc_after.channel.category.text_channels, name=vc_txt_after)
         if channel == None:
             overwrites = {
@@ -394,9 +407,28 @@ async def refresh(ctx):
     await msg.delete()
     await ctx.message.delete()
 
+async def count_msgs(ctx, channel):
+    global leaderboard
+    try:
+        msg_count = 0
+        async for msg in channel.history(limit=None):
+            #Filtrar mensagens com caracteres ZWSP
+            if not "\u200b" in msg.content:
+                msg_count += 1
+                if msg.author.id in leaderboard:
+                    leaderboard[msg.author.id] += len(msg.content)
+                else:
+                    leaderboard[msg.author.id] = len(msg.content)
+    except DiscordException as e:
+        print(f"Exception while doing leaderboard: {e}")
+        pass
+    finally:
+        await ctx.message.channel.send(f"Canal {channel.name} lido, {msg_count} mensagens")
+
 
 @bot.command(pass_context=True)
 async def make_leaderboard(ctx):
+    global leaderboard
     if not roles["admin"] in ctx.author.roles:
         await handle_no_permissions(ctx)
         return
@@ -405,17 +437,11 @@ async def make_leaderboard(ctx):
     visible_user_count = 50
     leaderboard = {}
 
-    for channel in guild.text_channels:
-        await ctx.message.channel.send('A ler canal {}'.format(channel.name))
-        async for msg in channel.history(limit=None):
-            #Filtrar mensagens com caracteres ZWSP
-            if not "\u200b" in msg.content:
-                if msg.author.id in leaderboard:
-                    leaderboard[msg.author.id] += len(msg.content)
-                else:
-                    leaderboard[msg.author.id] = len(msg.content) 
+    start_time = time.time()
 
+    await asyncio.gather(*[count_msgs(ctx, channel) for channel in guild.text_channels])
     leaderboard_msg = "```"
+
     for user_id in sorted(leaderboard, key=leaderboard.get, reverse=True)[:visible_user_count]:
         leaderboard_msg += '{} - {}\n'.format(guild.get_member(user_id), leaderboard[user_id])
         if len(leaderboard_msg) > 500:
@@ -425,7 +451,10 @@ async def make_leaderboard(ctx):
     leaderboard_msg += "```"
     if len(leaderboard_msg) > 6:
         await ctx.message.channel.send('{}'.format(leaderboard_msg))
-    await ctx.channel.send(f"{ctx.author.mention} Feito")
+
+    duration = time.time() - start_time
+    await ctx.channel.send(f"{ctx.author.mention} Concluído em {duration} segundos")
+
 
 @bot.command(pass_context=True)
 async def rebuild_course_channels(ctx):
