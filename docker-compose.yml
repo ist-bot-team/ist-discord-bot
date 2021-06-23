@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  ist-discord-bot:
+    #image: ist-bot-team/ist-discord-bot:v2.0.0
+    build: .
+    volumes:
+      - type: bind
+        source: ./data
+        target: /app/data
+    environment:
+      DISCORD_TOKEN: abc
+    restart: unless-stopped
