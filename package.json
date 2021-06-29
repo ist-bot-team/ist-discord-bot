@@ -1,0 +1,11 @@
+{
+  "name": "ist-discord-bot",
+  "version": "2.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:ist-bot-team/ist-discord-bot",
+  "author": "IST Bot Team",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^12.5.3"
+  }
+}
