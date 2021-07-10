@@ -18,6 +18,7 @@ services:
               target: /app/data
         environment:
             DISCORD_TOKEN: PLACE_BOT_TOKEN_HERE
+            TZ: Europe/Lisbon # default timezone for crontab and other date related stuff
         restart: unless-stopped
 ```
 
