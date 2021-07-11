@@ -69,14 +69,12 @@ export const getNewEmbed = (
 					(user) =>
 						user !== ATTENDANCE_NO_ONE && user !== `<@${userId}>`
 				)
-				.join("\n") || fieldIndex === i
-				? ""
-				: ATTENDANCE_NO_ONE;
+				.join("\n") || (fieldIndex === i ? "" : ATTENDANCE_NO_ONE);
 	});
 	if (oldEmbed.fields[fieldIndex])
 		oldEmbed.fields[
 			fieldIndex
-		].value = `${oldEmbed.fields[fieldIndex]?.value}<@${userId}>\n`;
+		].value = `${oldEmbed.fields[fieldIndex]?.value}\n<@${userId}>`;
 
 	return oldEmbed;
 };
