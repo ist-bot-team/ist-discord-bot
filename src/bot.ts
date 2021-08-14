@@ -1,43 +1,53 @@
-import { Client, Intents, TextChannel } from "discord.js";
+import { ScheduledAttendancePoll } from "./modules/attendance.d";
+import * as attendance from "./modules/attendance";
+import * as Discord from "discord.js";
+import * as storage from "./storage";
 
-const { DISCORD_TOKEN } = process.env;
-
-const client = new Client({
-	intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+const client = new Discord.Client({
+	intents: [
+		Discord.Intents.FLAGS.GUILDS,
+		Discord.Intents.FLAGS.GUILD_MESSAGES,
+	],
 });
 
-let maintenanceStatus: { enabled: boolean; reason?: string };
-const maintenanceCommands = {};
+const buttonHandlers: Record<
+	string,
+	(interaction: Discord.ButtonInteraction) => Promise<void>
+> = {
+	attendance: attendance.handleAttendanceButton,
+};
 
-client.once("ready", () => {
-	console.log("Ready!");
+client.on("ready", async () => {
+	await attendance.scheduleAttendancePolls(
+		client,
+		storage
+			.getAttendancePolls()
+			.filter((poll) => poll.type === "scheduled")
+			.map((poll) => poll as ScheduledAttendancePoll)
+	);
 
-	maintenanceStatus = { enabled: true, reason: "i said so" }; //updateMaintenanceStatus();
+	console.log(`Logged in as ${client.user?.tag}!`);
+});
 
-	if (maintenanceStatus.enabled) {
-		client.user?.setPresence({
-			status: "idle",
-			activities: [{ name: "🔧 Maintenance Mode" }],
-		});
-		for (const [_id, guild] of client.guilds.cache) {
-			const channel =
-				guild.systemChannel ??
-				(guild.channels.cache
-					.filter((c) => c.isText())
-					.first() as TextChannel);
-			channel?.send(
-				`Activating **MAINTENANCE MODE** because \`${
-					maintenanceStatus.reason
-				}\`.
-				- Slash commands are not available;
-				- Prefix is \`#\`;
-				- Bot owners and users with a role called (exactly) \`Admin\` may interact;
-				- Commands: ${Object.keys(maintenanceCommands)
-					.map((k) => "`" + k + "`")
-					.join(", ")}`
-			);
-		}
+client.on("interactionCreate", async (interaction: Discord.Interaction) => {
+	if (interaction.isButton()) {
+		const msgCompInteraction = interaction as Discord.ButtonInteraction;
+		const prefix = msgCompInteraction.customId.split(":")[0];
+
+		await buttonHandlers[prefix]?.(msgCompInteraction);
 	}
 });
 
-client.login(DISCORD_TOKEN);
+const loadBot = async (): Promise<void> => {
+	await storage.loadStorage();
+
+	client.login(process.env.DISCORD_TOKEN);
+};
+
+if (process.env.DISCORD_TOKEN) {
+	loadBot();
+} else {
+	console.error(
+		"Discord token not set. Please set the DISCORD_TOKEN environment variable"
+	);
+}
