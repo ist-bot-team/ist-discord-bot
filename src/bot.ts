@@ -3,6 +3,8 @@ import * as attendance from "./modules/attendance";
 import * as Discord from "discord.js";
 import * as storage from "./storage";
 
+const { DISCORD_TOKEN } = process.env;
+
 const client = new Discord.Client({
 	intents: [
 		Discord.Intents.FLAGS.GUILDS,
@@ -10,10 +12,9 @@ const client = new Discord.Client({
 	],
 });
 
-const buttonHandlers: Record<
-	string,
-	(interaction: Discord.ButtonInteraction) => Promise<void>
-> = {
+const buttonHandlers: {
+	[prefix: string]: (interaction: Discord.ButtonInteraction) => Promise<void>;
+} = {
 	attendance: attendance.handleAttendanceButton,
 };
 
@@ -41,10 +42,10 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 const loadBot = async (): Promise<void> => {
 	await storage.loadStorage();
 
-	client.login(process.env.DISCORD_TOKEN);
+	client.login(DISCORD_TOKEN);
 };
 
-if (process.env.DISCORD_TOKEN) {
+if (DISCORD_TOKEN) {
 	loadBot();
 } else {
 	console.error(
