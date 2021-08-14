@@ -3,6 +3,7 @@ import {
 	ButtonInteraction,
 	Client,
 	Message,
+	MessageActionRow,
 	MessageButton,
 	MessageEmbed,
 	Snowflake,
@@ -11,7 +12,8 @@ import {
 import * as cron from "node-cron";
 
 const ATTENDANCE_POLL_MSG = "Attendance Poll";
-const ATTENDANCE_POLL_BUTTONS = [
+const ATTENDANCE_POLL_ACTION_ROW = new MessageActionRow();
+ATTENDANCE_POLL_ACTION_ROW.addComponents([
 	new MessageButton()
 		.setLabel("Yes")
 		.setStyle("SUCCESS")
@@ -24,7 +26,7 @@ const ATTENDANCE_POLL_BUTTONS = [
 		.setLabel("Clear")
 		.setStyle("SECONDARY")
 		.setCustomId("attendance:clear"),
-];
+]);
 const ATTENDANCE_NO_ONE = "*No one*";
 
 export const handleAttendanceButton = async (
@@ -50,7 +52,7 @@ export const handleAttendanceButton = async (
 	(interaction.message as Message).edit({
 		content: ATTENDANCE_POLL_MSG,
 		embeds: [newEmbed],
-		components: [ATTENDANCE_POLL_BUTTONS],
+		components: [ATTENDANCE_POLL_ACTION_ROW],
 	});
 
 	await interaction.reply({ content: "Response recorded!", ephemeral: true });
@@ -105,7 +107,7 @@ export const sendAttendanceEmbed = async (
 				.setFooter(embed.id)
 				.setTimestamp(),
 		],
-		components: [ATTENDANCE_POLL_BUTTONS],
+		components: [ATTENDANCE_POLL_ACTION_ROW],
 	});
 
 	await message.pin();
