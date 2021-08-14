@@ -15,7 +15,7 @@
 	"author": "IST Bot Team",
 	"license": "MIT",
 	"dependencies": {
-		"discord.js": "^13.0.0-dev.d6c43a5.1625918569",
+		"discord.js": "^13.0.1",
 		"node-cron": "^3.0.0"
 	},
 	"devDependencies": {
