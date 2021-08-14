@@ -1,9 +1,23 @@
 import { ScheduledAttendancePoll } from "./modules/attendance.d";
 import * as attendance from "./modules/attendance";
 import * as Discord from "discord.js";
-import * as storage from "./storage";
+import Storage from "./storage";
 
-const { DISCORD_TOKEN } = process.env;
+for (const ev of ["DISCORD_TOKEN", "DB_PATH"]) {
+	if (process.env[ev] === undefined) {
+		throw new Error(`Missing environment variable; please set ${ev}!`);
+	}
+}
+const { DISCORD_TOKEN, DB_PATH } = process.env;
+
+const storage = new Storage(DB_PATH as string);
+const attendanceUnit = storage.getUnit("attendancePolls", {
+	id: "TEXT PRIMARY_KEY",
+	type: "TEXT",
+	title: "TEXT",
+	cron: "TEXT",
+	channelId: "TEXT",
+});
 
 const client = new Discord.Client({
 	intents: [
@@ -21,10 +35,10 @@ const buttonHandlers: {
 client.on("ready", async () => {
 	await attendance.scheduleAttendancePolls(
 		client,
-		storage
-			.getAttendancePolls()
-			.filter((poll) => poll.type === "scheduled")
-			.map((poll) => poll as ScheduledAttendancePoll)
+		attendanceUnit
+			.select("*", { type: "scheduled" })
+			.all()
+			.map((p) => p as ScheduledAttendancePoll)
 	);
 
 	console.log(`Logged in as ${client.user?.tag}!`);
@@ -39,9 +53,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 	}
 });
 
-const loadBot = async (): Promise<void> => {
-	await storage.loadStorage();
-
+const loadBot = async () => {
 	client.login(DISCORD_TOKEN);
 };
 
