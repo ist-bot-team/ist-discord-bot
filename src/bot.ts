@@ -77,14 +77,4 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 	}
 });
 
-const loadBot = async () => {
-	client.login(DISCORD_TOKEN);
-};
-
-if (DISCORD_TOKEN) {
-	loadBot();
-} else {
-	console.error(
-		"Discord token not set. Please set the DISCORD_TOKEN environment variable"
-	);
-}
+client.login(DISCORD_TOKEN);
