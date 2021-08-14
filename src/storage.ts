@@ -13,7 +13,7 @@ export default class Storage {
 		this.statement(
 			`CREATE TABLE IF NOT EXISTS ${uname} (
 				${Object.entries(shape)
-					.map((k, v) => k + " " + v)
+					.map(([k, v]) => k + " " + v)
 					.join(", ")}
 			);`
 		).run();
@@ -25,21 +25,22 @@ export default class Storage {
 		)(uname, this);
 	}
 	statement(str: string): BS3.Statement {
-		// do NOT use this directly!
+		// do NOT use this directly from outside code!
+		console.info("Running SQL:", str);
 		return this.db.prepare(str);
 	}
 	encodeValue(v: string | number | boolean | null | undefined): string {
 		if (v === null || v === undefined) {
 			return "NULL";
 		} else if (typeof v === "string") {
-			return `"${v.replace('"', '\\"')}"`;
+			return `'${v.replace("'", "\\'")}'`;
 		} else {
 			return v.toString();
 		}
 	}
 }
 
-class StorageUnit {
+export class StorageUnit {
 	// represents a table
 	name: string;
 	storage: Storage;
@@ -50,7 +51,7 @@ class StorageUnit {
 	select(
 		cols: string[] | string,
 		where: string | { [col: string]: number | string }
-	) {
+	): BS3.Statement {
 		// TODO: allow more complex objects with more operators
 		return this.storage.statement(
 			`SELECT ${typeof cols === "string" ? cols : cols.join(", ")} FROM ${
@@ -64,22 +65,24 @@ class StorageUnit {
 			};`
 		);
 	}
-	replace(values: { [col: string]: number | string }) {
-		this.storage.statement(
-			`REPLACE INTO ${this.name} (${Object.keys(values).join(
-				", "
-			)}) VALUES (${Object.values(values)
-				.map(this.storage.encodeValue)
-				.join(", ")})`
-		);
+	replace(values: { [col: string]: number | string }): void {
+		this.storage
+			.statement(
+				`REPLACE INTO ${this.name} (${Object.keys(values).join(
+					", "
+				)}) VALUES (${Object.values(values)
+					.map(this.storage.encodeValue)
+					.join(", ")})`
+			)
+			.run();
 	}
 }
 
-class KVStorageUnit extends StorageUnit {
-	getValue(key: string, def: number | string) {
+export class KVStorageUnit extends StorageUnit {
+	getValue(key: string, def?: number | string): number | string {
 		return this.select("value", { key }).pluck().get() ?? def;
 	}
-	setValue(key: string, value: number | string) {
+	setValue(key: string, value: number | string): void {
 		return this.replace({ key, value });
 	}
 }

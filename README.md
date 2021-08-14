@@ -11,7 +11,7 @@ version: "3.8"
 
 services:
     ist-discord-bot:
-        image: ist-bot-team/ist-discord-bot:v2.0.0
+        image: ist-bot-team/ist-discord-bot:v2.0.0 # or 'build: .' if working locally
         volumes:
             - type: bind
               source: ./data
@@ -19,6 +19,7 @@ services:
         environment:
             DISCORD_TOKEN: PLACE_BOT_TOKEN_HERE
             TZ: Europe/Lisbon # default timezone for crontab and other date related stuff
+			DB_PATH: ./data/bot.db
         restart: unless-stopped
 ```
 
