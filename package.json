@@ -15,9 +15,11 @@
 	"author": "IST Bot Team",
 	"license": "MIT",
 	"dependencies": {
+		"@types/better-sqlite3": "^5.4.3",
 		"better-sqlite3": "^7.4.3",
 		"discord.js": "^13.0.1",
-		"node-cron": "^3.0.0"
+		"node-cron": "^3.0.0",
+		"path": "^0.12.7"
 	},
 	"devDependencies": {
 		"@tsconfig/node14": "^1.0.1",
