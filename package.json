@@ -39,7 +39,8 @@
 	"scripts": {
 		"prepare": "husky install",
 		"build": "tsc",
-		"start": "node ."
+		"start": "node .",
+		"prisma-gen": "node_modules/.bin/prisma generate --schema=./schema.prisma"
 	},
 	"lint-staged": {
 		"**/*": "prettier --write --ignore-unknown"

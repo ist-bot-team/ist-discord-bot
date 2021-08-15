@@ -8,6 +8,7 @@ WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
 RUN yarn
-RUN npx prism generate
+COPY ./src/prisma/schema.prisma .
+RUN yarn run prisma-gen
 COPY ./dist ./dist
 CMD [ "yarn", "start" ]
