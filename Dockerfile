@@ -8,5 +8,6 @@ WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
 RUN yarn
+RUN npx prism generate
 COPY ./dist ./dist
 CMD [ "yarn", "start" ]

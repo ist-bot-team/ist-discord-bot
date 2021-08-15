@@ -1,4 +1,3 @@
-import { AttendancePoll, ScheduledAttendancePoll } from "./attendance.d";
 import {
 	ButtonInteraction,
 	Client,
@@ -9,7 +8,9 @@ import {
 	Snowflake,
 	TextChannel,
 } from "discord.js";
-import * as cron from "node-cron";
+import cron from "node-cron";
+
+import { AttendancePoll } from "@prisma/client";
 
 const ATTENDANCE_POLL_MSG = "Attendance Poll";
 const ATTENDANCE_POLL_ACTION_ROW = new MessageActionRow();
@@ -115,7 +116,7 @@ export const sendAttendanceEmbed = async (
 
 export const scheduleAttendancePolls = async (
 	client: Client,
-	polls: ScheduledAttendancePoll[]
+	polls: AttendancePoll[]
 ): Promise<void> => {
 	await Promise.all(
 		polls.map(async (poll) => {

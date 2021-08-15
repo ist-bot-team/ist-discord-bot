@@ -1,29 +1,17 @@
 import { performance } from "perf_hooks";
 import Discord from "discord.js";
-import Storage, { KVStorageUnit } from "./storage";
+import { PrismaClient } from "@prisma/client";
 
 import * as attendance from "./modules/attendance";
-import { ScheduledAttendancePoll } from "./modules/attendance.d";
 
-for (const ev of ["DISCORD_TOKEN", "DB_PATH"]) {
+for (const ev of ["DISCORD_TOKEN"]) {
 	if (process.env[ev] === undefined) {
 		throw new Error(`Missing environment variable; please set ${ev}!`);
 	}
 }
-const { DISCORD_TOKEN, DB_PATH } = process.env;
+const { DISCORD_TOKEN } = process.env;
 
-const storage = new Storage(DB_PATH as string);
-const configUnit = storage.getUnit("config", {
-	key: "TEXT PRIMARY_KEY",
-	value: "TEXT",
-}) as KVStorageUnit;
-const attendanceUnit = storage.getUnit("attendancePolls", {
-	id: "TEXT PRIMARY_KEY",
-	type: "TEXT",
-	title: "TEXT",
-	cron: "TEXT",
-	channelId: "TEXT",
-});
+const prisma = new PrismaClient();
 
 const client = new Discord.Client({
 	intents: [
@@ -53,19 +41,49 @@ client.on("ready", async () => {
 		async () =>
 			await attendance.scheduleAttendancePolls(
 				client,
-				attendanceUnit
-					.select("*", { type: "scheduled" })
-					.all()
-					.map((p) => p as ScheduledAttendancePoll)
+				await prisma.attendancePoll.findMany({
+					where: {
+						type: "scheduled",
+					},
+				})
 			)
 	);
 	console.log(`All attendance polls scheduled (delta=${delta}ms)`);
 
-	console.log("Before setting:", configUnit.getValue("dummy"));
+	console.log(
+		"Before setting:",
+		(
+			await prisma.config.findUnique({
+				where: {
+					key: "dummy",
+				},
+			})
+		)?.value
+	);
 
-	configUnit.setValue("dummy", 7);
+	await prisma.config.upsert({
+		where: {
+			key: "dummy",
+		},
+		update: {
+			value: "7",
+		},
+		create: {
+			key: "dummy",
+			value: "6",
+		},
+	});
 
-	console.log("After setting:", configUnit.getValue("dummy"));
+	console.log(
+		"After setting:",
+		(
+			await prisma.config.findUnique({
+				where: {
+					key: "dummy",
+				},
+			})
+		)?.value
+	);
 });
 
 client.on("interactionCreate", async (interaction: Discord.Interaction) => {
