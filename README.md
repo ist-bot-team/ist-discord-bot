@@ -19,14 +19,13 @@ services:
         environment:
             DISCORD_TOKEN: PLACE_BOT_TOKEN_HERE
             TZ: Europe/Lisbon # default timezone for crontab and other date related stuff
-			DB_PATH: ./data/bot.db
         restart: unless-stopped
 ```
 
 2. Run `docker-compose up -d --build`
 3. That's it!
 
-_You can also use `docker-compose down`, `docker-compose up`, `docker-compose restart` and `docker-compose logs`._
+_You can also use `docker-compose down`, `docker-compose up`, `docker-compose restart` and `docker-compose logs [-f]`._
 
 ### Adding to a Server
 
