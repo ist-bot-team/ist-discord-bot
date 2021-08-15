@@ -17,7 +17,6 @@
 	"dependencies": {
 		"@prisma/client": "^2.29.1",
 		"@types/better-sqlite3": "^5.4.3",
-		"better-sqlite3": "^7.4.3",
 		"discord.js": "^13.0.1",
 		"node-cron": "^3.0.0",
 		"path": "^0.12.7"
