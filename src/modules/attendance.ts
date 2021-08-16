@@ -1,3 +1,5 @@
+// Handler for attendance polls
+
 import {
 	ButtonInteraction,
 	Client,

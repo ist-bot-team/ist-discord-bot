@@ -1,4 +1,5 @@
-import { performance } from "perf_hooks";
+// Main controller
+
 import Discord from "discord.js";
 import { PrismaClient } from "@prisma/client";
 
