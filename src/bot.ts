@@ -2,6 +2,7 @@ import { performance } from "perf_hooks";
 import Discord from "discord.js";
 import { PrismaClient } from "@prisma/client";
 
+import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
 
 for (const ev of ["DISCORD_TOKEN"]) {
@@ -26,19 +27,10 @@ const buttonHandlers: {
 	attendance: attendance.handleAttendanceButton,
 };
 
-// TODO: move this somewhere else
-const timeFunction = async (fun: () => Promise<void>) => {
-	const t0 = performance.now();
-	await fun();
-	const t1 = performance.now();
-	return Math.round((t1 - t0 + Number.EPSILON) * 100) / 100;
-};
-
-client.on("ready", async () => {
-	console.log(`Logged in as ${client.user?.tag}!`);
-
-	const delta = await timeFunction(
-		async () =>
+const startupChores = [
+	{
+		summary: "Schedule attendance polls",
+		fn: async () =>
 			await attendance.scheduleAttendancePolls(
 				client,
 				await prisma.attendancePoll.findMany({
@@ -46,44 +38,22 @@ client.on("ready", async () => {
 						type: "scheduled",
 					},
 				})
-			)
-	);
-	console.log(`All attendance polls scheduled (delta=${delta}ms)`);
+			),
+		complete: "All attendance polls scheduled",
+	},
+];
 
-	console.log(
-		"Before setting:",
-		(
-			await prisma.config.findUnique({
-				where: {
-					key: "dummy",
-				},
-			})
-		)?.value
-	);
+client.on("ready", async () => {
+	console.log(`Logged in as ${client.user?.tag}!`);
 
-	await prisma.config.upsert({
-		where: {
-			key: "dummy",
-		},
-		update: {
-			value: "7",
-		},
-		create: {
-			key: "dummy",
-			value: "6",
-		},
-	});
+	console.log("Duty before self: starting chores...");
 
-	console.log(
-		"After setting:",
-		(
-			await prisma.config.findUnique({
-				where: {
-					key: "dummy",
-				},
-			})
-		)?.value
-	);
+	for (const [i, chore] of startupChores.entries()) {
+		const delta = await utils.timeFunction(chore.fn);
+		console.log(
+			`[${i + 1}/${startupChores.length}] ${chore.complete} (${delta}ms)`
+		);
+	}
 });
 
 client.on("interactionCreate", async (interaction: Discord.Interaction) => {
