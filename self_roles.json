@@ -3,14 +3,8 @@
         "geral": {
             "msg": "Roles Gerais",
             "roles": [
-                "Veterano/a",
+                "Candidato",
                 "TurISTa"
-            ]
-        },
-        "eventos": {
-            "msg": "Eventos do Servidor",
-            "roles": [
-                "Hora do Porco"
             ]
         },
         "leic-a": {
@@ -27,9 +21,8 @@
         }
     },
     "roles": {
-        "Veterano/a": "`Não é o meu primeiro ano no IST`",
+        "Candidato": "`Estou-me a candidatar ao IST em 2021/2022`",
         "TurISTa": "`Não sou do IST`",
-        "Hora do Porco": "`Hora do Porco`:pig:",
         "LEIC-A CDI-I": "`Receber pings de anúncios de CDI-I`",
         "LEIC-A CDI-II": "`Receber pings de anúncios de CDI-II`",
         "LEIC-A IAED": "`Receber pings de anúncios de IAED`",

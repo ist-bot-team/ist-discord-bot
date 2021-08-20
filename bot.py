@@ -56,8 +56,10 @@ def parse_embed(embed):
 
     for field in embeds[embed]['fields']:
         ret.add_field(
-            value=field['value'].replace('$veterano', roles["veterano"].mention).replace(
-                '$turista', roles["turista"].mention),
+            value=field['value']
+                .replace('$candidato', roles["candidato"].mention)
+                .replace('$turista', roles["turista"].mention)
+                .replace('$channel-self-roles', channels["self-roles"].mention),
             name=field['name'],
             inline=False
         )
@@ -136,7 +138,7 @@ async def on_ready():
 
     roles["turista"] = get(guild.roles, name="TurISTa")
     roles["aluno"] = get(guild.roles, name="Aluno/a")
-    roles["veterano"] = get(guild.roles, name="Veterano/a")
+    roles["candidato"] = get(guild.roles, name="Candidato")
     roles["tagus"] = get(guild.roles, name="Tagus Park")
     roles["alameda"] = get(guild.roles, name="Alameda")
     roles["admin"] = get(guild.roles, name="Admin")
