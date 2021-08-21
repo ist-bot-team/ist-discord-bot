@@ -13,6 +13,7 @@ import {
 import cron from "node-cron";
 
 import { AttendancePoll } from "@prisma/client";
+import * as utils from "./utils";
 
 const ATTENDANCE_POLL_MSG = "Attendance Poll";
 const ATTENDANCE_POLL_ACTION_ROW = new MessageActionRow();
@@ -37,7 +38,7 @@ export const handleAttendanceButton = async (
 ): Promise<void> => {
 	await interaction.deferReply({ ephemeral: true });
 
-	const action = interaction.customId.split(":")[1];
+	const [_prefix, action] = utils.getCustomIdComponents(interaction.customId);
 	let fieldIndex = -1;
 
 	const oldEmbeds = interaction.message.embeds;

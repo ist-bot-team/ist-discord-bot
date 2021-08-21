@@ -23,3 +23,22 @@ model AttendancePoll {
 
     @@map("attendance_polls")
 }
+
+model RoleGroup {
+    id          String            @id
+    mode        String
+    placeholder String
+    options     RoleGroupOption[]
+
+    @@map("role_groups")
+}
+
+model RoleGroupOption {
+    label       String
+    description String
+    value       String     @id
+    RoleGroup   RoleGroup? @relation(fields: [roleGroupId], references: [id])
+    roleGroupId String?    @map("role_group_id")
+
+    @@map("role_group_options")
+}

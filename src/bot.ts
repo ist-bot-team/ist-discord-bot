@@ -50,6 +50,45 @@ const startupChores = [
 		complete: "All attendance polls scheduled",
 	},
 	{
+		summary: "Bootstrap roles",
+		fn: async () => {
+			if (await prisma.config.findFirst({ where: { key: "rolesUp" } })) {
+				console.log("Was already up");
+			} else {
+				prisma.roleGroup.create({
+					data: {
+						id: "degree",
+						mode: "menu",
+						placeholder: "Escolhe o teu curso",
+						options: {
+							create: [
+								{
+									label: "LEIC-A",
+									description:
+										"Licenciatura em Engenharia Informática e de Computadores - Alameda",
+									value: "876961096253206542",
+								},
+								{
+									label: "LEIC-T",
+									description:
+										"Licenciatura em Engenharia Informática e de Computadores - Taguspark",
+									value: "876961212590587914",
+								},
+								{
+									label: "LEFT",
+									description:
+										"Licenciatura em Engenharia Física e Tecnológica",
+									value: "876961271667372073",
+								},
+							],
+						},
+					},
+				});
+			}
+		},
+		complete: "Added role groups to database",
+	},
+	{
 		summary: "Test select menus",
 		fn: async () => {
 			const channel = client.channels.cache.find(
@@ -57,7 +96,8 @@ const startupChores = [
 			);
 			if (channel) {
 				await roleSelection.sendRoleSelectionMessages(
-					channel as Discord.TextChannel
+					channel as Discord.TextChannel,
+					prisma
 				);
 			}
 		},
@@ -82,17 +122,21 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 	if (interaction.isMessageComponent()) {
 		const msgCompInteraction =
 			interaction as Discord.MessageComponentInteraction;
-		const prefix = msgCompInteraction.customId.split(":")[0];
+		const [prefix, _arg] = utils.getCustomIdComponents(
+			msgCompInteraction.customId
+		);
 
 		// TODO: consider moving `await interaction.deferReply({ ephemeral: true });` here
 
 		if (interaction.isButton()) {
 			await buttonHandlers[prefix]?.(
-				msgCompInteraction as Discord.ButtonInteraction
+				msgCompInteraction as Discord.ButtonInteraction,
+				prisma
 			);
 		} else if (interaction.isSelectMenu()) {
 			await menuHandlers[prefix]?.(
-				msgCompInteraction as Discord.SelectMenuInteraction
+				msgCompInteraction as Discord.SelectMenuInteraction,
+				prisma
 			);
 		}
 	}
