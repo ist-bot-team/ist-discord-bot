@@ -10,6 +10,6 @@ export async function timeFunction(fun: () => Promise<void>): Promise<number> {
 }
 
 export function getCustomIdComponents(customId: string): [string, string] {
-	const sp = customId.split(":")[1];
+	const sp = customId.split(":");
 	return [sp[0], sp[1]];
 }

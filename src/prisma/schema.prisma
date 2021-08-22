@@ -1,6 +1,6 @@
 datasource db {
     provider = "sqlite"
-    url      = "file:./data/bot.db"
+    url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -37,6 +37,7 @@ model RoleGroupOption {
     label       String
     description String
     value       String     @id
+    emoji       String?
     RoleGroup   RoleGroup? @relation(fields: [roleGroupId], references: [id])
     roleGroupId String?    @map("role_group_id")
 

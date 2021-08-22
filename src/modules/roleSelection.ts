@@ -79,17 +79,23 @@ export async function handleRoleSelectionMenu(
 	const groupRoles = (
 		await prisma.roleGroup.findMany({ include: { options: true } })
 	)
-		.map((g) => g.id)
-		.filter((g) => g === groupId);
+		.filter((g) => g.id === groupId)
+		.flatMap((g) => g.options.map((o) => o.value));
 
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 	const roleToAdd = interaction.values[0];
 
-	if (groupRoles.includes(roleToAdd)) {
-		roles.remove(roles.cache.filter((r) => groupRoles.includes(r.id)));
-		roles.add(roleToAdd);
-		await interaction.editReply("Role applied.");
-	} else {
+	try {
+		if (groupRoles.includes(roleToAdd)) {
+			await roles.remove(
+				roles.cache.filter((r) => groupRoles.includes(r.id))
+			);
+			await roles.add(roleToAdd);
+			await interaction.editReply("Role applied.");
+		} else {
+			throw new Error("Role not in group");
+		}
+	} catch (e) {
 		await interaction.editReply("Failed to apply role.");
 	}
 }

@@ -52,10 +52,18 @@ const startupChores = [
 	{
 		summary: "Bootstrap roles",
 		fn: async () => {
-			if (await prisma.config.findFirst({ where: { key: "rolesUp" } })) {
+			if (
+				(await prisma.config.findFirst({ where: { key: "rolesUp" } }))
+					?.value === "yes"
+			) {
 				console.log("Was already up");
 			} else {
-				prisma.roleGroup.create({
+				await prisma.config.upsert({
+					where: { key: "rolesUp" },
+					update: { value: "yes" },
+					create: { key: "rolesUp", value: "yes" },
+				});
+				await prisma.roleGroup.create({
 					data: {
 						id: "degree",
 						mode: "menu",
@@ -67,18 +75,21 @@ const startupChores = [
 									description:
 										"Licenciatura em Engenharia Informática e de Computadores - Alameda",
 									value: "876961096253206542",
+									emoji: "💻",
 								},
 								{
 									label: "LEIC-T",
 									description:
 										"Licenciatura em Engenharia Informática e de Computadores - Taguspark",
 									value: "876961212590587914",
+									emoji: "🇹",
 								},
 								{
 									label: "LEFT",
 									description:
 										"Licenciatura em Engenharia Física e Tecnológica",
 									value: "876961271667372073",
+									emoji: "⚛️",
 								},
 							],
 						},
