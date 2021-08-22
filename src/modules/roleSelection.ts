@@ -7,27 +7,42 @@ import * as utils from "./utils";
 // TODO: load from fénix into database
 
 export async function sendRoleSelectionMessages(
-	channel: Discord.TextChannel,
+	client: Discord.Client,
 	prisma: PrismaClient
 ): Promise<void> {
-	const rows = []; // FIXME: this only works up to 5, need a way to separate
 	const groups = await prisma.roleGroup.findMany({
 		include: { options: true },
 	});
 	for (const group of groups) {
-		if (group.mode === "menu") {
-			rows.push(
-				new Discord.MessageActionRow().addComponents(
-					new Discord.MessageSelectMenu()
-						.setCustomId(`roleSelection:${group.id}`)
-						.setPlaceholder(group.placeholder)
-						.addOptions(
-							group.options as Discord.MessageSelectOptionData[]
-						)
-				)
+		try {
+			const channel = client.channels.cache.find(
+				(c) => c.id === group.channelId
+			);
+			if (channel === undefined || !channel.isText()) {
+				throw new Error("Could not find channel");
+			}
+			if (group.mode === "menu") {
+				await (channel as Discord.TextChannel).send({
+					content: group.message,
+					components: [
+						new Discord.MessageActionRow().addComponents(
+							new Discord.MessageSelectMenu()
+								.setCustomId(`roleSelection:${group.id}`)
+								.setPlaceholder(group.placeholder)
+								.setMinValues(group.minValues ?? 1) // TODO: db
+								.setMaxValues(group.maxValues ?? 1) // TODO: db
+								.addOptions(
+									group.options as Discord.MessageSelectOptionData[]
+								)
+						),
+					],
+				});
+			}
+		} catch (e) {
+			console.error(
+				`Could not send role selection message for group ${group.id} because: ${e.message}`
 			);
 		}
-		await channel.send({ content: "This is a message", components: rows });
 	}
 }
 

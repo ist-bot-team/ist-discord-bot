@@ -28,6 +28,10 @@ model RoleGroup {
     id          String            @id
     mode        String
     placeholder String
+    message     String
+    minValues   Int?              @map("min_values")
+    maxValues   Int?              @map("max_values")
+    channelId   String            @map("channel_id")
     options     RoleGroupOption[]
 
     @@map("role_groups")

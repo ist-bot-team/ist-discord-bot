@@ -68,6 +68,9 @@ const startupChores = [
 						id: "degree",
 						mode: "menu",
 						placeholder: "Escolhe o teu curso",
+						message:
+							"Olá <@97446650548588544>!\n\n||(isto é uma mensagem)||",
+						channelId: "859896451270574082",
 						options: {
 							create: [
 								{
@@ -102,15 +105,7 @@ const startupChores = [
 	{
 		summary: "Test select menus",
 		fn: async () => {
-			const channel = client.channels.cache.find(
-				(c) => c.id === "859896451270574082"
-			);
-			if (channel) {
-				await roleSelection.sendRoleSelectionMessages(
-					channel as Discord.TextChannel,
-					prisma
-				);
-			}
+			await roleSelection.sendRoleSelectionMessages(client, prisma);
 		},
 		complete: "Testing select menus deployed",
 	},
