@@ -1,41 +1,10 @@
 // Handler for role selection
 
 import { PrismaClient } from "@prisma/client";
-import Discord, { MessageSelectOptionData } from "discord.js";
+import Discord from "discord.js";
 import * as utils from "./utils";
 
-// TODO: eventually, this should all be read from the database
-// TODO: load from fénix
-// TODO: try emoji: "id"
-/*const SELECTABLE_ROLE_GROUPS = [
-	[
-		{
-			id: "degree",
-			mode: "menu",
-			placeholder: "Escolhe o teu curso",
-			options: [
-				{
-					label: "LEIC-A",
-					description:
-						"Licenciatura em Engenharia Informática e de Computadores - Alameda",
-					value: "876961096253206542",
-				},
-				{
-					label: "LEIC-T",
-					description:
-						"Licenciatura em Engenharia Informática e de Computadores - Taguspark",
-					value: "876961212590587914",
-				},
-				{
-					label: "LEFT",
-					description:
-						"Licenciatura em Engenharia Física e Tecnológica",
-					value: "876961271667372073",
-				},
-			] as Discord.MessageSelectOptionData[],
-		},
-	],
-] as [RoleGroup?, RoleGroup?, RoleGroup?, RoleGroup?, RoleGroup?][];*/
+// TODO: load from fénix into database
 
 export async function sendRoleSelectionMessages(
 	channel: Discord.TextChannel,
@@ -53,12 +22,7 @@ export async function sendRoleSelectionMessages(
 						.setCustomId(`roleSelection:${group.id}`)
 						.setPlaceholder(group.placeholder)
 						.addOptions(
-							(group.options as MessageSelectOptionData[]).map(
-								(o) => {
-									o.emoji = "😄";
-									return o;
-								}
-							)
+							group.options as Discord.MessageSelectOptionData[]
 						)
 				)
 			);
