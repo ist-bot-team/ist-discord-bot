@@ -24,13 +24,9 @@ export async function sendRoleSelectionMessages(
 
 			if (
 				group.messageId === null ||
-				!(await // FIXME: i hate this
-				new Promise((res) =>
-					channel.messages
-						.fetch(group.messageId as string)
-						.then((m) => res(!!m))
-						.catch(() => res(false))
-				))
+				!(await channel.messages
+					.fetch(group.messageId as string)
+					.catch(() => false))
 			) {
 				console.log("msgId:", group.messageId);
 				if (group.mode === "menu") {
