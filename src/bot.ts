@@ -98,6 +98,35 @@ const startupChores = [
 						},
 					},
 				});
+				await prisma.roleGroup.create({
+					data: {
+						id: "buttonstest",
+						mode: "buttons",
+						placeholder: "N/A",
+						message: "Testing test",
+						channelId: "859896451270574082",
+						options: {
+							create: [
+								{
+									label: "BTN1",
+									description: "DANGER",
+									value: "btn1",
+									emoji: "📙",
+								},
+								{
+									label: "Long button",
+									description: "SECONDARY",
+									value: "long",
+								},
+								{
+									label: "i",
+									description: "invalid",
+									value: "small",
+								},
+							],
+						},
+					},
+				});
 			}
 		},
 		complete: "Added role groups to database",
@@ -117,7 +146,9 @@ client.on("ready", async () => {
 	console.log("Duty before self: starting chores...");
 
 	for (const [i, chore] of startupChores.entries()) {
-		const delta = await utils.timeFunction(chore.fn);
+		const delta = await utils
+			.timeFunction(chore.fn)
+			.catch((e) => console.error("Chore error:", e));
 		console.log(
 			`[${i + 1}/${startupChores.length}] ${chore.complete} (${delta}ms)`
 		);
