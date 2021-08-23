@@ -32,6 +32,7 @@ model RoleGroup {
     minValues   Int?              @map("min_values")
     maxValues   Int?              @map("max_values")
     channelId   String            @map("channel_id")
+    messageId   String?           @map("message_id")
     options     RoleGroupOption[]
 
     @@map("role_groups")

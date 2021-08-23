@@ -21,22 +21,39 @@ export async function sendRoleSelectionMessages(
 			if (channel === undefined || !channel.isText()) {
 				throw new Error("Could not find channel");
 			}
-			if (group.mode === "menu") {
-				await (channel as Discord.TextChannel).send({
-					content: group.message,
-					components: [
-						new Discord.MessageActionRow().addComponents(
-							new Discord.MessageSelectMenu()
-								.setCustomId(`roleSelection:${group.id}`)
-								.setPlaceholder(group.placeholder)
-								.setMinValues(group.minValues ?? 1) // TODO: db
-								.setMaxValues(group.maxValues ?? 1) // TODO: db
-								.addOptions(
-									group.options as Discord.MessageSelectOptionData[]
-								)
-						),
-					],
-				});
+
+			if (
+				group.messageId === null ||
+				!(await // FIXME: i hate this
+				new Promise((res) =>
+					channel.messages
+						.fetch(group.messageId as string)
+						.then((m) => res(!!m))
+						.catch(() => res(false))
+				))
+			) {
+				console.log("msgId:", group.messageId);
+				if (group.mode === "menu") {
+					const msg = await (channel as Discord.TextChannel).send({
+						content: group.message,
+						components: [
+							new Discord.MessageActionRow().addComponents(
+								new Discord.MessageSelectMenu()
+									.setCustomId(`roleSelection:${group.id}`)
+									.setPlaceholder(group.placeholder)
+									.setMinValues(group.minValues ?? 1)
+									.setMaxValues(group.maxValues ?? 1)
+									.addOptions(
+										group.options as Discord.MessageSelectOptionData[]
+									)
+							),
+						],
+					});
+					await prisma.roleGroup.update({
+						where: { id: group.id },
+						data: { messageId: msg.id },
+					});
+				}
 			}
 		} catch (e) {
 			console.error(
@@ -68,7 +85,7 @@ export async function handleRoleSelectionMenu(
 		if (groupRoles.includes(roleToAdd)) {
 			const rolesToSet = [roleToAdd];
 			for (const id of roles.cache.keys()) {
-				if (id !== roleToAdd && groupRoles.includes(id)) {
+				if (!groupRoles.includes(id)) {
 					rolesToSet.push(id);
 				}
 			}
