@@ -66,12 +66,13 @@ export async function handleRoleSelectionMenu(
 
 	try {
 		if (groupRoles.includes(roleToAdd)) {
-			await roles.add(roleToAdd);
-			await roles.remove(
-				roles.cache.filter(
-					(r) => r.id !== roleToAdd && groupRoles.includes(r.id)
-				) // FIXME: no work!!!!
-			);
+			const rolesToSet = [roleToAdd];
+			for (const id of roles.cache.keys()) {
+				if (id !== roleToAdd && groupRoles.includes(id)) {
+					rolesToSet.push(id);
+				}
+			}
+			await roles.set(rolesToSet);
 			await interaction.editReply("Role applied.");
 		} else {
 			throw new Error("Role not in group");
