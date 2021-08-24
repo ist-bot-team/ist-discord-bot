@@ -28,6 +28,7 @@ const client = new Discord.Client({
 const buttonHandlers: MessageComponentInteractionHandler<Discord.ButtonInteraction> =
 	{
 		attendance: attendance.handleAttendanceButton,
+		roleSelection: roleSelection.handleRoleSelectionButton,
 	};
 
 const menuHandlers: MessageComponentInteractionHandler<Discord.SelectMenuInteraction> =
@@ -159,9 +160,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 	if (interaction.isMessageComponent()) {
 		const msgCompInteraction =
 			interaction as Discord.MessageComponentInteraction;
-		const [prefix, _arg] = utils.getCustomIdComponents(
-			msgCompInteraction.customId
-		);
+		const prefix = msgCompInteraction.customId.split(":")[0];
 
 		// TODO: consider moving `await interaction.deferReply({ ephemeral: true });` here
 

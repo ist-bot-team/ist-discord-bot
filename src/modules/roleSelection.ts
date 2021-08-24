@@ -2,7 +2,6 @@
 
 import { PrismaClient } from "@prisma/client";
 import Discord from "discord.js";
-import * as utils from "./utils";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
@@ -121,23 +120,17 @@ export async function sendRoleSelectionMessages(
 	}
 }
 
-export async function handleRoleSelectionMenu(
-	interaction: Discord.SelectMenuInteraction,
+async function handleRoleSelection(
+	groupId: string,
+	roles: Discord.GuildMemberRoleManager,
+	roleToAdd: string,
 	prisma: PrismaClient
-): Promise<void> {
-	await interaction.deferReply({ ephemeral: true });
-
-	const [_prefix, groupId] = utils.getCustomIdComponents(
-		interaction.customId
-	);
+) {
 	const groupRoles = (
 		await prisma.roleGroup.findMany({ include: { options: true } })
 	)
 		.filter((g) => g.id === groupId)
 		.flatMap((g) => g.options.map((o) => o.value));
-
-	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
-	const roleToAdd = interaction.values[0];
 
 	try {
 		if (groupRoles.includes(roleToAdd)) {
@@ -148,11 +141,45 @@ export async function handleRoleSelectionMenu(
 				}
 			}
 			await roles.set(rolesToSet);
-			await interaction.editReply("Role applied.");
+			return true;
 		} else {
 			throw new Error("Role not in group");
 		}
 	} catch (e) {
+		return false;
+	}
+}
+
+// TODO: this for buttons
+export async function handleRoleSelectionMenu(
+	interaction: Discord.SelectMenuInteraction,
+	prisma: PrismaClient
+): Promise<void> {
+	await interaction.deferReply({ ephemeral: true });
+
+	const groupId = interaction.customId.split(":")[1];
+	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
+	const roleToAdd = interaction.values[0];
+
+	if (await handleRoleSelection(groupId, roles, roleToAdd, prisma)) {
+		await interaction.editReply("Role applied.");
+	} else {
+		await interaction.editReply("Failed to apply role.");
+	}
+}
+// FIXME: these two (v & ^) are a bit humid
+export async function handleRoleSelectionButton(
+	interaction: Discord.ButtonInteraction,
+	prisma: PrismaClient
+): Promise<void> {
+	await interaction.deferReply({ ephemeral: true });
+
+	const sp = interaction.customId.split(":");
+	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
+
+	if (await handleRoleSelection(sp[1], roles, sp[2], prisma)) {
+		await interaction.editReply("Role applied.");
+	} else {
 		await interaction.editReply("Failed to apply role.");
 	}
 }
