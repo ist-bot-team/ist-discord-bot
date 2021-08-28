@@ -8,6 +8,7 @@ import { MessageComponentInteractionHandler } from "./bot.d";
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
 import * as roleSelection from "./modules/roleSelection";
+import * as tourist from "./modules/tourist";
 
 for (const ev of ["DISCORD_TOKEN"]) {
 	if (process.env[ev] === undefined) {
@@ -29,6 +30,7 @@ const buttonHandlers: MessageComponentInteractionHandler<Discord.ButtonInteracti
 	{
 		attendance: attendance.handleAttendanceButton,
 		roleSelection: roleSelection.handleRoleSelectionButton,
+		tourist: tourist.handleRoleSelectionButton,
 	};
 
 const menuHandlers: MessageComponentInteractionHandler<Discord.SelectMenuInteraction> =
@@ -138,6 +140,13 @@ const startupChores = [
 			await roleSelection.sendRoleSelectionMessages(client, prisma);
 		},
 		complete: "Testing select menus deployed",
+	},
+	{
+		summary: "Send tourist message",
+		fn: async () => {
+			await tourist.sendTouristMessage(client, prisma);
+		},
+		complete: "Tourist message sent",
 	},
 ];
 
