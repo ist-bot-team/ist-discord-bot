@@ -3,12 +3,13 @@
 import Discord from "discord.js";
 import { PrismaClient } from "@prisma/client";
 
-import { MessageComponentInteractionHandler } from "./bot.d";
+import { MessageComponentInteractionHandler, Chore } from "./bot.d";
 
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
 import * as roleSelection from "./modules/roleSelection";
 import * as tourist from "./modules/tourist";
+import * as populate from "./modules/populate";
 
 for (const ev of ["DISCORD_TOKEN"]) {
 	if (process.env[ev] === undefined) {
@@ -38,7 +39,7 @@ const menuHandlers: MessageComponentInteractionHandler<Discord.SelectMenuInterac
 		roleSelection: roleSelection.handleRoleSelectionMenu,
 	};
 
-const startupChores = [
+const startupChores: Chore[] = [
 	{
 		summary: "Schedule attendance polls",
 		fn: async () =>
@@ -53,93 +54,18 @@ const startupChores = [
 		complete: "All attendance polls scheduled",
 	},
 	{
-		summary: "Bootstrap roles",
+		summary: "Populate database with mock/default/test data",
 		fn: async () => {
-			if (
-				(await prisma.config.findFirst({ where: { key: "rolesUp" } }))
-					?.value === "yes"
-			) {
-				console.log("Was already up");
-			} else {
-				await prisma.config.upsert({
-					where: { key: "rolesUp" },
-					update: { value: "yes" },
-					create: { key: "rolesUp", value: "yes" },
-				});
-				await prisma.roleGroup.create({
-					data: {
-						id: "degree",
-						mode: "menu",
-						placeholder: "Escolhe o teu curso",
-						message:
-							"Olá <@97446650548588544>!\n\n||(isto é uma mensagem)||",
-						channelId: "859896451270574082",
-						options: {
-							create: [
-								{
-									label: "LEIC-A",
-									description:
-										"Licenciatura em Engenharia Informática e de Computadores - Alameda",
-									value: "876961096253206542",
-									emoji: "💻",
-								},
-								{
-									label: "LEIC-T",
-									description:
-										"Licenciatura em Engenharia Informática e de Computadores - Taguspark",
-									value: "876961212590587914",
-									emoji: "🇹",
-								},
-								{
-									label: "LEFT",
-									description:
-										"Licenciatura em Engenharia Física e Tecnológica",
-									value: "876961271667372073",
-									emoji: "⚛️",
-								},
-							],
-						},
-					},
-				});
-				await prisma.roleGroup.create({
-					data: {
-						id: "buttonstest",
-						mode: "buttons",
-						placeholder: "N/A",
-						message: "Testing test",
-						channelId: "859896451270574082",
-						options: {
-							create: [
-								{
-									label: "BTN1",
-									description: "DANGER",
-									value: "btn1",
-									emoji: "📙",
-								},
-								{
-									label: "Long button",
-									description: "SECONDARY",
-									value: "long",
-								},
-								{
-									label: "i",
-									description: "invalid",
-									value: "small",
-								},
-							],
-						},
-					},
-				});
-			}
+			await populate.populateDatabase(prisma);
 		},
-		complete: "Added role groups to database",
+		complete: "Database fully populated with mock/default/test data",
 	},
 	{
-		summary: "Test select menus",
+		summary: "Send role selection messages",
 		fn: async () => {
 			await roleSelection.sendRoleSelectionMessages(client, prisma);
 		},
-		complete: "Testing select menus deployed",
+		complete: "Role selection messages deployed",
 	},
 	{
 		summary: "Send tourist message",
@@ -158,7 +84,7 @@ client.on("ready", async () => {
 	for (const [i, chore] of startupChores.entries()) {
 		const delta = await utils
 			.timeFunction(chore.fn)
-			.catch((e) => console.error("Chore error:", e));
+			.catch((e) => console.error("Chore error:", chore.summary, "-", e));
 		console.log(
 			`[${i + 1}/${startupChores.length}] ${chore.complete} (${delta}ms)`
 		);
