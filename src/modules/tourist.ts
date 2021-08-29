@@ -47,8 +47,8 @@ export async function sendTouristMessage(
 		});
 
 		await prisma.config.upsert({
-			where: { key: "message_id" },
-			create: { key: "message_id", value: msg.id },
+			where: { key: "tourist:message_id" },
+			create: { key: "tourist:message_id", value: msg.id },
 			update: { value: msg.id },
 		});
 	}
