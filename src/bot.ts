@@ -8,7 +8,6 @@ import { MessageComponentInteractionHandler, Chore } from "./bot.d";
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
 import * as roleSelection from "./modules/roleSelection";
-import * as tourist from "./modules/tourist";
 import * as populate from "./modules/populate";
 
 for (const ev of ["DISCORD_TOKEN"]) {
@@ -31,7 +30,6 @@ const buttonHandlers: MessageComponentInteractionHandler<Discord.ButtonInteracti
 	{
 		attendance: attendance.handleAttendanceButton,
 		roleSelection: roleSelection.handleRoleSelectionButton,
-		tourist: tourist.handleRoleSelectionButton,
 	};
 
 const menuHandlers: MessageComponentInteractionHandler<Discord.SelectMenuInteraction> =
@@ -67,13 +65,6 @@ const startupChores: Chore[] = [
 		},
 		complete: "Role selection messages deployed",
 	},
-	{
-		summary: "Send tourist message",
-		fn: async () => {
-			await tourist.sendTouristMessage(client, prisma);
-		},
-		complete: "Tourist message sent",
-	},
 ];
 
 client.on("ready", async () => {
@@ -89,6 +80,8 @@ client.on("ready", async () => {
 			`[${i + 1}/${startupChores.length}] ${chore.complete} (${delta}ms)`
 		);
 	}
+
+	console.log("Ready!");
 });
 
 client.on("interactionCreate", async (interaction: Discord.Interaction) => {

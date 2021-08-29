@@ -43,22 +43,24 @@ const populators = {
 	tourist: async (prisma: PrismaClient) => {
 		const configs = {
 			channel_id: "859896451270574082",
-			message_id: "noid",
+			message_id: null,
 			message: "If you're a ~~terrible person~~ tourIST click below",
 			label: "I'm not in IST",
-			csv: "881601009300959282,876961096253206542,876961212590587914,876961271667372073",
+			role_id: "881601009300959282",
 		};
 
 		const items = [];
 		for (const [key, value] of Object.entries(configs)) {
 			const fqkey = `tourist:${key}`;
-			items.push(
-				prisma.config.upsert({
-					where: { key: fqkey },
-					create: { key: fqkey, value },
-					update: { value },
-				})
-			);
+			if (value) {
+				items.push(
+					prisma.config.upsert({
+						where: { key: fqkey },
+						create: { key: fqkey, value },
+						update: { value },
+					})
+				);
+			}
 		}
 		await prisma.$transaction(items);
 	},

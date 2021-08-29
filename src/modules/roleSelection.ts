@@ -2,9 +2,13 @@
 
 import { PrismaClient } from "@prisma/client";
 import Discord from "discord.js";
+import { getConfigFactory } from "./utils";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
+
+const TOURIST_GROUP_ID = "__tourist";
+const TOURIST_BUTTON_STYLE = "SECONDARY";
 
 // TODO: load from fénix into database
 
@@ -15,6 +19,37 @@ export async function sendRoleSelectionMessages(
 	const groups = await prisma.roleGroup.findMany({
 		include: { options: true },
 	});
+
+	const getTouristConfig = getConfigFactory(prisma, "tourist");
+
+	try {
+		groups.push({
+			id: TOURIST_GROUP_ID,
+			mode: "buttons",
+			placeholder: "N/A",
+			message:
+				(await getTouristConfig("message")) ??
+				"Press if you're not from IST",
+			channelId:
+				(await getTouristConfig("channel_id", true)) ?? "missing",
+			messageId: (await getTouristConfig("message_id")) ?? null,
+			minValues: null,
+			maxValues: null,
+			options: [
+				{
+					label: (await getTouristConfig("label")) ?? "I'm a TourIST",
+					description: TOURIST_BUTTON_STYLE,
+					value:
+						(await getTouristConfig("role_id", true)) ?? "missing",
+					emoji: null,
+					roleGroupId: TOURIST_GROUP_ID,
+				},
+			],
+		});
+	} catch (e) {
+		console.error(`Failed to inject tourist group: ${e.message}`);
+	}
+
 	for (const group of groups) {
 		try {
 			const channel = client.channels.cache.find(
@@ -106,10 +141,19 @@ export async function sendRoleSelectionMessages(
 						components,
 					});
 
-					await prisma.roleGroup.update({
-						where: { id: group.id },
-						data: { messageId: msg.id },
-					});
+					if (group.id === TOURIST_GROUP_ID) {
+						const key = "tourist:message_id";
+						await prisma.config.upsert({
+							where: { key },
+							create: { key, value: msg.id },
+							update: { value: msg.id },
+						});
+					} else {
+						await prisma.roleGroup.update({
+							where: { id: group.id },
+							data: { messageId: msg.id },
+						});
+					}
 				}
 			}
 		} catch (e) {
@@ -126,11 +170,33 @@ async function handleRoleSelection(
 	roleToAdd: string,
 	prisma: PrismaClient
 ) {
-	const groupRoles = (
-		await prisma.roleGroup.findMany({ include: { options: true } })
-	)
-		.filter((g) => g.id === groupId)
-		.flatMap((g) => g.options.map((o) => o.value));
+	const groupRoles =
+		groupId === TOURIST_GROUP_ID
+			? [
+					roleToAdd,
+					...(
+						await prisma.roleGroup.findMany({
+							where: { OR: [{ id: "degree" }, { id: "year" }] },
+							include: { options: true },
+						})
+					).flatMap((g) => g.options.map((o) => o.value)),
+			  ]
+			: (
+					(
+						await prisma.roleGroup.findFirst({
+							where: { id: groupId },
+							include: { options: true },
+						})
+					)?.options.map((o) => o.value) ?? []
+			  ).concat(
+					[
+						(
+							await prisma.config.findFirst({
+								where: { key: "tourist:role_id" },
+							})
+						)?.value,
+					].filter((e) => e !== undefined) as string[]
+			  );
 
 	try {
 		if (groupRoles.includes(roleToAdd)) {
@@ -150,7 +216,6 @@ async function handleRoleSelection(
 	}
 }
 
-// TODO: this for buttons
 export async function handleRoleSelectionMenu(
 	interaction: Discord.SelectMenuInteraction,
 	prisma: PrismaClient
@@ -162,9 +227,9 @@ export async function handleRoleSelectionMenu(
 	const roleToAdd = interaction.values[0];
 
 	if (await handleRoleSelection(groupId, roles, roleToAdd, prisma)) {
-		await interaction.editReply("Role applied.");
+		await interaction.editReply("✅ Role applied.");
 	} else {
-		await interaction.editReply("Failed to apply role.");
+		await interaction.editReply("❌ Failed to apply role.");
 	}
 }
 // FIXME: these two (v & ^) are a bit humid
@@ -178,8 +243,8 @@ export async function handleRoleSelectionButton(
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 
 	if (await handleRoleSelection(sp[1], roles, sp[2], prisma)) {
-		await interaction.editReply("Role applied.");
+		await interaction.editReply("✅ Role applied.");
 	} else {
-		await interaction.editReply("Failed to apply role.");
+		await interaction.editReply("❌ Failed to apply role.");
 	}
 }
