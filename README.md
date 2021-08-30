@@ -12,6 +12,10 @@ version: "3.8"
 services:
     ist-discord-bot:
         image: ist-bot-team/ist-discord-bot:v2.0.0 # or 'build: .' if working locally
+		build:
+			context: .
+			args:
+				DATABASE_URL: ./data/bot.db
         volumes:
             - type: bind
               source: ./data
