@@ -11,11 +11,14 @@ version: "3.8"
 
 services:
     ist-discord-bot:
-        image: ist-bot-team/ist-discord-bot:v2.0.0 # or 'build: .' if working locally
+		## EITHER:
+        image: ist-bot-team/ist-discord-bot:v2.0.0
+		## OR:
 		build:
 			context: .
 			args:
 				DATABASE_URL: ./data/bot.db
+		## END;
         volumes:
             - type: bind
               source: ./data
