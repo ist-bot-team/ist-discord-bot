@@ -7,7 +7,7 @@ import { getConfigFactory } from "./utils";
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
 
-const TOURIST_GROUP_ID = "__tourist";
+const TOURIST_GROUP_ID = "__tourist"; // must be unique in database
 const TOURIST_BUTTON_STYLE = "SECONDARY";
 
 // TODO: load from fénix into database
@@ -190,11 +190,13 @@ async function handleRoleSelection(
 					)?.options.map((o) => o.value) ?? []
 			  ).concat(
 					[
-						(
-							await prisma.config.findFirst({
-								where: { key: "tourist:role_id" },
-							})
-						)?.value,
+						["degree", "year"].includes(groupId)
+							? (
+									await prisma.config.findFirst({
+										where: { key: "tourist:role_id" },
+									})
+							  )?.value
+							: undefined,
 					].filter((e) => e !== undefined) as string[]
 			  );
 
