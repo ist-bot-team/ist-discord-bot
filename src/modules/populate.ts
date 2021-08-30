@@ -47,6 +47,7 @@ const populators = {
 			message: "If you're a ~~terrible person~~ tourIST click below",
 			label: "I'm not in IST",
 			role_id: "881601009300959282",
+			exclusive_role_groups: "degree,year",
 		};
 
 		const items = [];

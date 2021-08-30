@@ -170,13 +170,20 @@ async function handleRoleSelection(
 	roleToAdd: string,
 	prisma: PrismaClient
 ) {
+	const touristExclusive = (
+		(await getConfigFactory(prisma, "tourist")("exclusive_role_groups")) ??
+		"degree,year"
+	).split(",");
+
 	const groupRoles =
 		groupId === TOURIST_GROUP_ID
 			? [
 					roleToAdd,
 					...(
 						await prisma.roleGroup.findMany({
-							where: { OR: [{ id: "degree" }, { id: "year" }] },
+							where: {
+								OR: touristExclusive.map((e) => ({ id: e })),
+							},
 							include: { options: true },
 						})
 					).flatMap((g) => g.options.map((o) => o.value)),
@@ -190,7 +197,7 @@ async function handleRoleSelection(
 					)?.options.map((o) => o.value) ?? []
 			  ).concat(
 					[
-						["degree", "year"].includes(groupId)
+						touristExclusive.includes(groupId)
 							? (
 									await prisma.config.findFirst({
 										where: { key: "tourist:role_id" },
