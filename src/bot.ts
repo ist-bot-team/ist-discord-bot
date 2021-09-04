@@ -5,11 +5,11 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import {
 	RESTPostAPIApplicationCommandsJSONBody,
 	Routes,
-} from "discord-api-types";
+} from "discord-api-types/v9";
 import { REST } from "@discordjs/rest";
 import { PrismaClient } from "@prisma/client";
 
-import { MessageComponentInteractionHandlers, Chore } from "./bot.d";
+import { InteractionHandlers, Chore } from "./bot.d";
 
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
@@ -32,20 +32,22 @@ const client = new Discord.Client({
 	],
 });
 
-const buttonHandlers: MessageComponentInteractionHandlers<Discord.ButtonInteraction> =
-	{
-		attendance: attendance.handleAttendanceButton,
-		roleSelection: roleSelection.handleRoleSelectionButton,
-	};
-
-const menuHandlers: MessageComponentInteractionHandlers<Discord.SelectMenuInteraction> =
-	{
-		roleSelection: roleSelection.handleRoleSelectionMenu,
-	};
-
 const commandProviders: (() => SlashCommandBuilder[])[] = [
 	roleSelection.provideCommands,
 ];
+
+const commandHandlers: InteractionHandlers<Discord.CommandInteraction> = {
+	"role-selection": roleSelection.handleCommand,
+};
+
+const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
+	attendance: attendance.handleAttendanceButton,
+	roleSelection: roleSelection.handleRoleSelectionButton,
+};
+
+const menuHandlers: InteractionHandlers<Discord.SelectMenuInteraction> = {
+	roleSelection: roleSelection.handleRoleSelectionMenu,
+};
 
 const startupChores: Chore[] = [
 	{
@@ -89,6 +91,8 @@ const startupChores: Chore[] = [
 				DISCORD_TOKEN as string
 			);
 
+			// TODO: use built-in slash commands permissions
+
 			const useGlobalCommands =
 				GUILD_ID?.toLocaleLowerCase() === "global";
 			await rest.put(
@@ -127,24 +131,33 @@ client.on("ready", async () => {
 });
 
 client.on("interactionCreate", async (interaction: Discord.Interaction) => {
-	if (interaction.isMessageComponent()) {
-		const msgCompInteraction =
-			interaction as Discord.MessageComponentInteraction;
-		const prefix = msgCompInteraction.customId.split(":")[0];
+	try {
+		if (interaction.isMessageComponent()) {
+			const prefix = interaction.customId.split(":")[0];
 
-		// TODO: consider moving `await interaction.deferReply({ ephemeral: true });` here
+			// TODO: consider moving `await interaction.deferReply({ ephemeral: true });` here
 
-		if (interaction.isButton()) {
-			await buttonHandlers[prefix]?.(
-				msgCompInteraction as Discord.ButtonInteraction,
-				prisma
-			);
-		} else if (interaction.isSelectMenu()) {
-			await menuHandlers[prefix]?.(
-				msgCompInteraction as Discord.SelectMenuInteraction,
+			if (interaction.isButton()) {
+				await buttonHandlers[prefix]?.(
+					interaction as Discord.ButtonInteraction,
+					prisma
+				);
+			} else if (interaction.isSelectMenu()) {
+				await menuHandlers[prefix]?.(
+					interaction as Discord.SelectMenuInteraction,
+					prisma
+				);
+			}
+		} else if (interaction.isCommand()) {
+			await interaction.deferReply({ ephemeral: true });
+
+			await commandHandlers[interaction.commandName]?.(
+				interaction,
 				prisma
 			);
 		}
+	} catch (e) {
+		console.error("Problem handling interaction: " + e.message);
 	}
 });
 
