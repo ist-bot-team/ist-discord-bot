@@ -1,21 +1,27 @@
 // Main controller
 
 import Discord from "discord.js";
+import { SlashCommandBuilder } from "@discordjs/builders";
+import {
+	RESTPostAPIApplicationCommandsJSONBody,
+	Routes,
+} from "discord-api-types";
+import { REST } from "@discordjs/rest";
 import { PrismaClient } from "@prisma/client";
 
-import { MessageComponentInteractionHandler, Chore } from "./bot.d";
+import { MessageComponentInteractionHandlers, Chore } from "./bot.d";
 
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
 import * as roleSelection from "./modules/roleSelection";
 import * as populate from "./modules/populate";
 
-for (const ev of ["DISCORD_TOKEN"]) {
+for (const ev of ["DISCORD_TOKEN", "GUILD_ID"]) {
 	if (process.env[ev] === undefined) {
 		throw new Error(`Missing environment variable; please set ${ev}!`);
 	}
 }
-const { DISCORD_TOKEN } = process.env;
+const { DISCORD_TOKEN, GUILD_ID } = process.env;
 
 const prisma = new PrismaClient();
 
@@ -26,16 +32,20 @@ const client = new Discord.Client({
 	],
 });
 
-const buttonHandlers: MessageComponentInteractionHandler<Discord.ButtonInteraction> =
+const buttonHandlers: MessageComponentInteractionHandlers<Discord.ButtonInteraction> =
 	{
 		attendance: attendance.handleAttendanceButton,
 		roleSelection: roleSelection.handleRoleSelectionButton,
 	};
 
-const menuHandlers: MessageComponentInteractionHandler<Discord.SelectMenuInteraction> =
+const menuHandlers: MessageComponentInteractionHandlers<Discord.SelectMenuInteraction> =
 	{
 		roleSelection: roleSelection.handleRoleSelectionMenu,
 	};
+
+const commandProviders: (() => SlashCommandBuilder[])[] = [
+	roleSelection.provideCommands,
+];
 
 const startupChores: Chore[] = [
 	{
@@ -64,6 +74,38 @@ const startupChores: Chore[] = [
 			await roleSelection.sendRoleSelectionMessages(client, prisma);
 		},
 		complete: "Role selection messages deployed",
+	},
+	{
+		summary: "Register slash commands",
+		fn: async () => {
+			const commands: RESTPostAPIApplicationCommandsJSONBody[] = [];
+			for (const provider of commandProviders) {
+				for (const builder of provider()) {
+					commands.push(builder.toJSON());
+				}
+			}
+
+			const rest = new REST({ version: "9" }).setToken(
+				DISCORD_TOKEN as string
+			);
+
+			const useGlobalCommands =
+				GUILD_ID?.toLocaleLowerCase() === "global";
+			await rest.put(
+				Routes.applicationCommands(client?.user?.id as string),
+				{ body: useGlobalCommands ? commands : [] }
+			);
+			if (!useGlobalCommands) {
+				await rest.put(
+					Routes.applicationGuildCommands(
+						client?.user?.id as string,
+						GUILD_ID as string
+					),
+					{ body: commands }
+				);
+			}
+		},
+		complete: "All slash commands registered",
 	},
 ];
 

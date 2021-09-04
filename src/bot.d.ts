@@ -2,7 +2,7 @@
 
 import { PrismaClient } from "@prisma/client";
 
-export type MessageComponentInteractionHandler<T> = {
+export type MessageComponentInteractionHandlers<T> = {
 	[prefix: string]: (interaction: T, prisma: PrismaClient) => Promise<void>;
 };
 

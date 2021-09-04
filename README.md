@@ -17,7 +17,7 @@ services:
 		build:
 			context: .
 			args:
-				DATABASE_URL: ./data/bot.db
+				DATABASE_URL: file:./data/bot.db
 		## END;
         volumes:
             - type: bind
@@ -25,7 +25,7 @@ services:
               target: /app/data
         environment:
             DISCORD_TOKEN: PLACE_BOT_TOKEN_HERE
-			DATABASE_URL: file:./data/bot.db
+			GUILD_ID: PLACE_MAIN_GUILD_ID_HERE # or "GLOBAL" to use in multiple guilds (1hr roll-out time)
             TZ: Europe/Lisbon # default timezone for crontab and other date related stuff
         restart: unless-stopped
 ```
