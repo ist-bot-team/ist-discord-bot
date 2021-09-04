@@ -3,6 +3,7 @@
 import { PrismaClient } from "@prisma/client";
 import Discord from "discord.js";
 import { getConfigFactory } from "./utils";
+import * as Builders from "@discordjs/builders";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
@@ -233,7 +234,7 @@ export async function handleRoleSelectionMenu(
 
 	const groupId = interaction.customId.split(":")[1];
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
-	const roleToAdd = interaction.values[0];
+	const roleToAdd = interaction.values[0]; // FIXME: this won't work for multiselects!
 
 	if (await handleRoleSelection(groupId, roles, roleToAdd, prisma)) {
 		await interaction.editReply("✅ Role applied.");
@@ -255,5 +256,142 @@ export async function handleRoleSelectionButton(
 		await interaction.editReply("✅ Role applied.");
 	} else {
 		await interaction.editReply("❌ Failed to apply role.");
+	}
+}
+
+export function provideCommands(): Builders.SlashCommandBuilder[] {
+	const cmd = new Builders.SlashCommandBuilder()
+		.setName("role-selection")
+		.setDescription("Manage the role selection module");
+	cmd.addSubcommandGroup(
+		new Builders.SlashCommandSubcommandGroupBuilder()
+			.setName("group")
+			.setDescription("Manage role selection groups")
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("create")
+					.setDescription("Create a new role selection group")
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("id")
+							.setDescription("Unique identifier, snake_case")
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("mode")
+							.setDescription("Either 'buttons' or 'menu'")
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("placeholder")
+							.setDescription(
+								"Shown in select menus when no options are selected; ignored otherwise"
+							)
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("message")
+							.setDescription("Message sent with menu/buttons")
+							.setRequired(true)
+					)
+					// FIXME: no multiselect support yet, so not asking for minValues/maxValues
+					.addChannelOption(
+						new Builders.SlashCommandChannelOption()
+							.setName("channel")
+							.setDescription(
+								"Channel where to send role selection message"
+							)
+							.setRequired(true)
+					)
+			)
+	);
+	return [cmd];
+}
+
+async function createGroup(
+	prisma: PrismaClient,
+	id: string,
+	mode: string,
+	placeholder: string,
+	message: string,
+	channel: Discord.GuildChannel
+): Promise<[boolean, string]> {
+	try {
+		if (!id.match(/^[a-z0-9_]+$/)) {
+			return [false, "Invalid id: must be snake_case"];
+		}
+
+		const goodModes = ["buttons", "menu"];
+		if (!goodModes.includes(mode)) {
+			return [
+				false,
+				"Invalid mode: may only be one of " + goodModes.join("/"),
+			];
+		}
+
+		message = message.replace("\\n", "\n");
+
+		if (!channel.isText()) {
+			return [false, "Invalid channel: must be a text channel"];
+		}
+
+		return [
+			true,
+			(
+				await prisma.roleGroup.create({
+					data: {
+						id,
+						mode,
+						placeholder,
+						message,
+						channelId: channel.id,
+					},
+				})
+			).id,
+		];
+	} catch (e) {
+		return [false, "Something went wrong"];
+	}
+}
+
+export async function handleCommand(
+	interaction: Discord.CommandInteraction,
+	prisma: PrismaClient
+): Promise<void> {
+	const subCommandGroup = interaction.options.getSubcommandGroup();
+	const subCommand = interaction.options.getSubcommand();
+	switch (subCommandGroup) {
+		case "group":
+			switch (subCommand) {
+				case "create": {
+					const [succ, res] = await createGroup(
+						prisma,
+						interaction.options.getString("id", true),
+						interaction.options.getString("mode", true),
+						interaction.options.getString("placeholder", true),
+						interaction.options.getString("message", true),
+						interaction.options.getChannel(
+							"channel",
+							true
+						) as Discord.GuildChannel
+						// FIXME: I've no clue what a APIInteractionDataResolvedChannel is
+						// so I'm ignoring the possibility of it even existing
+					);
+					if (succ) {
+						await interaction.editReply(
+							`✅ Role selection group \`${res}\` successfully created.`
+						);
+					} else {
+						await interaction.editReply(
+							`❌ Could not create group because: **${res}**`
+						);
+					}
+					break;
+				}
+			}
+			break;
 	}
 }
