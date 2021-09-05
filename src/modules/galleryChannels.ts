@@ -29,12 +29,16 @@ export async function handleMessage(
 			!message.attachments.size &&
 			!message.content.startsWith("https://")
 		) {
-			await message.reply({
+			const sermon = await message.reply({
 				content: `This is a gallery channel, ${message.author}, so only images may be sent here.`,
 				allowedMentions: { users: [message.author.id] },
 				failIfNotExists: false,
 			});
 			await message.delete().catch(() => undefined);
+			setTimeout(
+				async () => await sermon.delete().catch(() => undefined),
+				5000
+			);
 			return true;
 		}
 	}
@@ -175,9 +179,10 @@ export async function handleCommand(
 		}
 		case "list":
 			interaction.editReply(
-				"**Gallery Channels**\n\n" + galleries.length
-					? galleries.map((c) => `- <#${c}>`).join("\n")
-					: "*None*"
+				"**Gallery Channels**\n\n" +
+					(galleries.length
+						? galleries.map((c) => `- <#${c}>`).join("\n")
+						: "*None*")
 			);
 			break;
 	}

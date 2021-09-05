@@ -56,5 +56,7 @@ export async function fetchGalleries(
 	return (
 		(await prisma.config.findFirst({ where: { key: "gallery_channels" } }))
 			?.value ?? ""
-	).split(",");
+	)
+		.split(",")
+		.filter((c) => c.length);
 }
