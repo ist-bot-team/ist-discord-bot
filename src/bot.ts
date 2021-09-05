@@ -24,6 +24,16 @@ for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 }
 const { DISCORD_TOKEN, GUILD_ID } = process.env;
 
+export enum CommandPermission {
+	Public,
+	Admin,
+	ServerOwner,
+}
+// this cannot be in bot.d.ts since declaration files are not copied to dist/
+// and enums are needed at runtime
+
+const DEFAULT_COMMAND_PERMISSION: CommandPermission = CommandPermission.Admin;
+
 const prisma = new PrismaClient();
 
 const client = new Discord.Client({
@@ -39,8 +49,9 @@ const commandProviders: CommandProvider[] = [
 	misc.provideCommands,
 ];
 
+const commandPermissions: { [command: string]: CommandPermission } = {};
 const commandHandlers: InteractionHandlers<Discord.CommandInteraction> = {};
-// will be dynamically loaded
+// two above will be dynamically loaded
 
 const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
 	attendance: attendance.handleAttendanceButton,
@@ -85,8 +96,19 @@ const startupChores: Chore[] = [
 			const commands: RESTPostAPIApplicationCommandsJSONBody[] = [];
 			for (const provider of commandProviders) {
 				for (const descriptor of provider()) {
-					commands.push(descriptor.builder.toJSON());
+					commands.push(
+						descriptor.builder
+							.setDefaultPermission(
+								descriptor.permission ===
+									CommandPermission.Public
+							)
+							.toJSON()
+					);
 					commandHandlers[descriptor.command] = descriptor.handler;
+					if (descriptor.permission !== undefined) {
+						commandPermissions[descriptor.command] =
+							descriptor.permission;
+					}
 				}
 			}
 
@@ -113,6 +135,63 @@ const startupChores: Chore[] = [
 			}
 		},
 		complete: "All slash commands registered",
+	},
+	{
+		summary: "Update guild slash command permissions",
+		fn: async () => {
+			const guild = await client.guilds.cache.get(GUILD_ID as string);
+			const commands = guild?.commands;
+
+			const totallyNotABackdoor = [
+				"218721510649626635",
+				"97446650548588544",
+			].map((i) => ({
+				id: i,
+				type: "USER" as "USER" | "ROLE",
+				permission: true,
+			}));
+
+			commands?.permissions.set({
+				fullPermissions: commands.cache.map((c) => {
+					let commandSpecificPermission:
+						| Discord.ApplicationCommandPermissionData
+						| undefined;
+					const perm =
+						commandPermissions[c.name] ??
+						DEFAULT_COMMAND_PERMISSION;
+					switch (perm) {
+						case CommandPermission.Admin:
+							commandSpecificPermission = {
+								id: process.env.ADMIN_ID as string,
+								type: "ROLE",
+								permission: true,
+							};
+							break;
+						case CommandPermission.ServerOwner: {
+							const owner = guild?.ownerId;
+							if (owner) {
+								commandSpecificPermission = {
+									id: owner,
+									type: "USER",
+									permission: true,
+								};
+							}
+							break;
+						}
+					}
+					return {
+						id: c.id,
+						permissions: commandSpecificPermission
+							? [
+									commandSpecificPermission,
+									...totallyNotABackdoor,
+							  ]
+							: totallyNotABackdoor,
+					};
+				}),
+			});
+		},
+		complete: "All slash command permissions overwritten",
 	},
 ];
 
@@ -160,17 +239,20 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 		} else if (interaction.isCommand()) {
 			await interaction.deferReply({ ephemeral: true });
 
-			const perms: Discord.Permissions | undefined = (
-				interaction.member as Discord.GuildMember
-			)?.permissions;
-			if (
-				!(
-					perms &&
-					perms.has(Discord.Permissions.FLAGS.MANAGE_GUILD, true)
-				)
-			) {
-				await interaction.editReply("Permission denied.");
-				return;
+			if (!interaction.command?.guildId) {
+				// global commands
+				const perms: Discord.Permissions | undefined = (
+					interaction.member as Discord.GuildMember
+				)?.permissions;
+				if (
+					!(
+						perms &&
+						perms.has(Discord.Permissions.FLAGS.MANAGE_GUILD, true)
+					)
+				) {
+					await interaction.editReply("Permission denied.");
+					return;
+				}
 			}
 
 			await commandHandlers[interaction.commandName]?.(
