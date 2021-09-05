@@ -122,9 +122,13 @@ client.on("ready", async () => {
 		const delta = await utils
 			.timeFunction(chore.fn)
 			.catch((e) => console.error("Chore error:", chore.summary, "-", e));
-		console.log(
-			`[${i + 1}/${startupChores.length}] ${chore.complete} (${delta}ms)`
-		);
+		if (delta) {
+			console.log(
+				`[${i + 1}/${startupChores.length}] ${
+					chore.complete
+				} (${delta}ms)`
+			);
+		}
 	}
 
 	console.log("Ready!");
@@ -140,12 +144,14 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 			if (interaction.isButton()) {
 				await buttonHandlers[prefix]?.(
 					interaction as Discord.ButtonInteraction,
-					prisma
+					prisma,
+					client
 				);
 			} else if (interaction.isSelectMenu()) {
 				await menuHandlers[prefix]?.(
 					interaction as Discord.SelectMenuInteraction,
-					prisma
+					prisma,
+					client
 				);
 			}
 		} else if (interaction.isCommand()) {
@@ -155,7 +161,8 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 
 			await commandHandlers[interaction.commandName]?.(
 				interaction,
-				prisma
+				prisma,
+				client
 			);
 		}
 	} catch (e) {

@@ -15,7 +15,8 @@ const TOURIST_BUTTON_STYLE = "SECONDARY";
 
 export async function sendRoleSelectionMessages(
 	client: Discord.Client,
-	prisma: PrismaClient
+	prisma: PrismaClient,
+	editExisting = false
 ): Promise<void> {
 	const groups = await prisma.roleGroup.findMany({
 		include: { options: true },
@@ -60,11 +61,14 @@ export async function sendRoleSelectionMessages(
 				throw new Error("Could not find channel");
 			}
 
+			let message;
+
 			if (
 				group.messageId === null ||
-				!(await channel.messages
+				!(message = await channel.messages
 					.fetch(group.messageId as string)
-					.catch(() => false))
+					.catch(() => null)) ||
+				editExisting
 			) {
 				let components;
 
@@ -137,10 +141,14 @@ export async function sendRoleSelectionMessages(
 				}
 
 				if (components) {
-					const msg = await (channel as Discord.TextChannel).send({
+					const args = {
 						content: group.message,
 						components,
-					});
+					};
+					const msg =
+						message && editExisting
+							? await message.edit(args)
+							: await (channel as Discord.TextChannel).send(args);
 
 					if (group.id === TOURIST_GROUP_ID) {
 						const key = "tourist:message_id";
@@ -392,6 +400,100 @@ export function provideCommands(): Builders.SlashCommandBuilder[] {
 							.setRequired(true)
 					)
 			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("list")
+					.setDescription("List all existing role selection groups")
+			)
+	);
+	cmd.addSubcommandGroup(
+		new Builders.SlashCommandSubcommandGroupBuilder()
+			.setName("options")
+			.setDescription("Manage options for a role selection group")
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("add")
+					.setDescription(
+						"Add a new option to a role selection group"
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("group-id")
+							.setDescription(
+								"Unique identifier of the role group"
+							)
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("label")
+							.setDescription("New option's name")
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("description")
+							.setDescription(
+								"For menus, shown to the user below the label. For buttons, specifies the button style (in caps)"
+							)
+							.setRequired(true)
+					)
+					.addRoleOption(
+						new Builders.SlashCommandRoleOption()
+							.setName("role")
+							.setDescription("Role corresponding to this option")
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("emoji")
+							.setDescription(
+								"Single emote to show next to label"
+							)
+							.setRequired(false)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("remove")
+					.setDescription("Remove an option from a role group")
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("group-id")
+							.setDescription(
+								"Unique identifier of the role group"
+							)
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("label")
+							.setDescription(
+								"Label corresponding to the option to remove"
+							)
+							.setRequired(true)
+					)
+			)
+	);
+	cmd.addSubcommandGroup(
+		new Builders.SlashCommandSubcommandGroupBuilder()
+			.setName("apply")
+			.setDescription(
+				"Apply changes made to role groups and respective options"
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("send-messages")
+					.setDescription("Send messages for all role groups")
+					.addBooleanOption(
+						new Builders.SlashCommandBooleanOption()
+							.setName("edit-existing")
+							.setDescription(
+								"Whether to edit existing messages, updating them. Otherwise, you may delete some before running this"
+							)
+							.setRequired(true)
+					)
+			)
 	);
 	return [cmd];
 }
@@ -570,9 +672,89 @@ async function viewGroup(
 	}
 }
 
+async function addOption(
+	prisma: PrismaClient,
+	groupId: string,
+	label: string,
+	description: string,
+	role: Discord.Role,
+	emoji: string | null
+): Promise<true | string> {
+	try {
+		if (!groupId.match(/^[a-z0-9_]+$/)) {
+			return "Invalid group id: must be snake_case";
+		}
+
+		const group = await prisma.roleGroup.findFirst({
+			where: { id: groupId },
+		});
+
+		if (group === null) {
+			return "No group was found with that ID";
+		}
+
+		await prisma.roleGroupOption.create({
+			data: {
+				label,
+				description,
+				value: role.id,
+				emoji,
+				roleGroupId: group.id,
+			},
+		});
+
+		return true;
+	} catch (e) {
+		return "Something went wrong; possibly, that role is already associated with an option";
+	}
+}
+
+async function removeOption(
+	prisma: PrismaClient,
+	groupId: string,
+	label: string
+): Promise<true | string> {
+	try {
+		if (!groupId.match(/^[a-z0-9_]+$/)) {
+			return "Invalid group id: must be snake_case";
+		}
+
+		const group = await prisma.roleGroup.findFirst({
+			where: { id: groupId },
+		});
+
+		if (group === null) {
+			return "No group was found with that ID";
+		}
+
+		const possible = await prisma.roleGroupOption.findMany({
+			where: {
+				label,
+				roleGroupId: group.id,
+			},
+		});
+
+		if (possible.length < 1) {
+			return "No such option was found";
+		} else if (possible.length > 1) {
+			return "Several options have this label; in the future a command to remove an option by its associated role (unique) may be added";
+		}
+
+		await prisma.roleGroupOption.delete({
+			where: { value: possible[0].value },
+		});
+
+		return true;
+	} catch (e) {
+		return "Something went wrong";
+	}
+}
+
+// TODO: dry this a bit
 export async function handleCommand(
 	interaction: Discord.CommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
+	client: Discord.Client
 ): Promise<void> {
 	const subCommandGroup = interaction.options.getSubcommandGroup();
 	const subCommand = interaction.options.getSubcommand();
@@ -669,7 +851,110 @@ export async function handleCommand(
 					);
 					break;
 				}
+				case "list": {
+					try {
+						await interaction.editReply({
+							embeds: [
+								new Discord.MessageEmbed()
+									.setTitle("Role Selection Groups")
+									.setDescription(
+										"All available role groups are listed below with their `mode` field."
+									)
+									.addFields(
+										(
+											await prisma.roleGroup.findMany()
+										).map((g) => ({
+											name: g.id,
+											value: g.mode,
+											inline: true,
+										}))
+									),
+							],
+						});
+					} catch (e) {
+						console.error(
+							"Could not list role groups because: ",
+							e.message
+						);
+						await interaction.editReply(
+							"❌ Failed to list role groups."
+						);
+					}
+					break;
+				}
 			}
 			break;
+		case "options":
+			switch (subCommand) {
+				case "add": {
+					const res = await addOption(
+						prisma,
+						interaction.options.getString("group-id", true),
+						interaction.options.getString("label", true),
+						interaction.options.getString("description", true),
+						interaction.options.getRole(
+							"role",
+							true
+						) as Discord.Role,
+						interaction.options.getString("emoji", false)
+					);
+					if (res === true) {
+						await interaction.editReply(
+							"✅ Option successfully added."
+						);
+					} else {
+						await interaction.editReply(
+							`❌ Could not add option because: **${res}**`
+						);
+					}
+					break;
+				}
+				case "remove": {
+					const res = await removeOption(
+						prisma,
+						interaction.options.getString("group-id", true),
+						interaction.options.getString("label", true)
+					);
+					if (res === true) {
+						await interaction.editReply(
+							"✅ Option successfully removed."
+						);
+					} else {
+						await interaction.editReply(
+							`❌ Could not remove option because: **${res}**`
+						);
+					}
+					break;
+				}
+			}
+			break;
+		case "apply":
+			switch (subCommand) {
+				case "send-messages": {
+					try {
+						await sendRoleSelectionMessages(
+							client,
+							prisma,
+							interaction.options.getBoolean(
+								"edit-existing",
+								true
+							)
+						);
+
+						await interaction.editReply(
+							"✅ Role selection messages successfully sent."
+						);
+					} catch (e) {
+						console.error(
+							"Could not send role selection messages:",
+							e.message
+						);
+						await interaction.editReply(
+							"❌ Failed to send role selection messages."
+						);
+					}
+					break;
+				}
+			}
 	}
 }
