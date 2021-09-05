@@ -4,7 +4,8 @@ datasource db {
 }
 
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
+    previewFeatures = ["referentialActions"]
 }
 
 model Config {
@@ -43,7 +44,7 @@ model RoleGroupOption {
     description String
     value       String     @id
     emoji       String?
-    RoleGroup   RoleGroup? @relation(fields: [roleGroupId], references: [id])
+    RoleGroup   RoleGroup? @relation(fields: [roleGroupId], references: [id], onDelete: Cascade)
     roleGroupId String?    @map("role_group_id")
 
     @@map("role_group_options")

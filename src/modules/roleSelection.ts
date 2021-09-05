@@ -280,8 +280,10 @@ export function provideCommands(): Builders.SlashCommandBuilder[] {
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("mode")
-							.setDescription("Either 'buttons' or 'menu'")
+							.setDescription("How users may choose roles")
 							.setRequired(true)
+							.addChoice("Selection Menu", "menu")
+							.addChoice("Buttons", "buttons")
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
@@ -303,6 +305,89 @@ export function provideCommands(): Builders.SlashCommandBuilder[] {
 							.setName("channel")
 							.setDescription(
 								"Channel where to send role selection message"
+							)
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("delete")
+					.setDescription(
+						"Delete a role selection group (this action cannot be reverted!)"
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("id")
+							.setDescription(
+								"Unique identifier of the role to delete"
+							)
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("confirm-id")
+							.setDescription("Type id again to confirm")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("edit")
+					.setDescription(
+						"Change a setting for an existing role selection group"
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("id")
+							.setDescription(
+								"Unique identifier of the role group"
+							)
+							.setRequired(true)
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("name")
+							.setDescription("Property to set")
+							.setRequired(true)
+							.addChoice("Mode", "mode")
+							.addChoice("Placeholder", "placeholder")
+							.addChoice("Message", "message")
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("value")
+							.setDescription("New value to set")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("move")
+					.setDescription("Move role group to a new channel")
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("id")
+							.setDescription(
+								"Unique identifier of the role group"
+							)
+							.setRequired(true)
+					)
+					.addChannelOption(
+						new Builders.SlashCommandChannelOption()
+							.setName("channel")
+							.setDescription("New channel to send message to")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("view")
+					.setDescription("Get information for a role group")
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("id")
+							.setDescription(
+								"Unique identifier of the role group"
 							)
 							.setRequired(true)
 					)
@@ -357,6 +442,134 @@ async function createGroup(
 	}
 }
 
+async function deleteGroup(
+	prisma: PrismaClient,
+	id: string,
+	confirm: string
+): Promise<true | string> {
+	try {
+		if (id !== confirm) {
+			return "Confirmation failed";
+		}
+
+		if (!id.match(/^[a-z0-9_]+$/)) {
+			return "Invalid id: must be snake_case";
+		}
+
+		await prisma.roleGroup.delete({ where: { id } });
+
+		return true;
+	} catch (e) {
+		return "Something went wrong; possibly, no role group was found with that ID";
+	}
+}
+
+async function editGroup(
+	prisma: PrismaClient,
+	id: string,
+	name: string,
+	value: string
+): Promise<true | string> {
+	try {
+		if (!id.match(/^[a-z0-9_]+$/)) {
+			return "Invalid id: must be snake_case";
+		}
+
+		const goodNames = ["mode", "placeholder", "message"];
+		if (!goodNames.includes(name)) {
+			return "Invalid name: must be one of " + goodNames.join("/");
+		}
+
+		const goodModes = ["menu", "buttons"];
+		if (name === "mode" && !goodModes.includes(value)) {
+			return "Invalid mode: must be one of " + goodModes.join("/");
+		}
+
+		await prisma.roleGroup.update({
+			where: { id },
+			data: { [name]: value },
+		});
+
+		return true;
+	} catch (e) {
+		return "Something went wrong; possibly, no role group was found with that ID";
+	}
+}
+
+async function moveGroup(
+	prisma: PrismaClient,
+	id: string,
+	channel: Discord.GuildChannel
+): Promise<true | string> {
+	try {
+		if (!id.match(/^[a-z0-9_]+$/)) {
+			return "Invalid id: must be snake_case";
+		}
+
+		if (!channel.isText()) {
+			return "Invalid channel: must be a text channel";
+		}
+
+		await prisma.roleGroup.update({
+			where: { id },
+			data: { channelId: channel.id },
+		});
+
+		return true;
+	} catch (e) {
+		return "Something went wrong; possibly, no role group was found with that ID";
+	}
+}
+
+async function viewGroup(
+	prisma: PrismaClient,
+	id: string,
+	guildId: string
+): Promise<Discord.WebhookEditMessageOptions | string> {
+	try {
+		const group = await prisma.roleGroup.findFirst({
+			where: { id },
+			include: { options: true },
+		});
+		if (group) {
+			const embed = new Discord.MessageEmbed().setTitle(
+				"Role Group Information"
+			).setDescription(`**ID**: ${group.id}
+				**Mode:** ${group.mode}
+				**Placeholder:** ${group.placeholder}
+				**Message:** ${group.message}
+				**Channel:** <#${group.channelId}>
+				**Message:** ${
+					group.messageId
+						? "[Here](https://discord.com/channels/" +
+						  guildId +
+						  "/" +
+						  group.channelId +
+						  "/" +
+						  group.messageId +
+						  " 'Message Link')"
+						: "NONE"
+				}`);
+
+			for (const opt of group.options) {
+				embed.addField(
+					(opt.emoji ? opt.emoji + " " : "") + opt.label,
+					opt.value + " - " + opt.description,
+					true
+				);
+			}
+
+			return {
+				embeds: [embed],
+			};
+		} else {
+			return `No group was found with ID \`${id}\``;
+		}
+	} catch (e) {
+		return "Something went wrong";
+	}
+}
+
 export async function handleCommand(
 	interaction: Discord.CommandInteraction,
 	prisma: PrismaClient
@@ -389,6 +602,71 @@ export async function handleCommand(
 							`❌ Could not create group because: **${res}**`
 						);
 					}
+					break;
+				}
+				case "delete": {
+					const id = interaction.options.getString("id", true);
+					const res = await deleteGroup(
+						prisma,
+						id,
+						interaction.options.getString("confirm-id", true)
+					);
+					if (res === true) {
+						await interaction.editReply(
+							`✅ Role selection group \`${id}\` successfully deleted.`
+						);
+					} else {
+						await interaction.editReply(
+							`❌ Could not delete group because: **${res}**`
+						);
+					}
+					break;
+				}
+				case "edit": {
+					const id = interaction.options.getString("id", true);
+					const res = await editGroup(
+						prisma,
+						id,
+						interaction.options.getString("name", true),
+						interaction.options.getString("value", true)
+					);
+					if (res === true) {
+						await interaction.editReply(
+							`✅ Role selection group \`${id}\` successfully edited.`
+						);
+					} else {
+						await interaction.editReply(
+							`❌ Could not edit group because: **${res}**`
+						);
+					}
+					break;
+				}
+				case "move": {
+					const id = interaction.options.getString("id", true);
+					const channel = interaction.options.getChannel(
+						"channel",
+						true
+					) as Discord.GuildChannel;
+					const res = await moveGroup(prisma, id, channel);
+					if (res === true) {
+						await interaction.editReply(
+							`✅ Role selection group \`${id}\` successfully moved to <#${channel.id}>.`
+						);
+					} else {
+						await interaction.editReply(
+							`❌ Could not move group because: **${res}**`
+						);
+					}
+					break;
+				}
+				case "view": {
+					await interaction.editReply(
+						await viewGroup(
+							prisma,
+							interaction.options.getString("id", true),
+							interaction.guildId as string
+						)
+					);
 					break;
 				}
 			}

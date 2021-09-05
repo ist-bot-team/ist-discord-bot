@@ -151,6 +151,8 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 		} else if (interaction.isCommand()) {
 			await interaction.deferReply({ ephemeral: true });
 
+			// TODO: permissions!!
+
 			await commandHandlers[interaction.commandName]?.(
 				interaction,
 				prisma
