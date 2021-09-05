@@ -48,23 +48,25 @@ export async function handleMessage(
 
 export async function parseExistingMessages(
 	prisma: PrismaClient,
-	channel: Discord.TextChannel | Discord.ThreadChannel
+	channels: (Discord.TextChannel | Discord.ThreadChannel)[]
 ): Promise<number> {
 	let count = 0;
-	try {
-		const messages = await channel.messages.fetch({ limit: 100 });
+	for (const channel of channels) {
+		try {
+			const messages = await channel.messages.fetch({ limit: 100 });
 
-		for (const [_id, message] of messages) {
-			try {
-				if (await handleMessage(message, prisma, [channel.id])) {
-					count++;
+			for (const [_id, message] of messages) {
+				try {
+					if (await handleMessage(message, prisma, [channel.id])) {
+						count++;
+					}
+				} catch (e) {
+					// do nothing
 				}
-			} catch (e) {
-				// do nothing
 			}
+		} catch (e) {
+			// do nothing
 		}
-	} catch (e) {
-		// do nothing
 	}
 	return count;
 }
@@ -100,6 +102,21 @@ export function provideCommands(): CommandDescriptor[] {
 			.setName("list")
 			.setDescription("List existing gallery channels")
 	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("clean")
+			.setDescription(
+				"Clean (an) existing gallery channel(s), 100 messages/14 days"
+			)
+			.addChannelOption(
+				new Builders.SlashCommandChannelOption()
+					.setName("channel")
+					.setDescription(
+						"If specified, only this channel will be cleaned"
+					)
+					.setRequired(false)
+			)
+	);
 	return [
 		{
 			builder: cmd,
@@ -126,7 +143,8 @@ async function updateGalleries(
 
 export async function handleCommand(
 	interaction: Discord.CommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
+	client: Discord.Client
 ): Promise<void> {
 	const galleries = await utils.fetchGalleries(prisma);
 
@@ -185,5 +203,39 @@ export async function handleCommand(
 						: "*None*")
 			);
 			break;
+		case "clean": {
+			try {
+				const channel = interaction.options.getChannel(
+					"channel",
+					false
+				) as Discord.GuildChannel | null;
+				let channels: (Discord.TextChannel | Discord.ThreadChannel)[] =
+					[];
+				if (
+					channel === null ||
+					!(channel.isText() || channel.isThread())
+				) {
+					for (const c of galleries) {
+						const cf = await client.channels.fetch(c);
+						if (cf && (cf.isText() || cf.isThread())) {
+							channels.push(
+								cf as
+									| Discord.TextChannel
+									| Discord.ThreadChannel
+							);
+						}
+					}
+				} else {
+					channels = [
+						channel as Discord.TextChannel | Discord.ThreadChannel,
+					];
+				}
+				const n = await parseExistingMessages(prisma, channels);
+				await interaction.editReply(`✅ Cleaned \`${n}\` messages.`);
+				break;
+			} catch (e) {
+				await interaction.editReply("❌ Something went wrong.");
+			}
+		}
 	}
 }
