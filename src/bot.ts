@@ -15,6 +15,7 @@ import * as attendance from "./modules/attendance";
 import * as roleSelection from "./modules/roleSelection";
 import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
+import * as galleryChannels from "./modules/galleryChannels";
 import * as populate from "./modules/populate";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
@@ -47,6 +48,7 @@ const commandProviders: CommandProvider[] = [
 	roleSelection.provideCommands,
 	sudo.provideCommands,
 	misc.provideCommands,
+	galleryChannels.provideCommands,
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};
@@ -264,6 +266,10 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 	} catch (e) {
 		console.error("Problem handling interaction: " + e.message);
 	}
+});
+
+client.on("messageCreate", async (message) => {
+	await galleryChannels.handleMessage(message, prisma);
 });
 
 client.login(DISCORD_TOKEN);
