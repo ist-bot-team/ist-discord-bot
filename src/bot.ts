@@ -98,6 +98,7 @@ const startupChores: Chore[] = [
 			const commands: RESTPostAPIApplicationCommandsJSONBody[] = [];
 			for (const provider of commandProviders) {
 				for (const descriptor of provider()) {
+					const name = descriptor.builder.name;
 					commands.push(
 						descriptor.builder
 							.setDefaultPermission(
@@ -106,10 +107,9 @@ const startupChores: Chore[] = [
 							)
 							.toJSON()
 					);
-					commandHandlers[descriptor.command] = descriptor.handler;
+					commandHandlers[name] = descriptor.handler;
 					if (descriptor.permission !== undefined) {
-						commandPermissions[descriptor.command] =
-							descriptor.permission;
+						commandPermissions[name] = descriptor.permission;
 					}
 				}
 			}

@@ -9,14 +9,12 @@ import { CommandDescriptor } from "../bot.d";
 export function provideCommands(): CommandDescriptor[] {
 	return [
 		{
-			command: "sudo",
 			builder: new Builders.SlashCommandBuilder()
 				.setName("sudo")
 				.setDescription("Toggle enhanced administrator permissions"),
 			handler: handleSudoCommand,
 		},
 		{
-			command: "reset-admin",
 			builder: new Builders.SlashCommandBuilder()
 				.setName("reset-admin")
 				.setDescription(

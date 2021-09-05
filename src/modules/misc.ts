@@ -14,7 +14,6 @@ import * as utils from "./utils";
 export function provideCommands(): CommandDescriptor[] {
 	return [
 		{
-			command: "about",
 			builder: new Builders.SlashCommandBuilder()
 				.setName("about")
 				.setDescription("Show general and version information"),

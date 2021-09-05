@@ -120,7 +120,6 @@ export function provideCommands(): CommandDescriptor[] {
 	return [
 		{
 			builder: cmd,
-			command: "gallery-channels",
 			handler: handleCommand,
 		},
 	];
