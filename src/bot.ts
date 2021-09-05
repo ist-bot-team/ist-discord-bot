@@ -13,6 +13,7 @@ import { InteractionHandlers, CommandProvider, Chore } from "./bot.d";
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
 import * as roleSelection from "./modules/roleSelection";
+import * as misc from "./modules/misc";
 import * as populate from "./modules/populate";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID"]) {
