@@ -1,10 +1,14 @@
 // Misc. logic that doesn't fit elsewhere
 
+import * as fs from "fs";
+
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
-import { CommandDescriptor } from "../bot.d";
 import { PrismaClient } from "@prisma/client";
+
+import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
 
 export function provideCommands(): CommandDescriptor[] {
 	return [
@@ -23,8 +27,17 @@ export async function handleAboutCommand(
 	_prisma: PrismaClient,
 	client: Discord.Client
 ): Promise<void> {
-	const pvar = (v: string, fallback = "[unknown]") =>
-		process.env["npm_package_" + v] ?? fallback;
+	let pkg: Record<string, string>;
+	try {
+		pkg = JSON.parse(
+			fs.readFileSync(__dirname + "/../../package.json").toString()
+		);
+	} catch (e) {
+		pkg = {};
+	}
+	const pvar = (v: string, fallback = "[unknown]") => pkg[v] ?? fallback;
+
+	// cannot easily import so reading it directly
 	await interaction.editReply({
 		embeds: [
 			new Discord.MessageEmbed()
@@ -47,7 +60,9 @@ export async function handleAboutCommand(
 						inline: true,
 					}))
 				)
-				.setFooter("Uptime: " + client.uptime),
+				.setFooter(
+					"Uptime: " + utils.durationString(client.uptime ?? 0)
+				),
 		],
 	});
 }
