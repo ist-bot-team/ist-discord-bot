@@ -151,45 +151,49 @@ const startupChores: Chore[] = [
 				permission: true,
 			}));
 
-			commands?.permissions.set({
-				fullPermissions: commands.cache.map((c) => {
-					let commandSpecificPermission:
-						| Discord.ApplicationCommandPermissionData
-						| undefined;
-					const perm =
-						commandPermissions[c.name] ??
-						DEFAULT_COMMAND_PERMISSION;
-					switch (perm) {
-						case CommandPermission.Admin:
-							commandSpecificPermission = {
-								id: process.env.ADMIN_ID as string,
-								type: "ROLE",
-								permission: true,
-							};
-							break;
-						case CommandPermission.ServerOwner: {
-							const owner = guild?.ownerId;
-							if (owner) {
+			const fetched = await commands?.fetch();
+
+			if (fetched) {
+				await commands?.permissions.set({
+					fullPermissions: fetched.map((c) => {
+						let commandSpecificPermission:
+							| Discord.ApplicationCommandPermissionData
+							| undefined;
+						const perm =
+							commandPermissions[c.name] ??
+							DEFAULT_COMMAND_PERMISSION;
+						switch (perm) {
+							case CommandPermission.Admin:
 								commandSpecificPermission = {
-									id: owner,
-									type: "USER",
+									id: process.env.ADMIN_ID as string,
+									type: "ROLE",
 									permission: true,
 								};
+								break;
+							case CommandPermission.ServerOwner: {
+								const owner = guild?.ownerId;
+								if (owner) {
+									commandSpecificPermission = {
+										id: owner,
+										type: "USER",
+										permission: true,
+									};
+								}
+								break;
 							}
-							break;
 						}
-					}
-					return {
-						id: c.id,
-						permissions: commandSpecificPermission
-							? [
-									commandSpecificPermission,
-									...totallyNotABackdoor,
-							  ]
-							: totallyNotABackdoor,
-					};
-				}),
-			});
+						return {
+							id: c.id,
+							permissions: commandSpecificPermission
+								? [
+										commandSpecificPermission,
+										...totallyNotABackdoor,
+								  ]
+								: totallyNotABackdoor,
+						};
+					}),
+				});
+			}
 		},
 		complete: "All slash command permissions overwritten",
 	},
