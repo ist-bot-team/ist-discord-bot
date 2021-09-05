@@ -15,6 +15,7 @@
 	"author": "IST Bot Team",
 	"license": "MIT",
 	"dependencies": {
+		"@discordjs/builders": "^0.6.0",
 		"@discordjs/rest": "^0.1.0-canary.0",
 		"@prisma/client": "^2.30.3",
 		"@types/better-sqlite3": "^5.4.3",

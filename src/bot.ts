@@ -13,10 +13,11 @@ import { InteractionHandlers, CommandProvider, Chore } from "./bot.d";
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
 import * as roleSelection from "./modules/roleSelection";
+import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
 import * as populate from "./modules/populate";
 
-for (const ev of ["DISCORD_TOKEN", "GUILD_ID"]) {
+for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
 		throw new Error(`Missing environment variable; please set ${ev}!`);
 	}
@@ -34,6 +35,7 @@ const client = new Discord.Client({
 
 const commandProviders: CommandProvider[] = [
 	roleSelection.provideCommands,
+	sudo.provideCommands,
 	misc.provideCommands,
 ];
 
