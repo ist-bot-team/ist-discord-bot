@@ -1,7 +1,6 @@
 // Main controller
 
 import Discord from "discord.js";
-import { SlashCommandBuilder } from "@discordjs/builders";
 import {
 	RESTPostAPIApplicationCommandsJSONBody,
 	Routes,
@@ -9,7 +8,7 @@ import {
 import { REST } from "@discordjs/rest";
 import { PrismaClient } from "@prisma/client";
 
-import { InteractionHandlers, Chore } from "./bot.d";
+import { InteractionHandlers, CommandProvider, Chore } from "./bot.d";
 
 import * as utils from "./modules/utils";
 import * as attendance from "./modules/attendance";
@@ -32,13 +31,13 @@ const client = new Discord.Client({
 	],
 });
 
-const commandProviders: (() => SlashCommandBuilder[])[] = [
+const commandProviders: CommandProvider[] = [
 	roleSelection.provideCommands,
+	misc.provideCommands,
 ];
 
-const commandHandlers: InteractionHandlers<Discord.CommandInteraction> = {
-	"role-selection": roleSelection.handleCommand,
-};
+const commandHandlers: InteractionHandlers<Discord.CommandInteraction> = {};
+// will be dynamically loaded
 
 const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
 	attendance: attendance.handleAttendanceButton,
@@ -82,8 +81,9 @@ const startupChores: Chore[] = [
 		fn: async () => {
 			const commands: RESTPostAPIApplicationCommandsJSONBody[] = [];
 			for (const provider of commandProviders) {
-				for (const builder of provider()) {
-					commands.push(builder.toJSON());
+				for (const descriptor of provider()) {
+					commands.push(descriptor.builder.toJSON());
+					commandHandlers[descriptor.command] = descriptor.handler;
 				}
 			}
 

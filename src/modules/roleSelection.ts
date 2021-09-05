@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import Discord from "discord.js";
 import { getConfigFactory } from "./utils";
 import * as Builders from "@discordjs/builders";
+import { CommandDescriptor } from "../bot.d";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
@@ -267,7 +268,7 @@ export async function handleRoleSelectionButton(
 	}
 }
 
-export function provideCommands(): Builders.SlashCommandBuilder[] {
+export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
 		.setName("role-selection")
 		.setDescription("Manage the role selection module");
@@ -495,7 +496,9 @@ export function provideCommands(): Builders.SlashCommandBuilder[] {
 					)
 			)
 	);
-	return [cmd];
+	return [
+		{ command: "role-selection", builder: cmd, handler: handleCommand },
+	];
 }
 
 async function createGroup(
