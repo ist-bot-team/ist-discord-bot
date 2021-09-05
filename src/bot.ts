@@ -158,7 +158,18 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 		} else if (interaction.isCommand()) {
 			await interaction.deferReply({ ephemeral: true });
 
-			// TODO: permissions!!
+			const perms: Discord.Permissions | undefined = (
+				interaction.member as Discord.GuildMember
+			)?.permissions;
+			if (
+				!(
+					perms &&
+					perms.has(Discord.Permissions.FLAGS.MANAGE_GUILD, true)
+				)
+			) {
+				await interaction.editReply("Permission denied.");
+				return;
+			}
 
 			await commandHandlers[interaction.commandName]?.(
 				interaction,
