@@ -3,6 +3,7 @@
 import { performance } from "perf_hooks";
 
 import { PrismaClient } from "@prisma/client";
+import * as Discord from "discord.js";
 
 export async function timeFunction(fun: () => Promise<void>): Promise<number> {
 	const t0 = performance.now();
@@ -47,4 +48,15 @@ export function durationString(time: number): string {
 		}
 	}
 	return strs.join(", ");
+}
+
+export async function fetchGalleries(
+	prisma: PrismaClient
+): Promise<Discord.Snowflake[]> {
+	return (
+		(await prisma.config.findFirst({ where: { key: "gallery_channels" } }))
+			?.value ?? ""
+	)
+		.split(",")
+		.filter((c) => c.length);
 }
