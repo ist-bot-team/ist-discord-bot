@@ -8,6 +8,7 @@ import * as Builders from "@discordjs/builders";
 import { PrismaClient } from "@prisma/client";
 
 import { CommandDescriptor } from "../bot.d";
+import { CommandPermission } from "../bot";
 import * as utils from "./utils";
 
 export function provideCommands(): CommandDescriptor[] {
@@ -18,6 +19,7 @@ export function provideCommands(): CommandDescriptor[] {
 				.setName("about")
 				.setDescription("Show general and version information"),
 			handler: handleAboutCommand,
+			permission: CommandPermission.Public,
 		},
 	];
 }
