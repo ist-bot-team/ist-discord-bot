@@ -273,7 +273,7 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 		try {
 			await voiceThreads.handleVoiceLeave(oldState, prisma);
 		} catch (e) {
-			console.error("Someone left a VC, GONE WRONG!!1:", e.message);
+			console.error("Someone left a VC, GONE WRONG!!!:", e.message);
 		}
 	}
 
@@ -281,7 +281,7 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 		try {
 			await voiceThreads.handleVoiceJoin(newState, prisma);
 		} catch (e) {
-			console.error("Someone joined a VC, GONE WRONG!!1:", e.message);
+			console.error("Someone joined a VC, GONE WRONG!!!:", e.message);
 		}
 	}
 });
