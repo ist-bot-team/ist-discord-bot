@@ -16,6 +16,7 @@ import * as roleSelection from "./modules/roleSelection";
 import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
 import * as galleryChannels from "./modules/galleryChannels";
+import * as voiceThreads from "./modules/voiceThreads";
 import * as populate from "./modules/populate";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
@@ -41,6 +42,7 @@ const client = new Discord.Client({
 	intents: [
 		Discord.Intents.FLAGS.GUILDS,
 		Discord.Intents.FLAGS.GUILD_MESSAGES,
+		Discord.Intents.FLAGS.GUILD_VOICE_STATES,
 	],
 });
 
@@ -49,6 +51,7 @@ const commandProviders: CommandProvider[] = [
 	sudo.provideCommands,
 	misc.provideCommands,
 	galleryChannels.provideCommands,
+	voiceThreads.provideCommands,
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};
@@ -270,6 +273,27 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 
 client.on("messageCreate", async (message) => {
 	await galleryChannels.handleMessage(message, prisma);
+});
+
+client.on("voiceStateUpdate", async (oldState, newState) => {
+	if (oldState.channelId === newState.channelId) {
+		return;
+	}
+	if (oldState.channelId !== null) {
+		try {
+			await voiceThreads.handleVoiceLeave(oldState, prisma);
+		} catch (e) {
+			console.error("Someone left a VC, GONE WRONG!!1:", e.message);
+		}
+	}
+
+	if (newState.channelId !== null) {
+		try {
+			await voiceThreads.handleVoiceJoin(newState, prisma);
+		} catch (e) {
+			console.error("Someone joined a VC, GONE WRONG!!1:", e.message);
+		}
+	}
 });
 
 client.login(DISCORD_TOKEN);
