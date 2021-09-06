@@ -32,8 +32,10 @@ services:
         restart: unless-stopped
 ```
 
-2. Run `docker-compose up -d --build`
-3. That's it!
+2. Create a folder named `data` for Docker to store things in
+3. Run `yarn` and `yarn run build` if you're using the source code
+4. Run `docker-compose up -d --build`
+5. That's it!
 
 _You can also use `docker-compose down`, `docker-compose up`, `docker-compose restart` and `docker-compose logs [-f]`._
 
