@@ -116,8 +116,6 @@ const startupChores: Chore[] = [
 				DISCORD_TOKEN as string
 			);
 
-			// TODO: use built-in slash commands permissions
-
 			const useGlobalCommands =
 				GUILD_ID?.toLocaleLowerCase() === "global";
 			await rest.put(
