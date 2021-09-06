@@ -2,8 +2,9 @@
 
 import { PrismaClient } from "@prisma/client";
 import Discord from "discord.js";
-import { getConfigFactory } from "./utils";
 import * as Builders from "@discordjs/builders";
+
+import { getConfigFactory } from "./utils";
 import { CommandDescriptor } from "../bot.d";
 
 const MAX_COMPONENTS_PER_ROW = 5;
@@ -496,6 +497,59 @@ export function provideCommands(): CommandDescriptor[] {
 					)
 			)
 	);
+	cmd.addSubcommandGroup(
+		new Builders.SlashCommandSubcommandGroupBuilder()
+			.setName("tourist")
+			.setDescription("Settings for the special TourIST group")
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("set-info")
+					.setDescription("Change the message or button label")
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("field")
+							.setDescription("Which field to change")
+							.setRequired(true)
+							.addChoice("Message", "message")
+							.addChoice("Label", "label")
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("value")
+							.setDescription("Value to change to")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("move")
+					.setDescription("Set the channel where the message is sent")
+					.addChannelOption(
+						new Builders.SlashCommandChannelOption()
+							.setName("channel")
+							.setDescription("Channel where to move to")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("set-role")
+					.setDescription("Set the TourIST role")
+					.addRoleOption(
+						new Builders.SlashCommandRoleOption()
+							.setName("role")
+							.setDescription("TourIST role")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("info")
+					.setDescription(
+						"Get all information relative to the TourIST role"
+					)
+			)
+	);
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
@@ -957,5 +1011,125 @@ export async function handleCommand(
 					break;
 				}
 			}
+			break;
+		case "tourist":
+			switch (subCommand) {
+				case "set-info":
+					try {
+						const name = interaction.options.getString(
+							"name",
+							true
+						);
+						const value = interaction.options.getString(
+							"value",
+							true
+						);
+
+						if (!["message", "label"].includes(name)) {
+							await interaction.editReply("❌ Invalid name.");
+						}
+
+						const fqkey = `tourist:${name}`;
+
+						await prisma.config.upsert({
+							where: { key: fqkey },
+							update: { value },
+							create: { key: fqkey, value },
+						});
+
+						await interaction.editReply(
+							`✅ Successfully set TourIST ${name}.`
+						);
+					} catch (e) {
+						await interaction.editReply(
+							"❌ Failed to set TourIST info."
+						);
+					}
+					break;
+				case "move":
+					try {
+						const channel = interaction.options.getChannel(
+							"channel",
+							true
+						) as Discord.GuildChannel;
+
+						if (!channel.isText() && !channel.isThread()) {
+							await interaction.editReply("❌ Invalid channel.");
+						}
+
+						const fqkey = `tourist:channel_id`;
+
+						await prisma.config.upsert({
+							where: { key: fqkey },
+							update: { value: channel.id },
+							create: { key: fqkey, value: channel.id },
+						});
+
+						await interaction.editReply(
+							`✅ Successfully set TourIST channel.`
+						);
+					} catch (e) {
+						await interaction.editReply(
+							"❌ Failed to set TourIST channel."
+						);
+					}
+					break;
+				case "set-role":
+					try {
+						const role = interaction.options.getRole(
+							"role",
+							true
+						) as Discord.Role;
+
+						const fqkey = `tourist:role_id`;
+
+						await prisma.config.upsert({
+							where: { key: fqkey },
+							update: { value: role.id },
+							create: { key: fqkey, value: role.id },
+						});
+
+						await interaction.editReply(
+							`✅ Successfully set TourIST role.`
+						);
+					} catch (e) {
+						await interaction.editReply(
+							"❌ Failed to set TourIST role."
+						);
+					}
+					break;
+				case "info":
+					try {
+						const getConfig = getConfigFactory(prisma, "tourist");
+						const message =
+							(await getConfig("message")) ?? "[UNSET]";
+						const label = (await getConfig("label")) ?? "[UNSET]";
+						const channel = await getConfig("channel_id");
+						const role = await getConfig("role_id");
+						const msgId = await getConfig("message_id");
+
+						const embed = new Discord.MessageEmbed()
+							.setTitle("TourIST Information")
+							.addField("Message", message)
+							.addField("Label", label)
+							.addField(
+								"Channel",
+								channel ? `<#${channel}>` : "[UNSET]"
+							)
+							.addField("Role", role ? `<@&${role}>` : "[UNSET]")
+							.addField(
+								"Location",
+								channel && msgId
+									? `[Here](https://discord.com/channels/${process.env.GUILD_ID}/${channel}/${msgId})`
+									: "[UNSET]"
+							);
+						await interaction.editReply({ embeds: [embed] });
+					} catch (e) {
+						await interaction.editReply("❌ Something went wrong.");
+					}
+
+					break;
+			}
+			break;
 	}
 }
