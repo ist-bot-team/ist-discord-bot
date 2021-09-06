@@ -496,9 +496,7 @@ export function provideCommands(): CommandDescriptor[] {
 					)
 			)
 	);
-	return [
-		{ command: "role-selection", builder: cmd, handler: handleCommand },
-	];
+	return [{ builder: cmd, handler: handleCommand }];
 }
 
 async function createGroup(

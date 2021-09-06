@@ -15,7 +15,6 @@ export type InteractionHandlers<T> = {
 };
 
 export interface CommandDescriptor {
-	command: string;
 	builder: SlashCommandBuilder;
 	handler: InteractionHandler<Discord.CommandInteraction>;
 	permission?: CommandPermission;
