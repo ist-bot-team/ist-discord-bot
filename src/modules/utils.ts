@@ -25,3 +25,26 @@ export function getConfigFactory(
 		return result;
 	};
 }
+
+export function divmod(a: number, b: number): [number, number] {
+	return [Math.floor(a / b), a % b];
+}
+
+export function durationString(time: number): string {
+	time = Math.round(time / 1000); // ms -> secs
+	let tmp;
+	const strs: string[] = [],
+		seps: { [label: string]: number } = {
+			day: 24 * 60 * 60,
+			hour: 60 * 60,
+			min: 60,
+			sec: 1,
+		};
+	for (const [label, secs] of Object.entries(seps)) {
+		[tmp, time] = divmod(time, secs);
+		if (tmp) {
+			strs.push(tmp + " " + label + (tmp === 1 ? "" : "s"));
+		}
+	}
+	return strs.join(", ");
+}
