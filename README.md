@@ -11,13 +11,23 @@ version: "3.8"
 
 services:
     ist-discord-bot:
-        image: ist-bot-team/ist-discord-bot:v2.0.0 # or 'build: .' if working locally
+        ## EITHER:
+        image: ist-bot-team/ist-discord-bot:v2.0.0
+        ## OR:
+        build:
+            context: .
+            args:
+                DATABASE_URL: file:./data/bot.db
+        ## END;
         volumes:
             - type: bind
               source: ./data
               target: /app/data
         environment:
             DISCORD_TOKEN: PLACE_BOT_TOKEN_HERE
+            GUILD_ID: PLACE_MAIN_GUILD_ID_HERE # or "GLOBAL" to use in multiple guilds (1hr roll-out time)
+            ADMIN_ID: PLACE_ADMIN_ROLE_ID_HERE
+            ADMIN_PLUS_ID: PLACE_ADMIN_PLUS_ROLE_ID_HERE
             TZ: Europe/Lisbon # default timezone for crontab and other date related stuff
         restart: unless-stopped
 ```

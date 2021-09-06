@@ -35,6 +35,8 @@ const ATTENDANCE_NO_ONE = "*No one*";
 export const handleAttendanceButton = async (
 	interaction: ButtonInteraction
 ): Promise<void> => {
+	await interaction.deferReply({ ephemeral: true });
+
 	const action = interaction.customId.split(":")[1];
 	let fieldIndex = -1;
 
