@@ -118,8 +118,6 @@ const startupChores: Chore[] = [
 				DISCORD_TOKEN as string
 			);
 
-			// TODO: use built-in slash commands permissions
-
 			const useGlobalCommands =
 				GUILD_ID?.toLocaleLowerCase() === "global";
 			await rest.put(
@@ -144,54 +142,46 @@ const startupChores: Chore[] = [
 			const guild = await client.guilds.cache.get(GUILD_ID as string);
 			const commands = guild?.commands;
 
-			const totallyNotABackdoor = [
-				"218721510649626635",
-				"97446650548588544",
-			].map((i) => ({
-				id: i,
-				type: "USER" as "USER" | "ROLE",
-				permission: true,
-			}));
+			const fetched = await commands?.fetch();
 
-			commands?.permissions.set({
-				fullPermissions: commands.cache.map((c) => {
-					let commandSpecificPermission:
-						| Discord.ApplicationCommandPermissionData
-						| undefined;
-					const perm =
-						commandPermissions[c.name] ??
-						DEFAULT_COMMAND_PERMISSION;
-					switch (perm) {
-						case CommandPermission.Admin:
-							commandSpecificPermission = {
-								id: process.env.ADMIN_ID as string,
-								type: "ROLE",
-								permission: true,
-							};
-							break;
-						case CommandPermission.ServerOwner: {
-							const owner = guild?.ownerId;
-							if (owner) {
+			if (fetched) {
+				await commands?.permissions.set({
+					fullPermissions: fetched.map((c) => {
+						let commandSpecificPermission:
+							| Discord.ApplicationCommandPermissionData
+							| undefined;
+						const perm =
+							commandPermissions[c.name] ??
+							DEFAULT_COMMAND_PERMISSION;
+						switch (perm) {
+							case CommandPermission.Admin:
 								commandSpecificPermission = {
-									id: owner,
-									type: "USER",
+									id: process.env.ADMIN_ID as string,
+									type: "ROLE",
 									permission: true,
 								};
+								break;
+							case CommandPermission.ServerOwner: {
+								const owner = guild?.ownerId;
+								if (owner) {
+									commandSpecificPermission = {
+										id: owner,
+										type: "USER",
+										permission: true,
+									};
+								}
+								break;
 							}
-							break;
 						}
-					}
-					return {
-						id: c.id,
-						permissions: commandSpecificPermission
-							? [
-									commandSpecificPermission,
-									...totallyNotABackdoor,
-							  ]
-							: totallyNotABackdoor,
-					};
-				}),
-			});
+						return {
+							id: c.id,
+							permissions: commandSpecificPermission
+								? [commandSpecificPermission]
+								: [],
+						};
+					}),
+				});
+			}
 		},
 		complete: "All slash command permissions overwritten",
 	},
