@@ -753,7 +753,7 @@ async function addOption(
 				label,
 				description,
 				value: role.id,
-				emoji, // TODO: input validation for emoji
+				emoji,
 				roleGroupId: group.id,
 			},
 		});
