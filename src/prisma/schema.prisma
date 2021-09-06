@@ -1,10 +1,11 @@
 datasource db {
     provider = "sqlite"
-    url      = "file:./data/bot.db"
+    url      = env("DATABASE_URL")
 }
 
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
+    previewFeatures = ["referentialActions"]
 }
 
 model Config {
@@ -22,4 +23,29 @@ model AttendancePoll {
     channelId String @map("channel_id") /// channel where to post the poll
 
     @@map("attendance_polls")
+}
+
+model RoleGroup {
+    id          String            @id
+    mode        String
+    placeholder String
+    message     String
+    minValues   Int?              @map("min_values")
+    maxValues   Int?              @map("max_values")
+    channelId   String            @map("channel_id")
+    messageId   String?           @map("message_id")
+    options     RoleGroupOption[]
+
+    @@map("role_groups")
+}
+
+model RoleGroupOption {
+    label       String
+    description String
+    value       String     @id
+    emoji       String?
+    RoleGroup   RoleGroup? @relation(fields: [roleGroupId], references: [id], onDelete: Cascade)
+    roleGroupId String?    @map("role_group_id")
+
+    @@map("role_group_options")
 }
