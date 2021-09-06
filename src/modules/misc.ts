@@ -5,8 +5,6 @@ import * as fs from "fs";
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
-import { PrismaClient } from "@prisma/client";
-
 import { CommandDescriptor } from "../bot.d";
 import { CommandPermission } from "../bot";
 import * as utils from "./utils";
@@ -24,9 +22,7 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleAboutCommand(
-	interaction: Discord.CommandInteraction,
-	_prisma: PrismaClient,
-	client: Discord.Client
+	interaction: Discord.CommandInteraction
 ): Promise<void> {
 	let pkg: Record<string, string>;
 	try {
@@ -62,7 +58,8 @@ export async function handleAboutCommand(
 					}))
 				)
 				.setFooter(
-					"Uptime: " + utils.durationString(client.uptime ?? 0)
+					"Uptime: " +
+						utils.durationString(interaction.client.uptime ?? 0)
 				),
 		],
 	});

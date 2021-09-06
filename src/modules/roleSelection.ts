@@ -808,8 +808,7 @@ async function removeOption(
 // TODO: dry this a bit
 export async function handleCommand(
 	interaction: Discord.CommandInteraction,
-	prisma: PrismaClient,
-	client: Discord.Client
+	prisma: PrismaClient
 ): Promise<void> {
 	const subCommandGroup = interaction.options.getSubcommandGroup();
 	const subCommand = interaction.options.getSubcommand();
@@ -988,7 +987,7 @@ export async function handleCommand(
 				case "send-messages": {
 					try {
 						await sendRoleSelectionMessages(
-							client,
+							interaction.client,
 							prisma,
 							interaction.options.getBoolean(
 								"edit-existing",
@@ -1090,7 +1089,7 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							`✅ Successfully set TourIST role.`
+							"✅ Successfully set TourIST role."
 						);
 					} catch (e) {
 						await interaction.editReply(
