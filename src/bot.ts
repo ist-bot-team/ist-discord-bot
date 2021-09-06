@@ -17,7 +17,6 @@ import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
 import * as galleryChannels from "./modules/galleryChannels";
 import * as voiceThreads from "./modules/voiceThreads";
-import * as populate from "./modules/populate";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
@@ -80,13 +79,6 @@ const startupChores: Chore[] = [
 				})
 			),
 		complete: "All attendance polls scheduled",
-	},
-	{
-		summary: "Populate database with mock/default/test data",
-		fn: async () => {
-			await populate.populateDatabase(prisma);
-		},
-		complete: "Database fully populated with mock/default/test data",
 	},
 	{
 		summary: "Send role selection messages",
