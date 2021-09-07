@@ -1020,10 +1020,9 @@ export async function handleCommand(
 							"name",
 							true
 						);
-						const value = interaction.options.getString(
-							"value",
-							true
-						);
+						const value = interaction.options
+							.getString("value", true)
+							.replace(/\\n/g, "\n");
 
 						if (!["message", "label"].includes(name)) {
 							await interaction.editReply("❌ Invalid name.");
