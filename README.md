@@ -17,7 +17,7 @@ services:
         build:
             context: .
             args:
-                DATABASE_URL: file:./data/bot.db
+                DATABASE_URL: file:/app/data/bot.db
         ## END;
         volumes:
             - type: bind
