@@ -1016,19 +1016,19 @@ export async function handleCommand(
 			switch (subCommand) {
 				case "set-info":
 					try {
-						const name = interaction.options.getString(
-							"name",
+						const field = interaction.options.getString(
+							"field",
 							true
 						);
 						const value = interaction.options
 							.getString("value", true)
 							.replace(/\\n/g, "\n");
 
-						if (!["message", "label"].includes(name)) {
+						if (!["message", "label"].includes(field)) {
 							await interaction.editReply("❌ Invalid name.");
 						}
 
-						const fqkey = `tourist:${name}`;
+						const fqkey = `tourist:${field}`;
 
 						await prisma.config.upsert({
 							where: { key: fqkey },
@@ -1037,7 +1037,7 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							`✅ Successfully set TourIST ${name}.`
+							`✅ Successfully set TourIST ${field}.`
 						);
 					} catch (e) {
 						await interaction.editReply(
