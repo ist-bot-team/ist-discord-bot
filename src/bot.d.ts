@@ -6,8 +6,7 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 
 export type InteractionHandler<T> = (
 	interaction: T,
-	prisma: PrismaClient,
-	client: Discord.Client
+	prisma: PrismaClient
 ) => Promise<void>;
 
 export type InteractionHandlers<T> = {

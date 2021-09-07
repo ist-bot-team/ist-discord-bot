@@ -46,6 +46,7 @@ const client = new Discord.Client({
 });
 
 const commandProviders: CommandProvider[] = [
+	attendance.provideCommands,
 	roleSelection.provideCommands,
 	sudo.provideCommands,
 	misc.provideCommands,
@@ -72,6 +73,7 @@ const startupChores: Chore[] = [
 		fn: async () =>
 			await attendance.scheduleAttendancePolls(
 				client,
+				prisma,
 				await prisma.attendancePoll.findMany({
 					where: {
 						type: "scheduled",
@@ -213,14 +215,12 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 			if (interaction.isButton()) {
 				await buttonHandlers[prefix]?.(
 					interaction as Discord.ButtonInteraction,
-					prisma,
-					client
+					prisma
 				);
 			} else if (interaction.isSelectMenu()) {
 				await menuHandlers[prefix]?.(
 					interaction as Discord.SelectMenuInteraction,
-					prisma,
-					client
+					prisma
 				);
 			}
 		} else if (interaction.isCommand()) {
@@ -244,8 +244,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 
 			await commandHandlers[interaction.commandName]?.(
 				interaction,
-				prisma,
-				client
+				prisma
 			);
 		}
 	} catch (e) {
