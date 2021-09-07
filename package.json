@@ -40,7 +40,8 @@
 	"scripts": {
 		"prepare": "husky install",
 		"build": "tsc",
-		"start": "node ."
+		"start": "node .",
+		"start:docker": "prisma migrate deploy && node ."
 	},
 	"lint-staged": {
 		"**/*": "prettier --write --ignore-unknown"
