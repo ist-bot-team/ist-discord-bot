@@ -574,7 +574,7 @@ async function createGroup(
 			];
 		}
 
-		message = message.replace("\\n", "\n");
+		message = message.replace(/\\n/g, "\n");
 
 		if (!channel.isText()) {
 			return [false, "Invalid channel: must be a text channel"];
