@@ -4,8 +4,9 @@ ENV DATABASE_URL ${DATABASE_URL}
 WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
-RUN yarn
+RUN yarn install --frozen-lockfile
 COPY ./ ./
+RUN yarn run prisma generate
 RUN yarn build
 
 FROM node:16.6.1-alpine3.14
