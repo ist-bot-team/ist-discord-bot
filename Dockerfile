@@ -5,8 +5,8 @@ WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
 RUN yarn
-COPY ./src/prisma/schema.prisma .
-RUN yarn run prisma migrate deploy --schema=./schema.prisma
-RUN yarn run prisma generate --schema=./schema.prisma
+COPY ./src/prisma ./prisma
+RUN yarn run prisma migrate deploy --schema=./prisma/schema.prisma
+RUN yarn run prisma generate --schema=./prisma/schema.prisma
 COPY ./dist ./dist
 CMD [ "yarn", "start" ]
