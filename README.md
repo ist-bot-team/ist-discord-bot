@@ -1,8 +1,14 @@
 # IST Discord Bot
 
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/ist-bot-team/ist-discord-bot?label=version)
+[![Discord](https://img.shields.io/discord/759576132227694642?label=discord&logo=discord)](https://discord.leic.pt)
+![GitHub](https://img.shields.io/github/license/ist-bot-team/ist-discord-bot)
+
 Discord bot to manage the IST Hub server -- join [here](https://discord.leic.pt).
 
 ### Running
+
+#### Production
 
 1. Create a `docker-compose.yml` file as below:
 
@@ -12,7 +18,7 @@ version: "3.8"
 services:
     ist-discord-bot:
         ## EITHER:
-        image: ist-bot-team/ist-discord-bot:v2.0.0
+        image: ghcr.io/ist-bot-team/ist-discord-bot:2
         ## OR:
         build:
             context: .
@@ -33,9 +39,8 @@ services:
 ```
 
 2. Create a folder named `data` for Docker to store things in
-3. Run `yarn` and `yarn run build` if you're using the source code
-4. Run `docker-compose up -d --build`
-5. That's it!
+3. Run `docker-compose up -d --build`
+4. That's it!
 
 _You can also use `docker-compose down`, `docker-compose up`, `docker-compose restart` and `docker-compose logs [-f]`._
 
