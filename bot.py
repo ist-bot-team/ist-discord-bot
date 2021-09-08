@@ -244,8 +244,8 @@ async def clean_no_context(ctx):
 @bot.event
 async def on_member_join(member):
     await channels["entradas"].send(
-        'Bem vind@ {}! Vai ao canal {} para escolheres o teu curso e a {} para escolheres outras roles.'.format(
-            member.mention, channels["escolhe-o-teu-curso"].mention, channels["self-roles"].mention))
+        'Bem vind@ {}! Vai ao canal {} para escolheres o teu curso.'.format(
+            member.mention, channels["escolhe-o-teu-curso"].mention))
 
 @bot.event
 async def on_raw_reaction_add(payload):
