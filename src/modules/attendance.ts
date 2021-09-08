@@ -63,7 +63,7 @@ export const handleAttendanceButton = async (
 		components: [ATTENDANCE_POLL_ACTION_ROW],
 	});
 
-	await interaction.reply({ content: "Response recorded!", ephemeral: true });
+	await interaction.editReply("Response recorded!");
 };
 
 export const getNewEmbed = (
