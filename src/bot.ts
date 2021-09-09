@@ -17,6 +17,7 @@ import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
 import * as galleryChannels from "./modules/galleryChannels";
 import * as voiceThreads from "./modules/voiceThreads";
+import * as welcome from "./modules/welcome";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
@@ -42,6 +43,7 @@ const client = new Discord.Client({
 		Discord.Intents.FLAGS.GUILDS,
 		Discord.Intents.FLAGS.GUILD_MESSAGES,
 		Discord.Intents.FLAGS.GUILD_VOICE_STATES,
+		Discord.Intents.FLAGS.GUILD_MEMBERS, // THIS IS A PRIVELEGED INTENT! MANUAL ACTION REQUIRED TO ENABLE!
 	],
 });
 
@@ -52,6 +54,7 @@ const commandProviders: CommandProvider[] = [
 	misc.provideCommands,
 	galleryChannels.provideCommands,
 	voiceThreads.provideCommands,
+	welcome.provideCommands,
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};
@@ -248,7 +251,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 			);
 		}
 	} catch (e) {
-		console.error("Problem handling interaction: " + e.message);
+		console.error("Problem handling interaction: " + (e as Error).message);
 	}
 });
 
@@ -264,7 +267,10 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 		try {
 			await voiceThreads.handleVoiceLeave(oldState, prisma);
 		} catch (e) {
-			console.error("Someone left a VC, GONE WRONG!!!:", e.message);
+			console.error(
+				"Someone left a VC, GONE WRONG!!!:",
+				(e as Error).message
+			);
 		}
 	}
 
@@ -272,9 +278,16 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 		try {
 			await voiceThreads.handleVoiceJoin(newState, prisma);
 		} catch (e) {
-			console.error("Someone joined a VC, GONE WRONG!!!:", e.message);
+			console.error(
+				"Someone joined a VC, GONE WRONG!!!:",
+				(e as Error).message
+			);
 		}
 	}
+});
+
+client.on("guildMemberAdd", async (member) => {
+	await welcome.handleGuildJoin(member, prisma);
 });
 
 client.login(DISCORD_TOKEN);
