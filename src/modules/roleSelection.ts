@@ -51,7 +51,9 @@ export async function sendRoleSelectionMessages(
 			],
 		});
 	} catch (e) {
-		console.error(`Failed to inject tourist group: ${e.message}`);
+		console.error(
+			`Failed to inject tourist group: ${(e as Error).message}`
+		);
 	}
 
 	for (const group of groups) {
@@ -169,7 +171,9 @@ export async function sendRoleSelectionMessages(
 			}
 		} catch (e) {
 			console.error(
-				`Could not send role selection message for group ${group.id} because: ${e.message}`
+				`Could not send role selection message for group ${
+					group.id
+				} because: ${(e as Error).message}`
 			);
 		}
 	}
@@ -928,7 +932,7 @@ export async function handleCommand(
 					} catch (e) {
 						console.error(
 							"Could not list role groups because: ",
-							e.message
+							(e as Error).message
 						);
 						await interaction.editReply(
 							"❌ Failed to list role groups."
@@ -1001,7 +1005,7 @@ export async function handleCommand(
 					} catch (e) {
 						console.error(
 							"Could not send role selection messages:",
-							e.message
+							(e as Error).message
 						);
 						await interaction.editReply(
 							"❌ Failed to send role selection messages."
