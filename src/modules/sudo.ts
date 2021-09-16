@@ -7,11 +7,20 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 
 export function provideCommands(): CommandDescriptor[] {
+	const sudo = new Builders.SlashCommandBuilder()
+		.setName("sudo")
+		.setDescription("Toggle enhanced administrator permissions");
+	sudo.addUserOption(
+		new Builders.SlashCommandUserOption()
+			.setName("target")
+			.setDescription(
+				"Must have permissions to run sudo themselves; defaults to self"
+			)
+			.setRequired(false)
+	);
 	return [
 		{
-			builder: new Builders.SlashCommandBuilder()
-				.setName("sudo")
-				.setDescription("Toggle enhanced administrator permissions"),
+			builder: sudo,
 			handler: handleSudoCommand,
 		},
 		{
@@ -29,9 +38,22 @@ export async function handleSudoCommand(
 	interaction: Discord.CommandInteraction
 ): Promise<void> {
 	try {
-		const roles = interaction.member
+		const target = interaction.options.getMember(
+			"target",
+			false
+		) as Discord.GuildMember | null;
+
+		const roles = (target ?? interaction.member)
 			?.roles as Discord.GuildMemberRoleManager;
+		const aId = process.env.ADMIN_ID as string;
 		const apId = process.env.ADMIN_PLUS_ID as string;
+
+		if (!roles.cache.has(aId) && !roles.cache.has(apId)) {
+			await interaction.editReply(
+				"❌ User does not have administrator permissions."
+			);
+			return;
+		}
 
 		if (roles.cache.has(apId)) {
 			await roles.remove(apId);
