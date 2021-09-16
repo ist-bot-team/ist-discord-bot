@@ -10,6 +10,29 @@ import { CommandPermission } from "../bot";
 import * as utils from "./utils";
 
 export function provideCommands(): CommandDescriptor[] {
+	const say = new Builders.SlashCommandBuilder()
+		.setName("say")
+		.setDescription("Sends a message to a channel");
+	say.addStringOption(
+		new Builders.SlashCommandStringOption()
+			.setName("message")
+			.setDescription("What message to send")
+			.setRequired(true)
+	);
+	say.addChannelOption(
+		new Builders.SlashCommandChannelOption()
+			.setName("channel")
+			.setDescription("Where to send the message; defaults to current")
+			.setRequired(false)
+	);
+	say.addBooleanOption(
+		new Builders.SlashCommandBooleanOption()
+			.setName("allow-mentions")
+			.setDescription(
+				"Whether to allow mentions in the message; defaults to false"
+			)
+			.setRequired(false)
+	);
 	return [
 		{
 			builder: new Builders.SlashCommandBuilder()
@@ -17,6 +40,10 @@ export function provideCommands(): CommandDescriptor[] {
 				.setDescription("Show general and version information"),
 			handler: handleAboutCommand,
 			permission: CommandPermission.Public,
+		},
+		{
+			builder: say,
+			handler: handleSayCommand,
 		},
 	];
 }
@@ -63,4 +90,28 @@ export async function handleAboutCommand(
 				),
 		],
 	});
+}
+
+export async function handleSayCommand(
+	interaction: Discord.CommandInteraction
+): Promise<void> {
+	try {
+		const channel = (interaction.options.getChannel("channel", false) ||
+			interaction.channel) as Discord.GuildChannel | null;
+		const message = interaction.options.getString("message", true);
+		const allowMentions =
+			interaction.options.getBoolean("allow-mentions", false) ?? false;
+
+		if (channel && channel.isText()) {
+			await channel.send({
+				content: message.replace(/\\n/g, "\n"),
+				allowedMentions: allowMentions ? undefined : { parse: [] },
+			});
+			await interaction.editReply("✅ Successfully sent message.");
+			return;
+		}
+		throw new Error("???");
+	} catch (e) {
+		await interaction.editReply("❌ Something went wrong.");
+	}
 }
