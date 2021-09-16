@@ -77,6 +77,14 @@ export async function sendRoleSelectionMessages(
 				let components;
 
 				if (group.mode === "menu") {
+					if (group.options.length < (group.maxValues ?? 1)) {
+						throw new Error(
+							`Requires at least ${
+								group.maxValues ?? 1
+							} options, but got ${group.options.length}`
+						);
+					}
+
 					components = [
 						new Discord.MessageActionRow().addComponents(
 							new Discord.MessageSelectMenu()
@@ -182,18 +190,18 @@ export async function sendRoleSelectionMessages(
 async function handleRoleSelection(
 	groupId: string,
 	roles: Discord.GuildMemberRoleManager,
-	roleToAdd: string,
+	selectedRoles: string[],
 	prisma: PrismaClient
 ) {
 	const touristExclusive = (
 		(await getConfigFactory(prisma, "tourist")("exclusive_role_groups")) ??
 		"degree,year"
-	).split(",");
+	).split(","); // TODO: allow changing this config with commands
 
 	const groupRoles =
 		groupId === TOURIST_GROUP_ID
 			? [
-					roleToAdd,
+					selectedRoles,
 					...(
 						await prisma.roleGroup.findMany({
 							where: {
@@ -223,8 +231,8 @@ async function handleRoleSelection(
 			  );
 
 	try {
-		if (groupRoles.includes(roleToAdd)) {
-			const rolesToSet = [roleToAdd];
+		if (selectedRoles.every((r) => groupRoles.includes(r))) {
+			const rolesToSet = [...selectedRoles];
 			for (const id of roles.cache.keys()) {
 				if (!groupRoles.includes(id)) {
 					rolesToSet.push(id);
@@ -248,9 +256,8 @@ export async function handleRoleSelectionMenu(
 
 	const groupId = interaction.customId.split(":")[1];
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
-	const roleToAdd = interaction.values[0]; // FIXME: this won't work for multiselects!
 
-	if (await handleRoleSelection(groupId, roles, roleToAdd, prisma)) {
+	if (await handleRoleSelection(groupId, roles, interaction.values, prisma)) {
 		await interaction.editReply("✅ Role applied.");
 	} else {
 		await interaction.editReply("❌ Failed to apply role.");
@@ -266,7 +273,7 @@ export async function handleRoleSelectionButton(
 	const sp = interaction.customId.split(":");
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 
-	if (await handleRoleSelection(sp[1], roles, sp[2], prisma)) {
+	if (await handleRoleSelection(sp[1], roles, [sp[2]], prisma)) {
 		await interaction.editReply("✅ Role applied.");
 	} else {
 		await interaction.editReply("❌ Failed to apply role.");
@@ -313,7 +320,6 @@ export function provideCommands(): CommandDescriptor[] {
 							.setDescription("Message sent with menu/buttons")
 							.setRequired(true)
 					)
-					// FIXME: no multiselect support yet, so not asking for minValues/maxValues
 					.addChannelOption(
 						new Builders.SlashCommandChannelOption()
 							.setName("channel")
@@ -321,6 +327,22 @@ export function provideCommands(): CommandDescriptor[] {
 								"Channel where to send role selection message"
 							)
 							.setRequired(true)
+					)
+					.addIntegerOption(
+						new Builders.SlashCommandIntegerOption()
+							.setName("min")
+							.setDescription(
+								"At least how many options must be selected; default 1"
+							)
+							.setRequired(false)
+					)
+					.addIntegerOption(
+						new Builders.SlashCommandIntegerOption()
+							.setName("max")
+							.setDescription(
+								"At most how many options may be selected; default 1"
+							)
+							.setRequired(false)
 					)
 			)
 			.addSubcommand(
@@ -371,6 +393,29 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandStringOption()
 							.setName("value")
 							.setDescription("New value to set")
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("set-num")
+					.setDescription(
+						"Set how many options may be selected at once"
+					)
+					.addIntegerOption(
+						new Builders.SlashCommandIntegerOption()
+							.setName("min")
+							.setDescription(
+								"At least how many options must be selected"
+							)
+							.setRequired(true)
+					)
+					.addIntegerOption(
+						new Builders.SlashCommandIntegerOption()
+							.setName("max")
+							.setDescription(
+								"At most how many options may be selected"
+							)
 							.setRequired(true)
 					)
 			)
@@ -563,11 +608,15 @@ async function createGroup(
 	mode: string,
 	placeholder: string,
 	message: string,
+	minValues: number,
+	maxValues: number,
 	channel: Discord.GuildChannel
 ): Promise<[boolean, string]> {
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
 			return [false, "Invalid id: must be snake_case"];
+		} else if (id === TOURIST_GROUP_ID) {
+			return [false, "Tourist group ID must be unique in the database"];
 		}
 
 		const goodModes = ["buttons", "menu"];
@@ -579,6 +628,19 @@ async function createGroup(
 		}
 
 		message = message.replace(/\\n/g, "\n");
+
+		if (
+			minValues < 0 ||
+			minValues > 25 ||
+			maxValues < 0 ||
+			maxValues > 25 ||
+			minValues > maxValues
+		) {
+			return [
+				false,
+				"Minimum and maximum number of options must be between 0 and 25 and min<=max",
+			];
+		}
 
 		if (!channel.isText()) {
 			return [false, "Invalid channel: must be a text channel"];
@@ -593,6 +655,8 @@ async function createGroup(
 						mode,
 						placeholder,
 						message,
+						minValues,
+						maxValues,
 						channelId: channel.id,
 					},
 				})
@@ -657,6 +721,38 @@ async function editGroup(
 	}
 }
 
+async function setNumGroup(
+	prisma: PrismaClient,
+	id: string,
+	minValues: number,
+	maxValues: number
+): Promise<true | string> {
+	try {
+		if (!id.match(/^[a-z0-9_]+$/)) {
+			return "Invalid id: must be snake_case";
+		}
+
+		if (
+			minValues < 0 ||
+			minValues > 25 ||
+			maxValues < 0 ||
+			maxValues > 25 ||
+			minValues > maxValues
+		) {
+			return "Minimum and maximum number of options must be between 0 and 25 and min<=max";
+		}
+
+		await prisma.roleGroup.update({
+			where: { id },
+			data: { minValues, maxValues },
+		});
+
+		return true;
+	} catch (e) {
+		return "Something went wrong; possibly, no role group was found with that ID";
+	}
+}
+
 async function moveGroup(
 	prisma: PrismaClient,
 	id: string,
@@ -699,6 +795,7 @@ async function viewGroup(
 				**Mode:** ${group.mode}
 				**Placeholder:** ${group.placeholder}
 				**Message:** ${group.message}
+				**Value Constraints:** Min ${group.minValues}, Max ${group.maxValues}
 				**Channel:** <#${group.channelId}>
 				**Message:** ${
 					group.messageId
@@ -826,6 +923,8 @@ export async function handleCommand(
 						interaction.options.getString("mode", true),
 						interaction.options.getString("placeholder", true),
 						interaction.options.getString("message", true),
+						interaction.options.getInteger("min", false) ?? 1,
+						interaction.options.getInteger("max", false) ?? 1,
 						interaction.options.getChannel(
 							"channel",
 							true
@@ -869,6 +968,25 @@ export async function handleCommand(
 						id,
 						interaction.options.getString("name", true),
 						interaction.options.getString("value", true)
+					);
+					if (res === true) {
+						await interaction.editReply(
+							`✅ Role selection group \`${id}\` successfully edited.`
+						);
+					} else {
+						await interaction.editReply(
+							`❌ Could not edit group because: **${res}**`
+						);
+					}
+					break;
+				}
+				case "set-num": {
+					const id = interaction.options.getString("id", true);
+					const res = await setNumGroup(
+						prisma,
+						id,
+						interaction.options.getInteger("min", true),
+						interaction.options.getInteger("max", true)
 					);
 					if (res === true) {
 						await interaction.editReply(
