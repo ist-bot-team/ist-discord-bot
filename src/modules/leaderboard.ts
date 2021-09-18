@@ -2,7 +2,6 @@ import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
-import { SlashCommandSubcommandBuilder } from "@discordjs/builders";
 
 import * as utils from "./utils";
 
@@ -11,10 +10,10 @@ const MAX_PEOPLE = 50;
 type UsersCharacterCount = Discord.Collection<Discord.Snowflake, number>;
 
 export async function getUsersCharacterCount(
-	guild: Discord.Guild
+	guild: Discord.Guild,
+	onlyCountAfter?: Date
 ): Promise<[UsersCharacterCount, number, number, Discord.Channel[]]> {
 	// TODO: checkpoint
-	// TODO: just last 30 days
 
 	const chars: UsersCharacterCount = new Discord.Collection();
 	const failed: (Discord.TextChannel | Discord.ThreadChannel)[] = [];
@@ -29,11 +28,20 @@ export async function getUsersCharacterCount(
 		const messages = await channel.messages.fetch();
 		for (const [_id, msg] of messages) {
 			if (!msg.deleted && msg.author && !msg.author.bot) {
-				chars.set(
-					msg.author.id,
-					(chars.get(msg.author.id) ?? 0) + msg.content.length
-				);
-				msgCount++;
+				if (
+					onlyCountAfter === undefined ||
+					(msg.editedAt ?? msg.createdAt) >= onlyCountAfter
+				) {
+					chars.set(
+						msg.author.id,
+						(chars.get(msg.author.id) ?? 0) + msg.content.length
+					);
+					msgCount++;
+				} else {
+					// ? FIXME: TODO: !!! SHOULD A BREAK BE HERE?
+					// * would really help efficiency but I don't know if messages are sorted
+					// * either way recently edited messages wouldn't be counted
+				}
 			}
 		}
 	});
@@ -48,10 +56,19 @@ export async function getUsersCharacterCount(
 }
 
 export async function sendLeaderboard(
-	sendChannel: Discord.TextChannel | Discord.ThreadChannel
+	sendChannel: Discord.TextChannel | Discord.ThreadChannel,
+	period: string
 ): Promise<[number, number, Discord.Channel[], Discord.Snowflake]> {
+	const now = new Date().getTime();
+	const day = 1000 * 60 * 60 * 24;
+
 	const [chars, channels, msgs, failed] = await getUsersCharacterCount(
-		sendChannel.guild
+		sendChannel.guild,
+		period === "month"
+			? new Date(now - 30 * day)
+			: period === "week"
+			? new Date(now - 7 * day)
+			: undefined
 	);
 
 	chars.sort((v1, v2, k1, k2) => v2 - v1 || parseInt(k1) - parseInt(k2));
@@ -70,7 +87,11 @@ export async function sendLeaderboard(
 		);
 	}
 
-	lines.unshift("**__LEADERBOARD__** *(por número de caracteres)*");
+	lines.unshift(
+		"**__LEADERBOARD__** *(by character count)* `[" +
+			period.toUpperCase() +
+			"]`"
+	);
 
 	const sent = await sendChannel.send({
 		content: lines.join("\n"),
@@ -87,9 +108,20 @@ export function provideCommands(): CommandDescriptor[] {
 			"Manage leaderboard that sorts server members by characters sent"
 		);
 	cmd.addSubcommand(
-		new SlashCommandSubcommandBuilder()
+		new Builders.SlashCommandSubcommandBuilder()
 			.setName("send")
 			.setDescription("Calculate and send a new leaderboard")
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("time-period")
+					.setDescription(
+						"How recent do messages have to be to be considered; defaults to all"
+					)
+					.setRequired(false)
+					.addChoice("All messages", "all")
+					.addChoice("Last 30 days", "month")
+					.addChoice("Last 7 days", "week")
+			)
 	);
 	return [
 		{
@@ -109,16 +141,21 @@ export async function handleCommand(
 					throw new Error("Channel must exist");
 				}
 				// TODO: if one is already being sent, don't allow another user to run command
+				const period =
+					interaction.options.getString("time-period", false) ??
+					"all";
 				await interaction.editReply(
-					`Will send a leaderboard to ${interaction.channel}, but calculations are necessary.\nThis may take a while...`
+					`Will send a leaderboard (period: ${period}) to ${interaction.channel}, but calculations are necessary.\nThis may take a while...`
 				);
+
 				const [delta, [channels, msgs, failed, msgId]] =
 					(await utils.timeFunction(
 						async () =>
 							await sendLeaderboard(
 								interaction.channel as
 									| Discord.TextChannel
-									| Discord.ThreadChannel
+									| Discord.ThreadChannel,
+								period
 							)
 					)) as [
 						number,
