@@ -22,6 +22,7 @@ services:
         ## OR:
         build:
             context: .
+            dockerfile: Dockerfile.dev
             args:
                 DATABASE_URL: file:/app/data/bot.db
         ## END;
