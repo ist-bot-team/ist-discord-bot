@@ -8,6 +8,7 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 import { CommandPermission } from "../bot";
 import * as utils from "./utils";
+import { SlashCommandBuilder } from "@discordjs/builders";
 
 export function provideCommands(): CommandDescriptor[] {
 	const say = new Builders.SlashCommandBuilder()
@@ -33,6 +34,15 @@ export function provideCommands(): CommandDescriptor[] {
 			)
 			.setRequired(false)
 	);
+	const whoSaid = new SlashCommandBuilder()
+		.setName("who-said")
+		.setDescription("Shows who ordered the bot to say something");
+	whoSaid.addStringOption(
+		new Builders.SlashCommandStringOption()
+			.setName("message-id")
+			.setDescription("Message ID in question")
+			.setRequired(true)
+	);
 	return [
 		{
 			builder: new Builders.SlashCommandBuilder()
@@ -44,6 +54,10 @@ export function provideCommands(): CommandDescriptor[] {
 		{
 			builder: say,
 			handler: handleSayCommand,
+		},
+		{
+			builder: whoSaid,
+			handler: handleWhoSaidCommand,
 		},
 	];
 }
@@ -92,6 +106,8 @@ export async function handleAboutCommand(
 	});
 }
 
+const sayLogs: Discord.Collection<string, string> = new Discord.Collection();
+
 export async function handleSayCommand(
 	interaction: Discord.CommandInteraction
 ): Promise<void> {
@@ -103,15 +119,46 @@ export async function handleSayCommand(
 			interaction.options.getBoolean("allow-mentions", false) ?? false;
 
 		if (channel && channel.isText()) {
-			await channel.send({
+			const msg = await channel.send({
 				content: message.replace(/\\n/g, "\n"),
 				allowedMentions: allowMentions ? undefined : { parse: [] },
 			});
+			const uid = interaction.member?.user.id;
+			if (uid) {
+				sayLogs.set(msg.id, uid);
+				console.log(
+					`User ${
+						interaction.member?.user.username
+					} said «${message}» (w/${
+						allowMentions ? "" : "o"
+					} mentions)`
+				);
+			}
 			await interaction.editReply("✅ Successfully sent message.");
 			return;
 		}
 		throw new Error("???");
 	} catch (e) {
 		await interaction.editReply("❌ Something went wrong.");
+	}
+}
+
+export async function handleWhoSaidCommand(
+	interaction: Discord.CommandInteraction
+): Promise<void> {
+	try {
+		const messageId = interaction.options.getString("message-id", true);
+		const split = messageId.split("-");
+		const who = sayLogs.get(split[split.length - 1]);
+
+		if (who) {
+			await interaction.editReply(`<@${who}> said it!`);
+		} else {
+			await interaction.editReply("I don't know who said it...");
+		}
+	} catch (e) {
+		await interaction.editReply(
+			"❌ Something went wrong, maybe wrong message ID?"
+		);
 	}
 }
