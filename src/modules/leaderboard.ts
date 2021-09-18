@@ -4,6 +4,8 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 import { SlashCommandSubcommandBuilder } from "@discordjs/builders";
 
+import * as utils from "./utils";
+
 const MAX_PEOPLE = 50;
 
 type UsersCharacterCount = Discord.Collection<Discord.Snowflake, number>;
@@ -47,7 +49,7 @@ export async function getUsersCharacterCount(
 
 export async function sendLeaderboard(
 	sendChannel: Discord.TextChannel | Discord.ThreadChannel
-): Promise<[number, number, Discord.Channel[]]> {
+): Promise<[number, number, Discord.Channel[], Discord.Snowflake]> {
 	const [chars, channels, msgs, failed] = await getUsersCharacterCount(
 		sendChannel.guild
 	);
@@ -70,9 +72,12 @@ export async function sendLeaderboard(
 
 	lines.unshift("**__LEADERBOARD__** *(por número de caracteres)*");
 
-	sendChannel.send(lines.join("\n"));
+	const sent = await sendChannel.send({
+		content: lines.join("\n"),
+		allowedMentions: { parse: [] },
+	});
 
-	return [channels, msgs, failed];
+	return [channels, msgs, failed, sent.id];
 }
 
 export function provideCommands(): CommandDescriptor[] {
@@ -103,11 +108,34 @@ export async function handleCommand(
 				if (!interaction.channel) {
 					throw new Error("Channel must exist");
 				}
-				await sendLeaderboard(
-					interaction.channel as
-						| Discord.TextChannel
-						| Discord.ThreadChannel
+				// TODO: if one is already being sent, don't allow another user to run command
+				await interaction.editReply(
+					`Will send a leaderboard to ${interaction.channel}, but calculations are necessary.\nThis may take a while...`
 				);
+				const [delta, [channels, msgs, failed, msgId]] =
+					(await utils.timeFunction(
+						async () =>
+							await sendLeaderboard(
+								interaction.channel as
+									| Discord.TextChannel
+									| Discord.ThreadChannel
+							)
+					)) as [
+						number,
+						utils.ThenArg<ReturnType<typeof sendLeaderboard>>
+					];
+				await interaction.editReply(`✅ Sent [here](https://discord.com/channels/${
+					interaction.guildId as string
+				}/${interaction.channelId as string}/${msgId})
+
+Took ${delta}ms, combed through ${channels} channels and ${msgs} messages.
+${
+	failed.length
+		? "❌ Failed to go through the following channels: " +
+		  failed.map((c) => "<#" + c.id + ">").join(", ")
+		: "Did not fail to go through any channel"
+}`);
+				// TODO: if any failed, say I can't cache it (whenever I do start caching it with checkpoints)
 			} catch (e) {
 				await interaction.editReply("❌ Something went wrong.");
 			}
