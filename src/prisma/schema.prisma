@@ -62,11 +62,19 @@ model Degree {
 }
 
 model Course {
-    id                    String  @id
-    acronym               String
-    url                   String
-    announcementsUrl      String? @map("announcements_url")
-    lastAnnouncementStamp Int     @map("last_announcement_stamp")
-    Degree                Degree  @relation(fields: [degreeId], references: [id], onDelete: Cascade)
-    degreeId              String  @map("degree_id")
+    id               String         @id
+    acronym          String
+    url              String
+    announcementsUrl String?        @map("announcements_url")
+    announcements    Announcement[]
+    Degree           Degree         @relation(fields: [degreeId], references: [id], onDelete: Cascade)
+    degreeId         String         @map("degree_id")
+}
+
+model Announcement {
+    guid        String @id
+    messageId   String @map("message_id")
+    contentHash String @map("content_hash")
+    Course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+    courseId    String @map("course_id")
 }
