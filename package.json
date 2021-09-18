@@ -14,6 +14,10 @@
 	"repository": "git@github.com:ist-bot-team/ist-discord-bot",
 	"author": "IST Bot Team",
 	"license": "MIT",
+	"engines": {
+		"node": ">=16.6.1",
+		"npm": ">=7.23.0"
+	},
 	"dependencies": {
 		"@discordjs/builders": "^0.6.0",
 		"@discordjs/rest": "^0.1.0-canary.0",
