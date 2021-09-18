@@ -4,8 +4,7 @@ datasource db {
 }
 
 generator client {
-    provider        = "prisma-client-js"
-    previewFeatures = ["referentialActions"]
+    provider = "prisma-client-js"
 }
 
 model Config {
@@ -48,4 +47,26 @@ model RoleGroupOption {
     roleGroupId String?    @map("role_group_id")
 
     @@map("role_group_options")
+}
+
+model Degree {
+    id        String   @id
+    acronym   String
+    name      String
+    fenixName String?  @map("fenix_name")
+    emoji     String?
+    roleId    String   @map("role_id")
+    tier      Int
+    /// 0 = none, 1 = degree channels (text + VC), 2 = +course channels, 3 = +announcements channel
+    courses   Course[]
+}
+
+model Course {
+    id                    String  @id
+    acronym               String
+    url                   String
+    announcementsUrl      String? @map("announcements_url")
+    lastAnnouncementStamp Int     @map("last_announcement_stamp")
+    Degree                Degree  @relation(fields: [degreeId], references: [id], onDelete: Cascade)
+    degreeId              String  @map("degree_id")
 }
