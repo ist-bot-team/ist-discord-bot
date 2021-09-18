@@ -105,9 +105,7 @@ export function provideCommands(): CommandDescriptor[] {
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("clean")
-			.setDescription(
-				"Clean (an) existing gallery channel(s), 100 messages/14 days"
-			)
+			.setDescription("Clean (an) existing gallery channel(s)")
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
