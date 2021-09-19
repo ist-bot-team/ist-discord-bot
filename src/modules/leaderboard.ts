@@ -261,7 +261,9 @@ ${
 		  " characters"
 }`);
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction
+					.editReply("❌ Something went wrong.")
+					.catch(() => console.error("Leaderboard took too long :("));
 			}
 			break;
 		}
