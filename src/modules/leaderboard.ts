@@ -1,5 +1,7 @@
 // Guild leaderboard of users sorted by characters sent
 
+import { PrismaClient, LeaderboardEntry } from "@prisma/client";
+
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
@@ -13,11 +15,19 @@ type UsersCharacterCount = Discord.Collection<Discord.Snowflake, number>;
 
 export async function getUsersCharacterCount(
 	guild: Discord.Guild,
-	onlyCountAfter?: Date
-): Promise<[UsersCharacterCount, number, number, Discord.Channel[]]> {
-	// TODO: checkpoint
-
+	onlyCountAfter?: Date,
+	cacheDate?: Date
+): Promise<
+	[
+		UsersCharacterCount,
+		number,
+		number,
+		Discord.Channel[],
+		UsersCharacterCount
+	]
+> {
 	const chars: UsersCharacterCount = new Discord.Collection();
+	const addToCache: UsersCharacterCount = new Discord.Collection();
 	const failed: (Discord.TextChannel | Discord.ThreadChannel)[] = [];
 	let msgCount = 0;
 
@@ -32,13 +42,21 @@ export async function getUsersCharacterCount(
 			if (!msg.deleted && msg.author && !msg.author.bot) {
 				if (
 					onlyCountAfter === undefined ||
-					(msg.editedAt ?? msg.createdAt) >= onlyCountAfter
+					msg.createdAt > onlyCountAfter
 				) {
 					chars.set(
 						msg.author.id,
 						(chars.get(msg.author.id) ?? 0) + msg.content.length
 					);
 					msgCount++;
+
+					if (cacheDate && msg.createdAt <= cacheDate) {
+						addToCache.set(
+							msg.author.id,
+							(addToCache.get(msg.author.id) ?? 0) +
+								msg.content.length
+						);
+					}
 				} else {
 					break; // counting on you to be ordered, discord!
 				}
@@ -52,24 +70,83 @@ export async function getUsersCharacterCount(
 		}
 	});
 
-	return [chars, channels.length, msgCount, failed];
+	return [chars, channels.length, msgCount, failed, addToCache];
 }
 
 export async function sendLeaderboard(
 	sendChannel: Discord.TextChannel | Discord.ThreadChannel,
-	period: string
-): Promise<[number, number, Discord.Channel[], Discord.Snowflake]> {
+	period: string,
+	prisma: PrismaClient
+): Promise<[number, number, Discord.Channel[], number, Discord.Snowflake]> {
 	const now = new Date().getTime();
 	const day = 1000 * 60 * 60 * 24;
 
-	const [chars, channels, msgs, failed] = await getUsersCharacterCount(
-		sendChannel.guild,
-		period === "month"
-			? new Date(now - 30 * day)
-			: period === "week"
-			? new Date(now - 7 * day)
-			: undefined
+	const cacheStamp = ((i) => (i !== undefined ? new Date(i) : i))(
+		(
+			await prisma.config.findFirst({
+				where: { key: "leaderboard:cache_stamp" },
+			})
+		)?.value
 	);
+	const cache = cacheStamp ? await prisma.leaderboardEntry.findMany() : [];
+
+	const cacheDate = new Date(now - 45 * day); // cache messages older than 45 days
+
+	const [chars, channels, msgs, failed, addToCache] =
+		await getUsersCharacterCount(
+			sendChannel.guild,
+			period === "month"
+				? new Date(now - 30 * day)
+				: period === "week"
+				? new Date(now - 7 * day)
+				: cacheStamp
+				? new Date(cacheStamp)
+				: undefined,
+			cacheDate
+		);
+
+	const cacheMap: { [uid: string]: LeaderboardEntry } = {};
+
+	for (const entry of cache) {
+		cacheMap[entry.userId] = entry;
+
+		chars.set(
+			entry.userId,
+			(chars.get(entry.userId) ?? 0) + entry.characterCount
+		);
+	}
+
+	if (!failed.length) {
+		for (const [uid, count] of addToCache) {
+			const entry = cacheMap[uid];
+			if (entry) {
+				entry.characterCount += count;
+			} else {
+				cache.push({ userId: uid, characterCount: count });
+			}
+		}
+
+		await prisma.$transaction([
+			prisma.config.upsert({
+				where: { key: "leaderboard:cache_stamp" },
+				update: { value: cacheDate.toISOString() },
+				create: {
+					key: "leaderboard:cache_stamp",
+					value: cacheDate.toISOString(),
+				},
+			}),
+			...cache.map((entry) =>
+				prisma.leaderboardEntry.upsert({
+					where: { userId: entry.userId },
+					update: { characterCount: entry.characterCount },
+					create: {
+						userId: entry.userId,
+						characterCount: entry.characterCount,
+					},
+				})
+			),
+		]);
+	}
 
 	chars.sort((v1, v2, k1, k2) => v2 - v1 || parseInt(k1) - parseInt(k2));
 
@@ -98,7 +175,13 @@ export async function sendLeaderboard(
 		allowedMentions: { parse: [] },
 	});
 
-	return [channels, msgs, failed, sent.id];
+	return [
+		channels,
+		msgs,
+		failed,
+		failed.length ? 0 : addToCache.reduce((a, b) => a + b, 0),
+		sent.id,
+	];
 }
 
 export function provideCommands(): CommandDescriptor[] {
@@ -132,7 +215,8 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.CommandInteraction,
+	prisma: PrismaClient
 ): Promise<void> {
 	switch (interaction.options.getSubcommand()) {
 		case "send": {
@@ -148,14 +232,15 @@ export async function handleCommand(
 					`Will send a leaderboard (period: ${period}) to ${interaction.channel}, but calculations are necessary.\nThis may take a while...`
 				);
 
-				const [delta, [channels, msgs, failed, msgId]] =
+				const [delta, [channels, msgs, failed, cached, msgId]] =
 					(await utils.timeFunction(
 						async () =>
 							await sendLeaderboard(
 								interaction.channel as
 									| Discord.TextChannel
 									| Discord.ThreadChannel,
-								period
+								period,
+								prisma
 							)
 					)) as [
 						number,
@@ -169,10 +254,12 @@ Took ${delta}ms, combed through ${channels} channels and ${msgs} messages.
 ${
 	failed.length
 		? "❌ Failed to go through the following channels: " +
-		  failed.map((c) => "<#" + c.id + ">").join(", ")
-		: "Did not fail to go through any channel"
+		  failed.map((c) => "<#" + c.id + ">").join(", ") +
+		  "; as such, did not cache anything"
+		: "Did not fail to go through any channel; cached " +
+		  cached +
+		  " characters"
 }`);
-				// TODO: if any failed, say I can't cache it (whenever I do start caching it with checkpoints)
 			} catch (e) {
 				await interaction.editReply("❌ Something went wrong.");
 			}
