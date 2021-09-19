@@ -11,7 +11,7 @@ import { PrismaClient } from "@prisma/client";
 import { InteractionHandlers, CommandProvider, Chore } from "./bot.d";
 
 import * as utils from "./modules/utils";
-import * as attendance from "./modules/attendance";
+import * as polls from "./modules/polls";
 import * as roleSelection from "./modules/roleSelection";
 import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
@@ -48,7 +48,7 @@ const client = new Discord.Client({
 });
 
 const commandProviders: CommandProvider[] = [
-	attendance.provideCommands,
+	polls.provideCommands,
 	roleSelection.provideCommands,
 	sudo.provideCommands,
 	misc.provideCommands,
@@ -62,7 +62,7 @@ const commandHandlers: InteractionHandlers<Discord.CommandInteraction> = {};
 // two above will be dynamically loaded
 
 const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
-	attendance: attendance.handleAttendanceButton,
+	polls: polls.handlePollButton,
 	roleSelection: roleSelection.handleRoleSelectionButton,
 };
 
@@ -72,18 +72,18 @@ const menuHandlers: InteractionHandlers<Discord.SelectMenuInteraction> = {
 
 const startupChores: Chore[] = [
 	{
-		summary: "Schedule attendance polls",
+		summary: "Schedule polls",
 		fn: async () =>
-			await attendance.scheduleAttendancePolls(
+			await polls.schedulePolls(
 				client,
 				prisma,
-				await prisma.attendancePoll.findMany({
+				await prisma.poll.findMany({
 					where: {
 						type: "scheduled",
 					},
 				})
 			),
-		complete: "All attendance polls scheduled",
+		complete: "All polls scheduled",
 	},
 	{
 		summary: "Send role selection messages",
