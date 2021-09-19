@@ -53,7 +53,7 @@ export async function parseExistingMessages(
 	let count = 0;
 	for (const channel of channels) {
 		try {
-			const messages = await channel.messages.fetch();
+			const messages = await utils.fetchAllChannelMessages(channel);
 
 			for (const [_id, message] of messages) {
 				try {
