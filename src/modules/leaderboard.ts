@@ -1,3 +1,5 @@
+// Guild leaderboard of users sorted by characters sent
+
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
@@ -25,7 +27,7 @@ export async function getUsersCharacterCount(
 		)
 	).map((o) => o[1]) as (Discord.TextChannel | Discord.ThreadChannel)[];
 	const promises = channels.map(async (channel) => {
-		const messages = await channel.messages.fetch();
+		const messages = await utils.fetchAllChannelMessages(channel);
 		for (const [_id, msg] of messages) {
 			if (!msg.deleted && msg.author && !msg.author.bot) {
 				if (
@@ -38,9 +40,7 @@ export async function getUsersCharacterCount(
 					);
 					msgCount++;
 				} else {
-					// ? FIXME: TODO: !!! SHOULD A BREAK BE HERE?
-					// * would really help efficiency but I don't know if messages are sorted
-					// * either way recently edited messages wouldn't be counted
+					break; // counting on you to be ordered, discord!
 				}
 			}
 		}

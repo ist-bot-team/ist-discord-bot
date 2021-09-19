@@ -70,3 +70,26 @@ export async function fetchGalleries(
 		.split(",")
 		.filter((c) => c.length);
 }
+
+export type MessageCollection = Discord.Collection<string, Discord.Message>;
+
+export async function fetchAllChannelMessages(
+	channel: Discord.TextChannel | Discord.ThreadChannel,
+	after?: Date
+): Promise<MessageCollection> {
+	const messages = new Discord.Collection<string, Discord.Message>();
+	let fetched: MessageCollection | undefined;
+
+	do {
+		fetched = await channel.messages.fetch({
+			limit: 100,
+			before: fetched ? fetched.last()?.id : undefined,
+		});
+		fetched.map((msg, id) => messages.set(id, msg));
+	} while (
+		fetched.size >= 100 &&
+		(fetched.last()?.createdAt ?? 1) > (after ?? 0)
+	);
+
+	return messages;
+}
