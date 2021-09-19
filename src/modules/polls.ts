@@ -23,15 +23,15 @@ POLL_ACTION_ROW.addComponents([
 	new MessageButton()
 		.setLabel("Yes")
 		.setStyle("SUCCESS")
-		.setCustomId("poll:yes"),
+		.setCustomId("polls:yes"),
 	new MessageButton()
 		.setLabel("No")
 		.setStyle("DANGER")
-		.setCustomId("poll:no"),
+		.setCustomId("polls:no"),
 	new MessageButton()
 		.setLabel("Clear")
 		.setStyle("SECONDARY")
-		.setCustomId("poll:clear"),
+		.setCustomId("polls:clear"),
 ]);
 const POLL_NO_ONE = "*No one*";
 
@@ -138,7 +138,7 @@ export const schedulePolls = async (
 				return;
 			}
 
-			cron.schedule(poll.cron, async () => {
+			cron.schedule(poll.cron as string, async () => {
 				try {
 					// make sure it wasn't deleted / edited in the meantime
 					const p = await prisma.poll.findFirst({
@@ -162,7 +162,7 @@ export function provideCommands(): CommandDescriptor[] {
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("add")
-			.setDescription("Create a new scheduled poll")
+			.setDescription("Create a new poll")
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("id")
@@ -175,19 +175,19 @@ export function provideCommands(): CommandDescriptor[] {
 					.setDescription("Poll title")
 					.setRequired(true)
 			)
-			.addStringOption(
-				new Builders.SlashCommandStringOption()
-					.setName("cron")
-					.setDescription(
-						"Cron schedule string; BE VERY CAREFUL THIS IS CORRECT!"
-					)
-					.setRequired(true)
-			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
 					.setDescription("Where polls will be sent")
 					.setRequired(true)
+			)
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("schedule")
+					.setDescription(
+						"Cron schedule string; BE VERY CAREFUL THIS IS CORRECT! If none, send one-shot poll."
+					)
+					.setRequired(false)
 			)
 	);
 	cmd.addSubcommand(
@@ -229,26 +229,30 @@ export async function handleCommand(
 			try {
 				const id = interaction.options.getString("id", true);
 				const title = interaction.options.getString("title", true);
-				const cron = interaction.options.getString("cron", true);
 				const channel = interaction.options.getChannel("channel", true);
-
-				// TODO: don't take this at face value
-				// ^ how important is this? in principle admins won't mess up
+				const cron = interaction.options.getString(
+					"schedule",
+					false
+				) as string | null;
 
 				const poll = await prisma.poll.create({
 					data: {
 						id,
-						type: "scheduled",
+						type: cron ? "scheduled" : "one-shot",
 						title,
 						cron,
 						channelId: channel.id,
 					},
 				});
 
-				await schedulePolls(interaction.client, prisma, [poll]);
+				if (cron) {
+					await schedulePolls(interaction.client, prisma, [poll]);
+				} else {
+					await sendPollEmbed(poll, channel as TextChannel);
+				}
 
 				await interaction.editReply(
-					"✅ Successfully added and scheduled."
+					`✅ Successfully added${cron ? " and scheduled" : ""}.`
 				);
 			} catch (e) {
 				await interaction.editReply(
@@ -318,7 +322,11 @@ export async function handleCommand(
 								.addField("ID", poll.id, true)
 								.addField("Type", poll.type, true)
 								.addField("Title", poll.title, true)
-								.addField("Cron Schedule", poll.cron, true)
+								.addField(
+									"Schedule",
+									poll.cron ? poll.cron : "N/A",
+									true
+								)
 								.addField(
 									"Channel",
 									`<#${poll.channelId}>`,
