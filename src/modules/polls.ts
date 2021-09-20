@@ -17,7 +17,6 @@ import cron from "node-cron";
 import { PrismaClient, Poll } from "@prisma/client";
 import { CommandDescriptor } from "../bot.d";
 
-const POLL_MSG = "Poll";
 const POLL_ACTION_ROW = new MessageActionRow();
 POLL_ACTION_ROW.addComponents([
 	new MessageButton()
@@ -58,7 +57,6 @@ export const handlePollButton = async (
 	);
 
 	(interaction.message as Message).edit({
-		content: POLL_MSG,
 		embeds: [newEmbed],
 		components: [POLL_ACTION_ROW],
 	});
@@ -112,7 +110,6 @@ export const sendPollEmbed = async (
 	await unpinPoll(poll, channel);
 
 	const message = await channel.send({
-		content: POLL_MSG,
 		embeds: [
 			new MessageEmbed()
 				.setTitle(poll.title)
