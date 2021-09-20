@@ -89,7 +89,7 @@ export const getNewPollEmbed = (
 };
 
 export const sendPollEmbed = async (
-	embed: Poll,
+	poll: Poll,
 	channel: TextChannel
 ): Promise<void> => {
 	const pinnedMessages = await channel.messages.fetchPinned();
@@ -97,7 +97,7 @@ export const sendPollEmbed = async (
 		pinnedMessages.map((msg) => {
 			if (
 				msg.embeds?.some(
-					(msgEmbed) => msgEmbed.footer?.text === embed.id
+					(msgEmbed) => msgEmbed.footer?.text === poll.id
 				)
 			)
 				return msg.unpin();
@@ -108,10 +108,10 @@ export const sendPollEmbed = async (
 		content: POLL_MSG,
 		embeds: [
 			new MessageEmbed()
-				.setTitle(embed.title)
+				.setTitle(poll.title)
 				.addField("Yes", POLL_NO_ONE, true)
 				.addField("No", POLL_NO_ONE, true)
-				.setFooter(embed.id)
+				.setFooter(poll.id)
 				.setTimestamp(),
 		],
 		components: [POLL_ACTION_ROW],
@@ -123,7 +123,7 @@ export const sendPollEmbed = async (
 export const schedulePolls = async (
 	client: Client,
 	prisma: PrismaClient,
-	polls: Poll[]
+	polls: (Poll & { cron: string })[]
 ): Promise<void> => {
 	await Promise.all(
 		polls.map(async (poll) => {
@@ -138,7 +138,7 @@ export const schedulePolls = async (
 				return;
 			}
 
-			cron.schedule(poll.cron as string, async () => {
+			cron.schedule(poll.cron, async () => {
 				try {
 					// make sure it wasn't deleted / edited in the meantime
 					const p = await prisma.poll.findFirst({
@@ -148,10 +148,28 @@ export const schedulePolls = async (
 						await sendPollEmbed(p, channel as TextChannel);
 					}
 				} catch (e) {
-					console.error("Could not verify (& send) poll:", e.message);
+					console.error(
+						"Could not verify (& send) poll:",
+						(e as Error).message
+					);
 				}
 			});
 		})
+	);
+};
+
+export const scheduleAllScheduledPolls = async (
+	client: Client,
+	prisma: PrismaClient
+): Promise<void> => {
+	await schedulePolls(
+		client,
+		prisma,
+		(await prisma.poll.findMany({
+			where: {
+				type: "scheduled",
+			},
+		})) as (Poll & { cron: string })[]
 	);
 };
 
@@ -230,10 +248,7 @@ export async function handleCommand(
 				const id = interaction.options.getString("id", true);
 				const title = interaction.options.getString("title", true);
 				const channel = interaction.options.getChannel("channel", true);
-				const cron = interaction.options.getString(
-					"schedule",
-					false
-				) as string | null;
+				const cron = interaction.options.getString("schedule", false);
 
 				const poll = await prisma.poll.create({
 					data: {
@@ -246,7 +261,9 @@ export async function handleCommand(
 				});
 
 				if (cron) {
-					await schedulePolls(interaction.client, prisma, [poll]);
+					await schedulePolls(interaction.client, prisma, [
+						poll as Poll & { cron: string },
+					]);
 				} else {
 					await sendPollEmbed(poll, channel as TextChannel);
 				}
@@ -288,7 +305,7 @@ export async function handleCommand(
 									: "No polls found"
 							)
 							.addFields(
-								polls.map((p: Poll) => ({
+								polls.map((p) => ({
 									name: p.title,
 									value: p.id,
 									inline: true,

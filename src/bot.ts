@@ -73,16 +73,9 @@ const menuHandlers: InteractionHandlers<Discord.SelectMenuInteraction> = {
 const startupChores: Chore[] = [
 	{
 		summary: "Schedule polls",
-		fn: async () =>
-			await polls.schedulePolls(
-				client,
-				prisma,
-				await prisma.poll.findMany({
-					where: {
-						type: "scheduled",
-					},
-				})
-			),
+		fn: async () => {
+			await polls.scheduleAllScheduledPolls(client, prisma);
+		},
 		complete: "All polls scheduled",
 	},
 	{
