@@ -88,7 +88,7 @@ export const getNewPollEmbed = (
 	return oldEmbed;
 };
 
-export const sendPollEmbed = async (
+export const unpinPoll = async (
 	poll: Poll,
 	channel: TextChannel
 ): Promise<void> => {
@@ -103,6 +103,13 @@ export const sendPollEmbed = async (
 				return msg.unpin();
 		})
 	);
+};
+
+export const sendPollEmbed = async (
+	poll: Poll,
+	channel: TextChannel
+): Promise<void> => {
+	await unpinPoll(poll, channel);
 
 	const message = await channel.send({
 		content: POLL_MSG,
@@ -282,6 +289,14 @@ export async function handleCommand(
 		case "remove": {
 			try {
 				const id = interaction.options.getString("id", true);
+
+				const p = (await prisma.poll.findFirst({
+					where: { id },
+				})) as Poll;
+				const channel = (await interaction.client.channels.fetch(
+					p.channelId as Snowflake
+				)) as TextChannel;
+				await unpinPoll(p, channel);
 
 				await prisma.poll.delete({ where: { id } });
 
