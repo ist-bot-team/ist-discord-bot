@@ -49,3 +49,10 @@ model RoleGroupOption {
 
     @@map("role_group_options")
 }
+
+model LeaderboardEntry {
+    userId         String @id @map("user_id")
+    characterCount Int    @map("character_count")
+
+    @@map("leaderboard_entries")
+}
