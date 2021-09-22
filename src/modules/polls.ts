@@ -1,4 +1,4 @@
-// Handler for attendance polls
+// Handler for polls
 
 import {
 	ButtonInteraction,
@@ -14,28 +14,27 @@ import {
 import * as Builders from "@discordjs/builders";
 import cron from "node-cron";
 
-import { PrismaClient, AttendancePoll } from "@prisma/client";
+import { PrismaClient, Poll } from "@prisma/client";
 import { CommandDescriptor } from "../bot.d";
 
-const ATTENDANCE_POLL_MSG = "Attendance Poll";
-const ATTENDANCE_POLL_ACTION_ROW = new MessageActionRow();
-ATTENDANCE_POLL_ACTION_ROW.addComponents([
+const POLL_ACTION_ROW = new MessageActionRow();
+POLL_ACTION_ROW.addComponents([
 	new MessageButton()
 		.setLabel("Yes")
 		.setStyle("SUCCESS")
-		.setCustomId("attendance:yes"),
+		.setCustomId("polls:yes"),
 	new MessageButton()
 		.setLabel("No")
 		.setStyle("DANGER")
-		.setCustomId("attendance:no"),
+		.setCustomId("polls:no"),
 	new MessageButton()
 		.setLabel("Clear")
 		.setStyle("SECONDARY")
-		.setCustomId("attendance:clear"),
+		.setCustomId("polls:clear"),
 ]);
-const ATTENDANCE_NO_ONE = "*No one*";
+const POLL_NO_ONE = "*No one*";
 
-export const handleAttendanceButton = async (
+export const handlePollButton = async (
 	interaction: ButtonInteraction
 ): Promise<void> => {
 	await interaction.deferReply({ ephemeral: true });
@@ -51,22 +50,21 @@ export const handleAttendanceButton = async (
 		fieldIndex = 1;
 	}
 
-	const newEmbed = getNewEmbed(
+	const newEmbed = getNewPollEmbed(
 		oldEmbeds[0] as MessageEmbed,
 		fieldIndex,
 		interaction.user.id
 	);
 
 	(interaction.message as Message).edit({
-		content: ATTENDANCE_POLL_MSG,
 		embeds: [newEmbed],
-		components: [ATTENDANCE_POLL_ACTION_ROW],
+		components: [POLL_ACTION_ROW],
 	});
 
 	await interaction.editReply("Response recorded!");
 };
 
-export const getNewEmbed = (
+export const getNewPollEmbed = (
 	oldEmbed: MessageEmbed,
 	fieldIndex: number,
 	userId: Snowflake
@@ -76,10 +74,9 @@ export const getNewEmbed = (
 			field.value
 				.split("\n")
 				.filter(
-					(user) =>
-						user !== ATTENDANCE_NO_ONE && user !== `<@${userId}>`
+					(user) => user !== POLL_NO_ONE && user !== `<@${userId}>`
 				)
-				.join("\n") || (fieldIndex === i ? "" : ATTENDANCE_NO_ONE);
+				.join("\n") || (fieldIndex === i ? "" : POLL_NO_ONE);
 	});
 	if (oldEmbed.fields[fieldIndex])
 		oldEmbed.fields[
@@ -89,8 +86,8 @@ export const getNewEmbed = (
 	return oldEmbed;
 };
 
-export const sendAttendanceEmbed = async (
-	embed: AttendancePoll,
+export const unpinPoll = async (
+	poll: Poll,
 	channel: TextChannel
 ): Promise<void> => {
 	const pinnedMessages = await channel.messages.fetchPinned();
@@ -98,33 +95,39 @@ export const sendAttendanceEmbed = async (
 		pinnedMessages.map((msg) => {
 			if (
 				msg.embeds?.some(
-					(msgEmbed) => msgEmbed.footer?.text === embed.id
+					(msgEmbed) => msgEmbed.footer?.text === poll.id
 				)
 			)
 				return msg.unpin();
 		})
 	);
+};
+
+export const sendPollEmbed = async (
+	poll: Poll,
+	channel: TextChannel
+): Promise<void> => {
+	await unpinPoll(poll, channel);
 
 	const message = await channel.send({
-		content: ATTENDANCE_POLL_MSG,
 		embeds: [
 			new MessageEmbed()
-				.setTitle(embed.title)
-				.addField("Attending", ATTENDANCE_NO_ONE, true)
-				.addField("Not Attending", ATTENDANCE_NO_ONE, true)
-				.setFooter(embed.id)
+				.setTitle(poll.title)
+				.addField("Yes", POLL_NO_ONE, true)
+				.addField("No", POLL_NO_ONE, true)
+				.setFooter(poll.id)
 				.setTimestamp(),
 		],
-		components: [ATTENDANCE_POLL_ACTION_ROW],
+		components: [POLL_ACTION_ROW],
 	});
 
 	await message.pin();
 };
 
-export const scheduleAttendancePolls = async (
+export const schedulePolls = async (
 	client: Client,
 	prisma: PrismaClient,
-	polls: AttendancePoll[]
+	polls: (Poll & { cron: string })[]
 ): Promise<void> => {
 	await Promise.all(
 		polls.map(async (poll) => {
@@ -134,7 +137,7 @@ export const scheduleAttendancePolls = async (
 
 			if (!channel) {
 				console.error(
-					`Couldn't fetch channel ${poll.channelId} for attendance poll ${poll.id}`
+					`Couldn't fetch channel ${poll.channelId} for poll ${poll.id}`
 				);
 				return;
 			}
@@ -142,16 +145,16 @@ export const scheduleAttendancePolls = async (
 			cron.schedule(poll.cron, async () => {
 				try {
 					// make sure it wasn't deleted / edited in the meantime
-					const p = await prisma.attendancePoll.findFirst({
+					const p = await prisma.poll.findFirst({
 						where: { id: poll.id },
 					});
 					if (p !== null) {
-						await sendAttendanceEmbed(p, channel as TextChannel);
+						await sendPollEmbed(p, channel as TextChannel);
 					}
 				} catch (e) {
 					console.error(
-						"Could not verify (& send) attendance poll:",
-						e.message
+						"Could not verify (& send) poll:",
+						(e as Error).message
 					);
 				}
 			});
@@ -159,14 +162,29 @@ export const scheduleAttendancePolls = async (
 	);
 };
 
+export const scheduleAllScheduledPolls = async (
+	client: Client,
+	prisma: PrismaClient
+): Promise<void> => {
+	await schedulePolls(
+		client,
+		prisma,
+		(await prisma.poll.findMany({
+			where: {
+				type: "scheduled",
+			},
+		})) as (Poll & { cron: string })[]
+	);
+};
+
 export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
-		.setName("attendance")
-		.setDescription("Manage attendance polls");
+		.setName("poll")
+		.setDescription("Manage polls");
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("add")
-			.setDescription("Create a new scheduled attendance poll")
+			.setDescription("Create a new poll")
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("id")
@@ -176,15 +194,7 @@ export function provideCommands(): CommandDescriptor[] {
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("title")
-					.setDescription("Attendance poll title")
-					.setRequired(true)
-			)
-			.addStringOption(
-				new Builders.SlashCommandStringOption()
-					.setName("cron")
-					.setDescription(
-						"Cron schedule string; BE VERY CAREFUL THIS IS CORRECT!"
-					)
+					.setDescription("Poll title")
 					.setRequired(true)
 			)
 			.addChannelOption(
@@ -193,11 +203,19 @@ export function provideCommands(): CommandDescriptor[] {
 					.setDescription("Where polls will be sent")
 					.setRequired(true)
 			)
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("schedule")
+					.setDescription(
+						"Cron schedule string; BE VERY CAREFUL THIS IS CORRECT! If none, send one-shot poll."
+					)
+					.setRequired(false)
+			)
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("remove")
-			.setDescription("Remove an existing attendance poll")
+			.setDescription("Remove an existing poll")
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("id")
@@ -208,12 +226,12 @@ export function provideCommands(): CommandDescriptor[] {
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("list")
-			.setDescription("List existing attendance polls")
+			.setDescription("List existing polls")
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("info")
-			.setDescription("Get information for an existing attendance poll")
+			.setDescription("Get information for an existing poll")
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("id")
@@ -233,28 +251,29 @@ export async function handleCommand(
 			try {
 				const id = interaction.options.getString("id", true);
 				const title = interaction.options.getString("title", true);
-				const cron = interaction.options.getString("cron", true);
 				const channel = interaction.options.getChannel("channel", true);
+				const cron = interaction.options.getString("schedule", false);
 
-				// TODO: don't take this at face value
-				// ^ how important is this? in principle admins won't mess up
-
-				const poll = await prisma.attendancePoll.create({
+				const poll = await prisma.poll.create({
 					data: {
 						id,
-						type: "scheduled",
+						type: cron ? "scheduled" : "one-shot",
 						title,
 						cron,
 						channelId: channel.id,
 					},
 				});
 
-				await scheduleAttendancePolls(interaction.client, prisma, [
-					poll,
-				]);
+				if (cron) {
+					await schedulePolls(interaction.client, prisma, [
+						poll as Poll & { cron: string },
+					]);
+				} else {
+					await sendPollEmbed(poll, channel as TextChannel);
+				}
 
 				await interaction.editReply(
-					"✅ Successfully added and scheduled."
+					`✅ Successfully added${cron ? " and scheduled" : ""}.`
 				);
 			} catch (e) {
 				await interaction.editReply(
@@ -268,7 +287,15 @@ export async function handleCommand(
 			try {
 				const id = interaction.options.getString("id", true);
 
-				await prisma.attendancePoll.delete({ where: { id } });
+				const p = (await prisma.poll.findFirst({
+					where: { id },
+				})) as Poll;
+				const channel = (await interaction.client.channels.fetch(
+					p.channelId as Snowflake
+				)) as TextChannel;
+				await unpinPoll(p, channel);
+
+				await prisma.poll.delete({ where: { id } });
 
 				await interaction.editReply("✅ Successfully removed.");
 			} catch (e) {
@@ -279,15 +306,15 @@ export async function handleCommand(
 		}
 		case "list": {
 			try {
-				const polls = await prisma.attendancePoll.findMany();
+				const polls = await prisma.poll.findMany();
 				await interaction.editReply({
 					embeds: [
 						new MessageEmbed()
-							.setTitle("Attendance Polls")
+							.setTitle("Polls")
 							.setDescription(
 								polls.length
-									? "Below is a list of all attendance polls with their title and ID"
-									: "No attendance polls found"
+									? "Below is a list of all polls with their title and ID"
+									: "No polls found"
 							)
 							.addFields(
 								polls.map((p) => ({
@@ -308,7 +335,7 @@ export async function handleCommand(
 			try {
 				const id = interaction.options.getString("id", true);
 
-				const poll = await prisma.attendancePoll.findFirst({
+				const poll = await prisma.poll.findFirst({
 					where: { id },
 				});
 
@@ -320,11 +347,15 @@ export async function handleCommand(
 					await interaction.editReply({
 						embeds: [
 							new MessageEmbed()
-								.setTitle("Attendance Poll Information")
+								.setTitle("Poll Information")
 								.addField("ID", poll.id, true)
 								.addField("Type", poll.type, true)
 								.addField("Title", poll.title, true)
-								.addField("Cron Schedule", poll.cron, true)
+								.addField(
+									"Schedule",
+									poll.cron ? poll.cron : "N/A",
+									true
+								)
 								.addField(
 									"Channel",
 									`<#${poll.channelId}>`,

@@ -15,14 +15,14 @@ model Config {
     @@map("config")
 }
 
-model AttendancePoll {
+model Poll {
     id        String @id /// identifier used to keep track of embed on pinned messages
     type      String
     title     String
-    cron      String /// cron schedule
+    cron      String? /// cron schedule
     channelId String @map("channel_id") /// channel where to post the poll
 
-    @@map("attendance_polls")
+    @@map("polls")
 }
 
 model RoleGroup {
