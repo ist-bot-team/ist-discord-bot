@@ -41,10 +41,10 @@ model RoleGroup {
 model RoleGroupOption {
     label       String
     description String
-    value       String     @id
+    value       String    @id
     emoji       String?
-    RoleGroup   RoleGroup? @relation(fields: [roleGroupId], references: [id], onDelete: Cascade)
-    roleGroupId String?    @map("role_group_id")
+    RoleGroup   RoleGroup @relation(fields: [roleGroupId], references: [id], onDelete: Cascade)
+    roleGroupId String    @map("role_group_id")
 
     @@map("role_group_options")
 }
