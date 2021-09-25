@@ -14,14 +14,14 @@ model Config {
     @@map("config")
 }
 
-model AttendancePoll {
-    id        String @id /// identifier used to keep track of embed on pinned messages
+model Poll {
+    id        String  @id /// identifier used to keep track of embed on pinned messages
     type      String
     title     String
-    cron      String /// cron schedule
-    channelId String @map("channel_id") /// channel where to post the poll
+    cron      String? /// cron schedule
+    channelId String  @map("channel_id") /// channel where to post the poll
 
-    @@map("attendance_polls")
+    @@map("polls")
 }
 
 model RoleGroup {
@@ -77,4 +77,11 @@ model Announcement {
     contentHash String @map("content_hash")
     Course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
     courseId    String @map("course_id")
+}
+
+model LeaderboardEntry {
+    userId         String @id @map("user_id")
+    characterCount Int    @map("character_count")
+
+    @@map("leaderboard_entries")
 }

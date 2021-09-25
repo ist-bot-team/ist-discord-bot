@@ -11,13 +11,14 @@ import { PrismaClient } from "@prisma/client";
 import { InteractionHandlers, CommandProvider, Chore } from "./bot.d";
 
 import * as utils from "./modules/utils";
-import * as attendance from "./modules/attendance";
+import * as polls from "./modules/polls";
 import * as roleSelection from "./modules/roleSelection";
 import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
 import * as galleryChannels from "./modules/galleryChannels";
 import * as voiceThreads from "./modules/voiceThreads";
 import * as welcome from "./modules/welcome";
+import * as leaderboard from "./modules/leaderboard";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
@@ -48,13 +49,14 @@ const client = new Discord.Client({
 });
 
 const commandProviders: CommandProvider[] = [
-	attendance.provideCommands,
+	polls.provideCommands,
 	roleSelection.provideCommands,
 	sudo.provideCommands,
 	misc.provideCommands,
 	galleryChannels.provideCommands,
 	voiceThreads.provideCommands,
 	welcome.provideCommands,
+	leaderboard.provideCommands,
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};
@@ -62,7 +64,7 @@ const commandHandlers: InteractionHandlers<Discord.CommandInteraction> = {};
 // two above will be dynamically loaded
 
 const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
-	attendance: attendance.handleAttendanceButton,
+	polls: polls.handlePollButton,
 	roleSelection: roleSelection.handleRoleSelectionButton,
 };
 
@@ -72,18 +74,11 @@ const menuHandlers: InteractionHandlers<Discord.SelectMenuInteraction> = {
 
 const startupChores: Chore[] = [
 	{
-		summary: "Schedule attendance polls",
-		fn: async () =>
-			await attendance.scheduleAttendancePolls(
-				client,
-				prisma,
-				await prisma.attendancePoll.findMany({
-					where: {
-						type: "scheduled",
-					},
-				})
-			),
-		complete: "All attendance polls scheduled",
+		summary: "Schedule polls",
+		fn: async () => {
+			await polls.scheduleAllScheduledPolls(client, prisma);
+		},
+		complete: "All polls scheduled",
 	},
 	{
 		summary: "Send role selection messages",

@@ -5,11 +5,21 @@ import { performance } from "perf_hooks";
 import { PrismaClient } from "@prisma/client";
 import * as Discord from "discord.js";
 
-export async function timeFunction(fun: () => Promise<void>): Promise<number> {
+// ThenArgRecursive from https://stackoverflow.com/a/49889856
+export type ThenArg<T> = T extends PromiseLike<infer U> ? ThenArg<U> : T;
+
+export async function timeFunction(
+	fun: () => Promise<unknown>
+): Promise<number | [number, unknown]> {
 	const t0 = performance.now();
-	await fun();
+	const res = await fun();
 	const t1 = performance.now();
-	return Math.round((t1 - t0 + Number.EPSILON) * 100) / 100;
+	const delta = Math.round((t1 - t0 + Number.EPSILON) * 100) / 100;
+	if (res === undefined) {
+		return delta;
+	} else {
+		return [delta, res];
+	}
 }
 
 export function getConfigFactory(
@@ -59,4 +69,27 @@ export async function fetchGalleries(
 	)
 		.split(",")
 		.filter((c) => c.length);
+}
+
+export type MessageCollection = Discord.Collection<string, Discord.Message>;
+
+export async function fetchAllChannelMessages(
+	channel: Discord.TextChannel | Discord.ThreadChannel,
+	after?: Date
+): Promise<MessageCollection> {
+	const messages = new Discord.Collection<string, Discord.Message>();
+	let fetched: MessageCollection | undefined;
+
+	do {
+		fetched = await channel.messages.fetch({
+			limit: 100,
+			before: fetched ? fetched.last()?.id : undefined,
+		});
+		fetched.map((msg, id) => messages.set(id, msg));
+	} while (
+		fetched.size >= 100 &&
+		(fetched.last()?.createdAt ?? 1) > (after ?? 0)
+	);
+
+	return messages;
 }

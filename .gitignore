@@ -4,3 +4,5 @@ data/
 docker-compose.yml
 
 .vscode
+
+shell.nix

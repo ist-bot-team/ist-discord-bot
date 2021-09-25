@@ -53,7 +53,7 @@ export async function parseExistingMessages(
 	let count = 0;
 	for (const channel of channels) {
 		try {
-			const messages = await channel.messages.fetch({ limit: 100 });
+			const messages = await utils.fetchAllChannelMessages(channel);
 
 			for (const [_id, message] of messages) {
 				try {
@@ -105,9 +105,7 @@ export function provideCommands(): CommandDescriptor[] {
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("clean")
-			.setDescription(
-				"Clean (an) existing gallery channel(s), 100 messages/14 days"
-			)
+			.setDescription("Clean (an) existing gallery channel(s)")
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
