@@ -169,5 +169,90 @@ export async function handleCommand(
 	interaction: Discord.CommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
-	//
+	switch (interaction.options.getSubcommand()) {
+		case "create": {
+			try {
+				//FIXME: Assuming acronym = name and fenix-acronym = acronym. Please check!
+				const name = interaction.options.getString("acronym", true);
+				const role = interaction.options.getRole("role", true);
+				const tier = interaction.options.getString("tier", true);
+				const acronym = interaction.options.getString(
+					"fenix-acronym",
+					false
+				);
+				const degreeTextChannel = interaction.options.getChannel(
+					"degree-text-channel",
+					false
+				);
+				const degreeVoiceChannel = interaction.options.getChannel(
+					"degree-voice-channel",
+					false
+				);
+				const courseSelectionChannel = interaction.options.getChannel(
+					"course-selection-channel",
+					false
+				);
+				const announcementsChannel = interaction.options.getChannel(
+					"announcements-channel",
+					false
+				);
+			} catch (e) {
+				await interaction.editReply("X  Something went wrong.");
+			}
+
+			break;
+		}
+		case "delete": {
+			try {
+				const name = interaction.options.getString("acronym", true);
+			} catch (e) {
+				await interaction.editReply("X  Something went wrong.");
+			}
+
+			break;
+		}
+		case "rename": {
+			try {
+				const name = interaction.options.getString("acronym", true);
+				const newName = interaction.options.getString("new-name", true);
+			} catch (e) {
+				await interaction.editReply("X  Something went wrong.");
+			}
+
+			break;
+		}
+		case "set-role": {
+			try {
+				const name = interaction.options.getString("acronym", true);
+				const newRole = interaction.options.getRole("new-role", true);
+			} catch (e) {
+				await interaction.editReply("X  Something went wrong.");
+			}
+
+			break;
+		}
+		case "set-tier": {
+			try {
+				const name = interaction.options.getString("acronym", true);
+				const newTier = interaction.options.getString("new-tier", true);
+			} catch (e) {
+				await interaction.editReply("X  Something went wrong.");
+			}
+
+			break;
+		}
+		case "set-channel": {
+			try {
+				const name = interaction.options.getString("acronym", true);
+				const channelType = interaction.options.getString(
+					"channel-type",
+					true
+				);
+			} catch (e) {
+				await interaction.editReply("X  Something went wrong.");
+			}
+
+			break;
+		}
+	}
 }
