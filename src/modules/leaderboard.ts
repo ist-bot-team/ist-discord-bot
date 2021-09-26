@@ -246,23 +246,27 @@ export async function handleCommand(
 						number,
 						utils.ThenArg<ReturnType<typeof sendLeaderboard>>
 					];
-				await interaction.editReply(`✅ Sent [here](https://discord.com/channels/${
-					interaction.guildId as string
-				}/${interaction.channelId as string}/${msgId})
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Sent [here](https://discord.com/channels/${
+							interaction.guildId as string
+						}/${interaction.channelId as string}/${msgId})
 
 Took ${delta}ms, combed through ${channels} channels and ${msgs} messages.
 ${
 	failed.length
-		? "❌ Failed to go through the following channels: " +
+		? utils.XEmoji +
+		  "Failed to go through the following channels: " +
 		  failed.map((c) => "<#" + c.id + ">").join(", ") +
 		  "; as such, did not cache anything"
 		: "Did not fail to go through any channel; cached " +
 		  cached +
 		  " characters"
-}`);
+}`
+				);
 			} catch (e) {
 				await interaction
-					.editReply("❌ Something went wrong.")
+					.editReply(utils.XEmoji + "Something went wrong.")
 					.catch(() => console.error("Leaderboard took too long :("));
 			}
 			break;

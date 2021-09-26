@@ -6,6 +6,7 @@ import * as Builders from "@discordjs/builders";
 
 import { getConfigFactory } from "./utils";
 import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
@@ -258,9 +259,9 @@ export async function handleRoleSelectionMenu(
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 
 	if (await handleRoleSelection(groupId, roles, interaction.values, prisma)) {
-		await interaction.editReply("✅ Role applied.");
+		await interaction.editReply(utils.CheckMarkEmoji + "Role applied.");
 	} else {
-		await interaction.editReply("❌ Failed to apply role.");
+		await interaction.editReply(utils.XEmoji + "Failed to apply role.");
 	}
 }
 // FIXME: these two (v & ^) are a bit humid
@@ -274,9 +275,9 @@ export async function handleRoleSelectionButton(
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 
 	if (await handleRoleSelection(sp[1], roles, [sp[2]], prisma)) {
-		await interaction.editReply("✅ Role applied.");
+		await interaction.editReply(utils.CheckMarkEmoji + "Role applied.");
 	} else {
-		await interaction.editReply("❌ Failed to apply role.");
+		await interaction.editReply(utils.XEmoji + "Failed to apply role.");
 	}
 }
 
@@ -934,11 +935,13 @@ export async function handleCommand(
 					);
 					if (succ) {
 						await interaction.editReply(
-							`✅ Role selection group \`${res}\` successfully created.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${res}\` successfully created.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not create group because: **${res}**`
+							utils.XEmoji +
+								`Could not create group because: **${res}**`
 						);
 					}
 					break;
@@ -952,11 +955,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully deleted.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully deleted.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not delete group because: **${res}**`
+							utils.XEmoji +
+								`Could not delete group because: **${res}**`
 						);
 					}
 					break;
@@ -971,11 +976,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully edited.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully edited.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not edit group because: **${res}**`
+							utils.XEmoji +
+								`Could not edit group because: **${res}**`
 						);
 					}
 					break;
@@ -990,11 +997,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully edited.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully edited.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not edit group because: **${res}**`
+							utils.XEmoji +
+								`Could not edit group because: **${res}**`
 						);
 					}
 					break;
@@ -1008,11 +1017,13 @@ export async function handleCommand(
 					const res = await moveGroup(prisma, id, channel);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully moved to <#${channel.id}>.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully moved to <#${channel.id}>.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not move group because: **${res}**`
+							utils.XEmoji +
+								`Could not move group because: **${res}**`
 						);
 					}
 					break;
@@ -1053,7 +1064,7 @@ export async function handleCommand(
 							(e as Error).message
 						);
 						await interaction.editReply(
-							"❌ Failed to list role groups."
+							utils.XEmoji + "Failed to list role groups."
 						);
 					}
 					break;
@@ -1076,11 +1087,12 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							"✅ Option successfully added."
+							utils.CheckMarkEmoji + "Option successfully added."
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not add option because: **${res}**`
+							utils.XEmoji +
+								`Could not add option because: **${res}**`
 						);
 					}
 					break;
@@ -1093,11 +1105,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							"✅ Option successfully removed."
+							utils.CheckMarkEmoji +
+								"Option successfully removed."
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not remove option because: **${res}**`
+							utils.XEmoji +
+								`Could not remove option because: **${res}**`
 						);
 					}
 					break;
@@ -1118,7 +1132,8 @@ export async function handleCommand(
 						);
 
 						await interaction.editReply(
-							"✅ Role selection messages successfully sent."
+							utils.CheckMarkEmoji +
+								"Role selection messages successfully sent."
 						);
 					} catch (e) {
 						console.error(
@@ -1126,7 +1141,8 @@ export async function handleCommand(
 							(e as Error).message
 						);
 						await interaction.editReply(
-							"❌ Failed to send role selection messages."
+							utils.XEmoji +
+								"Failed to send role selection messages."
 						);
 					}
 					break;
@@ -1146,7 +1162,9 @@ export async function handleCommand(
 							.replace(/\\n/g, "\n");
 
 						if (!["message", "label"].includes(field)) {
-							await interaction.editReply("❌ Invalid name.");
+							await interaction.editReply(
+								utils.XEmoji + "Invalid name."
+							);
 						}
 
 						const fqkey = `tourist:${field}`;
@@ -1158,11 +1176,12 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							`✅ Successfully set TourIST ${field}.`
+							utils.CheckMarkEmoji +
+								`Successfully set TourIST ${field}.`
 						);
 					} catch (e) {
 						await interaction.editReply(
-							"❌ Failed to set TourIST info."
+							utils.XEmoji + "Failed to set TourIST info."
 						);
 					}
 					break;
@@ -1174,7 +1193,9 @@ export async function handleCommand(
 						) as Discord.GuildChannel;
 
 						if (!channel.isText() && !channel.isThread()) {
-							await interaction.editReply("❌ Invalid channel.");
+							await interaction.editReply(
+								utils.XEmoji + "Invalid channel."
+							);
 						}
 
 						const fqkey = `tourist:channel_id`;
@@ -1186,11 +1207,12 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							`✅ Successfully set TourIST channel.`
+							utils.CheckMarkEmoji +
+								`Successfully set TourIST channel.`
 						);
 					} catch (e) {
 						await interaction.editReply(
-							"❌ Failed to set TourIST channel."
+							utils.XEmoji + "Failed to set TourIST channel."
 						);
 					}
 					break;
@@ -1210,11 +1232,12 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							"✅ Successfully set TourIST role."
+							utils.CheckMarkEmoji +
+								"Successfully set TourIST role."
 						);
 					} catch (e) {
 						await interaction.editReply(
-							"❌ Failed to set TourIST role."
+							utils.XEmoji + "Failed to set TourIST role."
 						);
 					}
 					break;
@@ -1245,7 +1268,9 @@ export async function handleCommand(
 							);
 						await interaction.editReply({ embeds: [embed] });
 					} catch (e) {
-						await interaction.editReply("❌ Something went wrong.");
+						await interaction.editReply(
+							utils.XEmoji + "Something went wrong."
+						);
 					}
 
 					break;

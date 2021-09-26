@@ -8,6 +8,9 @@ import * as Discord from "discord.js";
 // ThenArgRecursive from https://stackoverflow.com/a/49889856
 export type ThenArg<T> = T extends PromiseLike<infer U> ? ThenArg<U> : T;
 
+export const XEmoji = "❌ ";
+export const CheckMarkEmoji = "✅ ";
+
 export async function timeFunction(
 	fun: () => Promise<unknown>
 ): Promise<number | [number, unknown]> {

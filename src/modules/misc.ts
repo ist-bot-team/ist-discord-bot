@@ -134,12 +134,14 @@ export async function handleSayCommand(
 					} mentions)`
 				);
 			}
-			await interaction.editReply("✅ Successfully sent message.");
+			await interaction.editReply(
+				utils.CheckMarkEmoji + "Successfully sent message."
+			);
 			return;
 		}
 		throw new Error("???");
 	} catch (e) {
-		await interaction.editReply("❌ Something went wrong.");
+		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }
 
@@ -158,7 +160,7 @@ export async function handleWhoSaidCommand(
 		}
 	} catch (e) {
 		await interaction.editReply(
-			"❌ Something went wrong, maybe wrong message ID?"
+			utils.XEmoji + "Something went wrong, maybe wrong message ID?"
 		);
 	}
 }

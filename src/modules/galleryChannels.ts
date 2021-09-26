@@ -154,17 +154,19 @@ export async function handleCommand(
 
 				if (galleries.includes(channel)) {
 					await interaction.editReply(
-						"❌ Channel is already a gallery."
+						utils.XEmoji + "Channel is already a gallery."
 					);
 				} else {
 					galleries.push(channel);
 					await updateGalleries(prisma, galleries);
 					await interaction.editReply(
-						"✅ Gallery successfully added."
+						utils.CheckMarkEmoji + "Gallery successfully added."
 					);
 				}
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 			break;
 		}
@@ -176,18 +178,22 @@ export async function handleCommand(
 				).id;
 
 				if (!galleries.includes(channel)) {
-					await interaction.editReply("❌ Channel is not a gallery.");
+					await interaction.editReply(
+						utils.XEmoji + "Channel is not a gallery."
+					);
 				} else {
 					await updateGalleries(
 						prisma,
 						galleries.filter((c) => c != channel)
 					);
 					await interaction.editReply(
-						"✅ Gallery successfully removed."
+						utils.CheckMarkEmoji + "Gallery successfully removed."
 					);
 				}
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 			break;
 		}
@@ -227,10 +233,14 @@ export async function handleCommand(
 					];
 				}
 				const n = await parseExistingMessages(prisma, channels);
-				await interaction.editReply(`✅ Cleaned \`${n}\` messages.`);
+				await interaction.editReply(
+					utils.CheckMarkEmoji + `Cleaned \`${n}\` messages.`
+				);
 				break;
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 		}
 	}

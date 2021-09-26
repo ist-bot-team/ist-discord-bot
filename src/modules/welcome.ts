@@ -5,6 +5,7 @@ import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
 
 async function getWelcomeChannel(
 	prisma: PrismaClient,
@@ -83,7 +84,7 @@ export async function handleCommand(
 				) as Discord.GuildChannel;
 				if (!channel.isText()) {
 					await interaction.editReply(
-						"❌ Channel must be a text channel."
+						utils.XEmoji + "Channel must be a text channel."
 					);
 				} else {
 					await prisma.config.upsert({
@@ -95,7 +96,8 @@ export async function handleCommand(
 						},
 					});
 					await interaction.editReply(
-						`✅ Welcome channel successfully set as <#${channel.id}>.`
+						utils.CheckMarkEmoji +
+							`Welcome channel successfully set as <#${channel.id}>.`
 					);
 				}
 				break;
@@ -109,7 +111,7 @@ export async function handleCommand(
 					create: { key: "welcome:message", value },
 				});
 				await interaction.editReply(
-					`✅ Welcome message successfully set.`
+					utils.CheckMarkEmoji + `Welcome message successfully set.`
 				);
 				break;
 			}
@@ -135,6 +137,6 @@ export async function handleCommand(
 			}
 		}
 	} catch (e) {
-		await interaction.editReply("❌ Something went wrong.");
+		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }
