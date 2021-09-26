@@ -25,6 +25,7 @@
 		"@types/better-sqlite3": "^5.4.3",
 		"discord.js": "^13.0.1",
 		"node-cron": "^3.0.0",
+		"node-fetch": "^3.0.0",
 		"path": "^0.12.7"
 	},
 	"devDependencies": {

@@ -1,24 +1,27 @@
 import { PrismaClient } from "@prisma/client";
+import fetch from "node-fetch";
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import * as fenix from "./fenix";
+
+const tierChoices = [
+	"None",
+	"Degree channels (Text & VC)",
+	"1 + Course channels (& course selection channel)",
+	"2 + Announcements channel",
+].map(
+	(desc, i) =>
+		[`${i}: ${i > 1 ? i - 1 + " + " : ""}${desc}`, i.toString()] as [
+			name: string,
+			value: string
+		]
+);
 
 export function provideCommands(): CommandDescriptor[] {
-	const tierChoices = [
-		"None",
-		"Degree channels (Text & VC)",
-		"1 + Course channels (& course selection channel)",
-		"2 + Announcements channel",
-	].map(
-		(desc, i) =>
-			[`${i}: ${i > 1 ? i - 1 + " + " : ""}${desc}`, i.toString()] as [
-				name: string,
-				value: string
-			]
-	);
 	const cmd = new Builders.SlashCommandBuilder()
 		.setName("degrees")
 		.setDescription("Manage degrees");
@@ -166,37 +169,153 @@ export function provideCommands(): CommandDescriptor[] {
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
+export async function createDegree(
+	prisma: PrismaClient,
+	guild: Discord.Guild,
+	acronym: string,
+	role: Discord.Role,
+	tier: number,
+	fenixAcronym: string | null,
+	degreeTextChannel: Discord.GuildChannel | null,
+	degreeVoiceChannel: Discord.GuildChannel | null,
+	courseSelectionChannel: Discord.GuildChannel | null,
+	announcementsChannel: Discord.GuildChannel | null
+): Promise<true | string> {
+	if (!tierChoices.map((arr) => arr[1]).includes(tier.toString())) {
+		return "Invalid tier";
+	}
+
+	if (!fenixAcronym) fenixAcronym = acronym;
+
+	const degrees = await fenix.getDegrees();
+	const shortDegree = degrees.filter(
+		(d) => d.acronym.toLowerCase() === fenixAcronym?.toLowerCase()
+	)[0];
+
+	if (shortDegree === undefined) {
+		return "Could not find degree; try setting a fenix-acronym";
+	}
+
+	const reason = "Adding new degree " + acronym;
+
+	if (tier >= 1) {
+		const catName = role.name.toUpperCase();
+		const category =
+			(
+				degreeTextChannel ??
+				degreeVoiceChannel ??
+				courseSelectionChannel ??
+				announcementsChannel
+			)?.parent ??
+			((await guild.channels.fetch())
+				.filter(
+					(c) => c.type === "GUILD_CATEGORY" && c.name === catName
+				)
+				.first() as Discord.CategoryChannel | undefined) ??
+			(await guild.channels.create(catName, {
+				type: "GUILD_CATEGORY",
+				permissionOverwrites: [
+					{
+						id: guild.roles.everyone.id,
+						deny: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+					},
+					{
+						id: role.id,
+						allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+					},
+				],
+				reason,
+			}));
+		if (!degreeTextChannel) {
+			degreeTextChannel = await guild.channels.create(
+				acronym.toLowerCase(),
+				{
+					type: "GUILD_TEXT",
+					topic: shortDegree.name,
+					parent: category,
+					reason,
+				}
+			);
+			await degreeTextChannel.lockPermissions();
+		}
+		if (!degreeVoiceChannel) {
+			degreeVoiceChannel = await guild.channels.create(
+				acronym.toUpperCase(),
+				{
+					type: "GUILD_VOICE",
+					parent: category,
+					reason,
+				}
+			);
+			await degreeVoiceChannel.lockPermissions();
+		}
+	}
+
+	await prisma.degree.create({
+		data: {
+			fenixId: shortDegree.id,
+			acronym,
+			name: shortDegree.name,
+			roleId: role.id,
+			tier,
+			degreeTextChannelId: degreeTextChannel
+				? degreeTextChannel.id
+				: null,
+			degreeVoiceChannelId: degreeVoiceChannel
+				? degreeVoiceChannel.id
+				: null,
+			announcementsChannelId: announcementsChannel
+				? announcementsChannel.id
+				: null,
+			courseSelectionChannelId: courseSelectionChannel
+				? courseSelectionChannel.id
+				: null,
+		},
+	});
+
+	return true;
+}
+
 export async function handleCommand(
 	interaction: Discord.CommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
+	if (!interaction.guild) return;
+
 	switch (interaction.options.getSubcommand()) {
 		case "create": {
 			try {
-				//FIXME: Assuming acronym = name and fenix-acronym = acronym. Please check!
-				const name = interaction.options.getString("acronym", true);
-				const role = interaction.options.getRole("role", true);
-				const tier = interaction.options.getString("tier", true);
-				const acronym = interaction.options.getString(
-					"fenix-acronym",
-					false
+				const result = await createDegree(
+					prisma,
+					interaction.guild,
+					interaction.options.getString("acronym", true),
+					interaction.options.getRole("role", true) as Discord.Role,
+					parseInt(interaction.options.getString("tier", true)),
+					interaction.options.getString("fenix-acronym", false),
+					interaction.options.getChannel(
+						"degree-text-channel",
+						false
+					) as Discord.GuildChannel | null,
+					interaction.options.getChannel(
+						"degree-voice-channel",
+						false
+					) as Discord.GuildChannel | null,
+					interaction.options.getChannel(
+						"course-selection-channel",
+						false
+					) as Discord.GuildChannel | null,
+					interaction.options.getChannel(
+						"announcements-channel",
+						false
+					) as Discord.GuildChannel | null
 				);
-				const degreeTextChannel = interaction.options.getChannel(
-					"degree-text-channel",
-					false
-				);
-				const degreeVoiceChannel = interaction.options.getChannel(
-					"degree-voice-channel",
-					false
-				);
-				const courseSelectionChannel = interaction.options.getChannel(
-					"course-selection-channel",
-					false
-				);
-				const announcementsChannel = interaction.options.getChannel(
-					"announcements-channel",
-					false
-				);
+				if (result === true) {
+					await interaction.editReply(
+						utils.CheckMarkEmoji + "Sucessfully created degree."
+					);
+				} else {
+					await interaction.editReply(utils.XEmoji + result);
+				}
 			} catch (e) {
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
@@ -207,7 +326,7 @@ export async function handleCommand(
 		}
 		case "delete": {
 			try {
-				const name = interaction.options.getString("acronym", true);
+				const acronym = interaction.options.getString("acronym", true);
 			} catch (e) {
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
@@ -218,7 +337,7 @@ export async function handleCommand(
 		}
 		case "rename": {
 			try {
-				const name = interaction.options.getString("acronym", true);
+				const acronym = interaction.options.getString("acronym", true);
 				const newName = interaction.options.getString("new-name", true);
 			} catch (e) {
 				await interaction.editReply(
@@ -230,7 +349,7 @@ export async function handleCommand(
 		}
 		case "set-role": {
 			try {
-				const name = interaction.options.getString("acronym", true);
+				const acronym = interaction.options.getString("acronym", true);
 				const newRole = interaction.options.getRole("new-role", true);
 			} catch (e) {
 				await interaction.editReply(
@@ -242,7 +361,7 @@ export async function handleCommand(
 		}
 		case "set-tier": {
 			try {
-				const name = interaction.options.getString("acronym", true);
+				const acronym = interaction.options.getString("acronym", true);
 				const newTier = interaction.options.getString("new-tier", true);
 			} catch (e) {
 				await interaction.editReply(
@@ -254,7 +373,7 @@ export async function handleCommand(
 		}
 		case "set-channel": {
 			try {
-				const name = interaction.options.getString("acronym", true);
+				const acronym = interaction.options.getString("acronym", true);
 				const channelType = interaction.options.getString(
 					"channel-type",
 					true
