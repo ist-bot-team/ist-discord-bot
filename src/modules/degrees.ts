@@ -4,6 +4,7 @@ import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
 
 export function provideCommands(): CommandDescriptor[] {
 	const tierChoices = [
@@ -197,7 +198,9 @@ export async function handleCommand(
 					false
 				);
 			} catch (e) {
-				await interaction.editReply("X  Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
@@ -206,7 +209,9 @@ export async function handleCommand(
 			try {
 				const name = interaction.options.getString("acronym", true);
 			} catch (e) {
-				await interaction.editReply("X  Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
@@ -216,7 +221,9 @@ export async function handleCommand(
 				const name = interaction.options.getString("acronym", true);
 				const newName = interaction.options.getString("new-name", true);
 			} catch (e) {
-				await interaction.editReply("X  Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
@@ -226,7 +233,9 @@ export async function handleCommand(
 				const name = interaction.options.getString("acronym", true);
 				const newRole = interaction.options.getRole("new-role", true);
 			} catch (e) {
-				await interaction.editReply("X  Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
@@ -236,7 +245,9 @@ export async function handleCommand(
 				const name = interaction.options.getString("acronym", true);
 				const newTier = interaction.options.getString("new-tier", true);
 			} catch (e) {
-				await interaction.editReply("X  Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
@@ -249,7 +260,9 @@ export async function handleCommand(
 					true
 				);
 			} catch (e) {
-				await interaction.editReply("X  Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
