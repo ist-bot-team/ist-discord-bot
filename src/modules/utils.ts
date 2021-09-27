@@ -5,8 +5,7 @@ import { performance } from "perf_hooks";
 import { PrismaClient } from "@prisma/client";
 import * as Discord from "discord.js";
 
-// ThenArgRecursive from https://stackoverflow.com/a/49889856
-export type ThenArg<T> = T extends PromiseLike<infer U> ? ThenArg<U> : T;
+import { MessageCollection } from "./utils.d";
 
 export const XEmoji = "❌ ";
 export const CheckMarkEmoji = "✅ ";
@@ -73,8 +72,6 @@ export async function fetchGalleries(
 		.split(",")
 		.filter((c) => c.length);
 }
-
-export type MessageCollection = Discord.Collection<string, Discord.Message>;
 
 export async function fetchAllChannelMessages(
 	channel: Discord.TextChannel | Discord.ThreadChannel,

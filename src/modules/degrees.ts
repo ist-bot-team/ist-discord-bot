@@ -6,6 +6,7 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
 import * as fenix from "./fenix";
+import { OrphanChannel } from "./courses.d";
 
 const tierChoices = [
 	"None",
@@ -179,7 +180,7 @@ export async function createDegree(
 	degreeVoiceChannel: Discord.GuildChannel | null,
 	courseSelectionChannel: Discord.GuildChannel | null,
 	announcementsChannel: Discord.GuildChannel | null
-): Promise<Discord.Snowflake[] | string> {
+): Promise<OrphanChannel[] | string> {
 	// snowflakes are orphan channels; FIXME: change to course.OrphanChannel[]
 	if (!tierChoices.map((arr) => arr[1]).includes(tier.toString())) {
 		return "Invalid tier";
@@ -374,7 +375,7 @@ export async function handleCommand(
 							"Sucessfully created degree." +
 							result.length
 							? `\nConsider deleting the following ${result.length} orphan channel(s):\n` +
-									result.map((id) => `- <#${id}>`).join("\n")
+									result.map((c) => `- <#${c.id}>`).join("\n")
 							: ""
 					);
 				}
