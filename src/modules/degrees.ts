@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import fetch from "node-fetch";
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
@@ -248,6 +247,35 @@ export async function createDegree(
 				}
 			);
 			await degreeVoiceChannel.lockPermissions();
+		}
+
+		if (tier >= 2) {
+			if (!courseSelectionChannel) {
+				courseSelectionChannel = await guild.channels.create(
+					"cadeiras-" + acronym.toLowerCase(),
+					{
+						type: "GUILD_TEXT",
+						topic: "Selecionar cadeiras",
+						parent: category,
+						reason,
+						permissionOverwrites: [
+							{
+								id: guild.roles.everyone,
+								deny: [
+									Discord.Permissions.FLAGS.VIEW_CHANNEL,
+									Discord.Permissions.FLAGS.SEND_MESSAGES,
+								],
+							},
+							{
+								id: role.id,
+								allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+							},
+						],
+					}
+				);
+			}
+
+			// TODO: course stuff
 		}
 	}
 
