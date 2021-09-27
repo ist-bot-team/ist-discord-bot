@@ -179,7 +179,8 @@ export async function createDegree(
 	degreeVoiceChannel: Discord.GuildChannel | null,
 	courseSelectionChannel: Discord.GuildChannel | null,
 	announcementsChannel: Discord.GuildChannel | null
-): Promise<true | string> {
+): Promise<Discord.Snowflake[] | string> {
+	// snowflakes are orphan channels; FIXME: change to course.OrphanChannel[]
 	if (!tierChoices.map((arr) => arr[1]).includes(tier.toString())) {
 		return "Invalid tier";
 	}
@@ -250,32 +251,58 @@ export async function createDegree(
 		}
 
 		if (tier >= 2) {
+			const restricted = [
+				{
+					id: guild.roles.everyone,
+					deny: [
+						Discord.Permissions.FLAGS.VIEW_CHANNEL,
+						Discord.Permissions.FLAGS.SEND_MESSAGES,
+					],
+				},
+				{
+					id: role.id,
+					allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+				},
+			];
+
 			if (!courseSelectionChannel) {
 				courseSelectionChannel = await guild.channels.create(
-					"cadeiras-" + acronym.toLowerCase(),
+					acronym.toLowerCase() + "-cadeiras",
 					{
 						type: "GUILD_TEXT",
 						topic: "Selecionar cadeiras",
 						parent: category,
 						reason,
-						permissionOverwrites: [
-							{
-								id: guild.roles.everyone,
-								deny: [
-									Discord.Permissions.FLAGS.VIEW_CHANNEL,
-									Discord.Permissions.FLAGS.SEND_MESSAGES,
-								],
-							},
-							{
-								id: role.id,
-								allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
-							},
-						],
+						permissionOverwrites: restricted,
 					}
 				);
 			}
 
-			// TODO: course stuff
+			if (tier >= 3) {
+				if (!announcementsChannel) {
+					const announcer = (await guild.roles.fetch())
+						.filter((r) => r.name === "Announcer")
+						.first();
+					announcementsChannel = await guild.channels.create(
+						acronym.toLowerCase() + "-announcements",
+						{
+							type: "GUILD_NEWS",
+							topic: shortDegree.name + " Announcements",
+							parent: category,
+							reason,
+							permissionOverwrites: announcer
+								? restricted.concat({
+										id: announcer.id,
+										allow: [
+											Discord.Permissions.FLAGS
+												.SEND_MESSAGES,
+										],
+								  })
+								: restricted,
+						}
+					);
+				}
+			}
 		}
 	}
 
@@ -301,7 +328,9 @@ export async function createDegree(
 		},
 	});
 
-	return true;
+	// FIXME: return await courses.refreshCourses(prisma, guild)
+
+	return [];
 }
 
 export async function handleCommand(
@@ -337,12 +366,17 @@ export async function handleCommand(
 						false
 					) as Discord.GuildChannel | null
 				);
-				if (result === true) {
-					await interaction.editReply(
-						utils.CheckMarkEmoji + "Sucessfully created degree."
-					);
-				} else {
+				if (typeof result === "string") {
 					await interaction.editReply(utils.XEmoji + result);
+				} else {
+					await interaction.editReply(
+						utils.CheckMarkEmoji +
+							"Sucessfully created degree." +
+							result.length
+							? `\nConsider deleting the following ${result.length} orphan channel(s):\n` +
+									result.map((id) => `- <#${id}>`).join("\n")
+							: ""
+					);
 				}
 			} catch (e) {
 				await interaction.editReply(
