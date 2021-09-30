@@ -40,10 +40,10 @@ services:
 ```
 
 2. Create a folder named `data` for Docker to store things in
-3. Run `docker-compose up -d --build`
+3. Run `docker compose up -d --build`
 4. That's it!
 
-_You can also use `docker-compose down`, `docker-compose up`, `docker-compose restart` and `docker-compose logs [-f]`._
+_You can also use `docker compose down`, `docker compose up`, `docker compose restart` and `docker compose logs [-f]`._
 
 ### Adding to a Server
 
