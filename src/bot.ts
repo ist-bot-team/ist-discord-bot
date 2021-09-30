@@ -19,6 +19,8 @@ import * as galleryChannels from "./modules/galleryChannels";
 import * as voiceThreads from "./modules/voiceThreads";
 import * as welcome from "./modules/welcome";
 import * as leaderboard from "./modules/leaderboard";
+import * as degrees from "./modules/degrees";
+import { getDegreeCourses } from "./modules/fenix";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
@@ -57,6 +59,7 @@ const commandProviders: CommandProvider[] = [
 	voiceThreads.provideCommands,
 	welcome.provideCommands,
 	leaderboard.provideCommands,
+	degrees.provideCommands,
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};
@@ -179,6 +182,13 @@ const startupChores: Chore[] = [
 			}
 		},
 		complete: "All slash command permissions overwritten",
+	},
+	{
+		summary: "Test fenix api",
+		fn: async () => {
+			getDegreeCourses("2761663971474");
+		},
+		complete: "Finished testing fenix api",
 	},
 ];
 

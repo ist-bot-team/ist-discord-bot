@@ -8,6 +8,7 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 
 import * as utils from "./utils";
+import { ThenArg } from "./utils.d";
 
 const MAX_PEOPLE = 50;
 
@@ -242,10 +243,7 @@ export async function handleCommand(
 								period,
 								prisma
 							)
-					)) as [
-						number,
-						utils.ThenArg<ReturnType<typeof sendLeaderboard>>
-					];
+					)) as [number, ThenArg<ReturnType<typeof sendLeaderboard>>];
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Sent [here](https://discord.com/channels/${

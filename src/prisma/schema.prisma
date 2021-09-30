@@ -66,8 +66,8 @@ model Course {
     acronym                  String         @id /// let's hope this is unique
     displayAcronym           String         @unique @map("display_acronym") // e.g., fp > fprog 
     name                     String         @unique
-    channelId                String         @unique @map("channel_id")
-    roleId                   String         @unique @map("role_id")
+    channelId                String?        @unique @map("channel_id")
+    roleId                   String?        @unique @map("role_id")
     perDegreeImplementations DegreeCourse[]
 }
 

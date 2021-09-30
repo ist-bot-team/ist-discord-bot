@@ -16,3 +16,10 @@ export interface ShortDegree {
 	acronym: string;
 	academicTerms: string[];
 }
+
+export interface FenixDegreeCourse {
+	acronym: string;
+	name: string;
+	year: number;
+	semester: number;
+}

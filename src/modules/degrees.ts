@@ -6,13 +6,14 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
 import * as fenix from "./fenix";
+import * as courses from "./courses";
 import { OrphanChannel } from "./courses.d";
 
 const tierChoices = [
 	"None",
 	"Degree channels (Text & VC)",
-	"1 + Course channels (& course selection channel)",
-	"2 + Announcements channel",
+	"Course channels (& course selection channel)",
+	"Announcements channel",
 ].map(
 	(desc, i) =>
 		[`${i}: ${i > 1 ? i - 1 + " + " : ""}${desc}`, i.toString()] as [
@@ -90,6 +91,7 @@ export function provideCommands(): CommandDescriptor[] {
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
+					.setDescription("The acronym of the degree to be removed")
 					.setRequired(true)
 			)
 	);
@@ -189,9 +191,9 @@ export async function createDegree(
 	if (!fenixAcronym) fenixAcronym = acronym;
 
 	const degrees = await fenix.getDegrees();
-	const shortDegree = degrees.filter(
+	const shortDegree = degrees.find(
 		(d) => d.acronym.toLowerCase() === fenixAcronym?.toLowerCase()
-	)[0];
+	);
 
 	if (shortDegree === undefined) {
 		return "Could not find degree; try setting a fenix-acronym";
@@ -287,7 +289,7 @@ export async function createDegree(
 					announcementsChannel = await guild.channels.create(
 						acronym.toLowerCase() + "-announcements",
 						{
-							type: "GUILD_NEWS",
+							type: "GUILD_TEXT",
 							topic: shortDegree.name + " Announcements",
 							parent: category,
 							reason,
@@ -329,9 +331,9 @@ export async function createDegree(
 		},
 	});
 
-	// FIXME: return await courses.refreshCourses(prisma, guild)
+	await courses.importCoursesFromDegree(prisma, shortDegree.id);
 
-	return [];
+	return await courses.refreshCourses(prisma, guild);
 }
 
 export async function handleCommand(
@@ -390,6 +392,12 @@ export async function handleCommand(
 		case "delete": {
 			try {
 				const acronym = interaction.options.getString("acronym", true);
+
+				await prisma.degree.delete({ where: { acronym } });
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji + "Successfully removed."
+				);
 			} catch (e) {
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
