@@ -62,6 +62,25 @@ export function provideCommands(): CommandDescriptor[] {
 					.setRequired(false)
 			)
 	);
+	cmd.addSubcommand(
+		new SlashCommandSubcommandBuilder()
+			.setName("rename")
+			.setDescription("Set display acronym of course")
+			.addStringOption(
+				new SlashCommandStringOption()
+					.setName("old_acronym")
+					.setDescription("The acronym of the course to be renamed")
+					.setRequired(true)
+			)
+			.addStringOption(
+				new SlashCommandStringOption()
+					.setName("new_acronym")
+					.setDescription(
+						"The acronym to show on channel name and role (e.g. CDI-I)"
+					)
+					.setRequired(true)
+			)
+	);
 
 	return [{ builder: cmd, handler: handleCommand }];
 }
@@ -141,7 +160,6 @@ export async function handleCommand(
 
 			break;
 		}
-
 		case "toggle-channel-visibility": {
 			try {
 				const courseAcronym = interaction.options.getString(
@@ -184,7 +202,7 @@ export async function handleCommand(
 								);
 							if (courseRole) {
 								courseRole.delete(
-									`${interaction.user.discriminator} has hidden course`
+									`${interaction.user.tag} has hidden course`
 								);
 							}
 						}
@@ -212,6 +230,76 @@ export async function handleCommand(
 					utils.XEmoji + "Something went wrong."
 				);
 			}
+			break;
+		}
+		case "rename": {
+			try {
+				const oldAcronym = interaction.options.getString(
+					"old_acronym",
+					true
+				);
+				const newAcronym = interaction.options.getString(
+					"new_acronym",
+					true
+				);
+
+				const course = await prisma.course.findUnique({
+					where: { displayAcronym: oldAcronym },
+				});
+				if (!course) {
+					await interaction.editReply(
+						utils.XEmoji + `Course \`${oldAcronym}\` not found!`
+					);
+					return;
+				}
+
+				await prisma.course.update({
+					where: { displayAcronym: oldAcronym },
+					data: { displayAcronym: newAcronym },
+				});
+
+				try {
+					const courseChannel =
+						await interaction.guild.channels.fetch(
+							course.channelId || ""
+						);
+					const roleChannel = await interaction.guild.roles.fetch(
+						course.roleId || ""
+					);
+					if (courseChannel) {
+						courseChannel.edit(
+							{
+								name: newAcronym.toLowerCase(),
+								topic: `${course.name} - ${newAcronym}`,
+							},
+							`Course rename by ${interaction.user.tag}`
+						);
+					}
+					if (roleChannel) {
+						roleChannel.setName(
+							newAcronym,
+							`Course rename by ${interaction.user.tag}`
+						);
+					}
+				} catch (e) {
+					console.error(e);
+					await interaction.editReply(
+						utils.XEmoji +
+							"Failed to rename channel and/or role, but renamed course on database. Please rename channel and/or role manully."
+					);
+				}
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji + "Course renamed succesfully!"
+				);
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji +
+						"Something went wrong. Maybe there is already another course with the desired acronym?"
+				);
+			}
+
 			break;
 		}
 	}
@@ -321,6 +409,7 @@ export async function refreshCourses(
 		if (!courseRole) {
 			courseRole = await guild.roles.create({
 				name: course.displayAcronym,
+				mentionable: false,
 				reason,
 			});
 			await prisma.course.update({
