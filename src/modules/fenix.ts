@@ -2,8 +2,11 @@
 
 import axios from "axios";
 import cheerio from "cheerio";
+import RSSParser from "rss-parser";
 
 import * as FenixTypings from "./fenix.d";
+
+const parser = new RSSParser();
 
 export const axiosClient = axios.create({
 	baseURL: "https://fenix.tecnico.ulisboa.pt",
@@ -54,7 +57,8 @@ export async function getDegrees(): Promise<FenixTypings.ShortDegree[]> {
 }
 
 export async function getDegreeCourses(
-	degreeId: string
+	degreeId: string,
+	academicYear: string
 ): Promise<FenixTypings.FenixDegreeCourse[]> {
 	const degrees = await getDegrees();
 	const shortDegree = degrees.find((d) => d.id.toLowerCase() === degreeId);
@@ -107,16 +111,54 @@ export async function getDegreeCourses(
 				const coursePageHtml = (await callEndpoint(
 					course.acronym
 				)) as string;
+				const $coursePage = cheerio.load(coursePageHtml);
 				const acronym =
-					cheerio
-						.load(coursePageHtml)("#content-block h1 small")
+					$coursePage("#content-block h1 small")
 						.first()
 						.text()
 						?.trim() || course.name;
 
-				return { ...course, acronym };
+				const executionCourseUrl = $coursePage("#content-block a")
+					.map((_, linkNode) => {
+						const executionCourseLink = $coursePage(linkNode)
+							.attr("href")
+							?.match(/\/disciplinas\/\w+\/([\w-]+)\/[\w-]+/);
+						if (
+							!executionCourseLink ||
+							executionCourseLink[1] !== academicYear
+						)
+							return null;
+
+						return executionCourseLink[0];
+					})
+					.toArray()
+					.find((v) => !!v);
+
+				const rssUrl =
+					executionCourseUrl &&
+					`${executionCourseUrl}/rss/announcement`;
+
+				return { ...course, acronym, announcementsFeedUrl: rssUrl };
 			})
 	);
 
 	return courses;
+}
+
+export async function getRSSFeed<T extends FenixTypings.RSSFeedItem>(
+	url: string,
+	after: Date
+): Promise<T[]> {
+	const data = await callEndpoint(url);
+	const json = await parser.parseString(data as string);
+
+	let item: T[] = (json?.items || []) as T[];
+	if (!Array.isArray(item)) item = [item];
+
+	return item
+		.filter((v) => new Date(v.pubDate) > after)
+		.sort(
+			(a, b) =>
+				new Date(a.pubDate).getTime() - new Date(b.pubDate).getTime()
+		);
 }

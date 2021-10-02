@@ -21,6 +21,7 @@ import * as welcome from "./modules/welcome";
 import * as leaderboard from "./modules/leaderboard";
 import * as degrees from "./modules/degrees";
 import * as courses from "./modules/courses";
+import * as rss from "./modules/rss";
 import { getDegreeCourses } from "./modules/fenix";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
@@ -188,9 +189,16 @@ const startupChores: Chore[] = [
 	{
 		summary: "Test fenix api",
 		fn: async () => {
-			getDegreeCourses("2761663971474");
+			getDegreeCourses("2761663971474", "2020/2021");
 		},
 		complete: "Finished testing fenix api",
+	},
+	{
+		summary: "Start RSS cron job",
+		fn: async () => {
+			rss.scheduleRSSFeedJob(prisma, client);
+		},
+		complete: "Finished starting RSS cron job",
 	},
 ];
 
