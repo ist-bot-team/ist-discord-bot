@@ -1,7 +1,13 @@
 import { CommandDescriptor } from "./../bot.d";
 // Controller for everything courses
 
-import { PrismaClient } from "@prisma/client";
+import {
+	PrismaClient,
+	RoleGroup,
+	RoleGroupOption,
+	DegreeCourse,
+	Course,
+} from "@prisma/client";
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
@@ -485,4 +491,61 @@ export async function refreshCourses(
 	}, Promise.resolve());
 
 	return channels.map((v) => v);
+}
+
+export async function generateRoleSelectionGroupsForCourseSelectionChannel(
+	prisma: PrismaClient,
+	guild: Discord.Guild,
+	channelId: Discord.Snowflake
+): Promise<(RoleGroup & { options: RoleGroupOption[] })[]> {
+	const courses = await prisma.degreeCourse.findMany({
+		where: {
+			degree: {
+				tier: { gte: 2 },
+				courseSelectionChannelId: channelId,
+			},
+			course: {
+				hideChannel: false,
+				roleId: { not: null },
+			},
+		},
+		include: { course: true },
+	});
+	courses.sort((a, b) =>
+		a.course.displayAcronym.localeCompare(b.course.displayAcronym)
+	);
+
+	const byYear: (DegreeCourse & { course: Course })[][] = [];
+	for (const course of courses) {
+		if (byYear[course.year] === undefined) {
+			byYear[course.year] = [];
+		}
+		byYear[course.year].push(course);
+	}
+
+	const channel = (await guild.channels.fetch(
+		channelId
+	)) as Discord.TextChannel;
+
+	return byYear.map((yearCourses, year) =>
+		((groupId) => ({
+			id: groupId,
+			mode: "menu",
+			placeholder: `Escolhe cadeiras de ${year}º ano`,
+			message: `Para acederes aos respetivos canais e receberes anúncios, escolhe em que cadeiras de ${year}º ano tens interesse.`,
+			minValues: 0,
+			maxValues: -1,
+			channelId,
+			messageId: channel.topic,
+			options: yearCourses.map((c) => ({
+				label: c.course.displayAcronym,
+				description: `${c.course.name} (${
+					c.semester === 1 ? "1º Semestre" : "2º Semestre"
+				})`,
+				value: c.course.roleId as string,
+				emoji: null,
+				roleGroupId: groupId,
+			})),
+		}))(`__dc-${channelId}-${year}`)
+	);
 }
