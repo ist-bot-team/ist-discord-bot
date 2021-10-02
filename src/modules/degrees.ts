@@ -84,6 +84,22 @@ export function provideCommands(): CommandDescriptor[] {
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
+			.setName("list")
+			.setDescription("List all degrees")
+	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("view")
+			.setDescription("Show information relative to a degree")
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("acronym")
+					.setDescription("The acronym of the degree to be removed")
+					.setRequired(true)
+			)
+	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
 			.setName("delete")
 			.setDescription(
 				"Remove a degree (no channels/roles will be deleted)"
