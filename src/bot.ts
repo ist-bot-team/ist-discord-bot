@@ -22,7 +22,6 @@ import * as leaderboard from "./modules/leaderboard";
 import * as degrees from "./modules/degrees";
 import * as courses from "./modules/courses";
 import * as rss from "./modules/rss";
-import { getDegreeCourses } from "./modules/fenix";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
@@ -185,13 +184,6 @@ const startupChores: Chore[] = [
 			}
 		},
 		complete: "All slash command permissions overwritten",
-	},
-	{
-		summary: "Test fenix api",
-		fn: async () => {
-			getDegreeCourses("2761663971474", "2020/2021");
-		},
-		complete: "Finished testing fenix api",
 	},
 	{
 		summary: "Start RSS cron job",

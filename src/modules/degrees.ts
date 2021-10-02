@@ -84,6 +84,22 @@ export function provideCommands(): CommandDescriptor[] {
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
+			.setName("list")
+			.setDescription("List all degrees")
+	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("view")
+			.setDescription("Show information relative to a degree")
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("acronym")
+					.setDescription("The acronym of the degree to be removed")
+					.setRequired(true)
+			)
+	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
 			.setName("delete")
 			.setDescription(
 				"Remove a degree (no channels/roles will be deleted)"
@@ -166,6 +182,12 @@ export function provideCommands(): CommandDescriptor[] {
 					.addChoice("Degree Voice", "degree-voice")
 					.addChoice("Announcements", "announcements")
 					.addChoice("Course Selection", "course-selection")
+			)
+			.addChannelOption(
+				new Builders.SlashCommandChannelOption()
+					.setName("new-channel")
+					.setDescription("New channel to set")
+					.setRequired(true)
 			)
 	);
 	cmd.addSubcommand(
@@ -401,6 +423,96 @@ export async function handleCommand(
 
 			break;
 		}
+		case "list": {
+			try {
+				const degrees = await prisma.degree.findMany();
+
+				await interaction.editReply({
+					embeds: [
+						new Discord.MessageEmbed()
+							.setTitle("All Degrees")
+							.setDescription(
+								"Below are all known degrees, by acronym and Fénix ID"
+							)
+							.addFields(
+								degrees.map((d) => ({
+									name: d.acronym,
+									value: d.fenixId,
+									inline: true,
+								}))
+							),
+					],
+				});
+			} catch (e) {
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
+			}
+
+			break;
+		}
+		case "view": {
+			try {
+				const acronym = interaction.options.getString("acronym", true);
+
+				const degree = await prisma.degree.findFirst({
+					where: { acronym },
+				});
+
+				if (degree === null) {
+					await interaction.editReply(
+						utils.XEmoji + "Could not find degree"
+					);
+				} else {
+					await interaction.editReply({
+						embeds: [
+							new Discord.MessageEmbed()
+								.setTitle("Degree Information")
+								.setDescription(
+									"Below are all the available details on this degree."
+								)
+								.addField("Acronym", degree.acronym, true)
+								.addField("Name", degree.name, true)
+								.addField("Fénix ID", degree.fenixId, true)
+								.addField("Tier", degree.tier.toString(), true)
+								.addField("Role", `<@&${degree.roleId}>`, true)
+								.addField(
+									"Text Channel",
+									degree.degreeTextChannelId
+										? `<#${degree.degreeTextChannelId}>`
+										: "[NOT SET]",
+									true
+								)
+								.addField(
+									"Voice Channel",
+									degree.degreeVoiceChannelId ?? "[NOT SET]",
+									true
+								)
+								.addField(
+									"Announcements Channel",
+									degree.announcementsChannelId
+										? `<#${degree.announcementsChannelId}>`
+										: "[NOT SET]",
+									true
+								)
+								.addField(
+									"Course Selection Channel",
+									degree.courseSelectionChannelId
+										? `<#${degree.courseSelectionChannelId}>`
+										: "[NOT SET",
+									true
+								),
+						],
+					});
+				}
+			} catch (e) {
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
+			}
+
+			break;
+		}
 		case "delete": {
 			try {
 				const acronym = interaction.options.getString("acronym", true);
@@ -422,6 +534,16 @@ export async function handleCommand(
 			try {
 				const acronym = interaction.options.getString("acronym", true);
 				const newName = interaction.options.getString("new-name", true);
+
+				await prisma.degree.update({
+					where: { acronym },
+					data: { name: newName },
+				});
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Successfully renamed ${acronym} to ${newName}`
+				);
 			} catch (e) {
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
@@ -434,6 +556,16 @@ export async function handleCommand(
 			try {
 				const acronym = interaction.options.getString("acronym", true);
 				const newRole = interaction.options.getRole("new-role", true);
+
+				await prisma.degree.update({
+					where: { acronym },
+					data: { roleId: newRole.id },
+				});
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Successfully set role of ${acronym} to <@&${newRole.id}>`
+				);
 			} catch (e) {
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
@@ -446,6 +578,22 @@ export async function handleCommand(
 			try {
 				const acronym = interaction.options.getString("acronym", true);
 				const newTier = interaction.options.getString("new-tier", true);
+				const numTier = parseInt(newTier);
+
+				if (isNaN(numTier) || tierChoices[numTier] === undefined) {
+					await interaction.editReply(utils.XEmoji + "Invalid tier");
+					return;
+				}
+
+				await prisma.degree.update({
+					where: { acronym },
+					data: { tier: numTier },
+				});
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Successfully set tier of ${acronym} to ${newTier}`
+				);
 			} catch (e) {
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
@@ -460,6 +608,49 @@ export async function handleCommand(
 				const channelType = interaction.options.getString(
 					"channel-type",
 					true
+				);
+				const newChannel = interaction.options.getChannel(
+					"new-channel",
+					true
+				) as Discord.GuildChannel;
+
+				const key = {
+					["degree-text"]: "degreeText",
+					["degree-voice"]: "degreeVoice",
+					["announcements"]: "announcements",
+					["course-selection"]: "courseSelection",
+				}[channelType];
+
+				if (key === undefined) {
+					await interaction.editReply(
+						utils.XEmoji + "Invalid channel type"
+					);
+					return;
+				}
+
+				if (channelType === "degreeVoice" && !newChannel.isVoice()) {
+					await interaction.editReply(
+						utils.XEmoji + "Must be a voice channel"
+					);
+					return;
+				} else if (
+					channelType !== "degreeVoice" &&
+					newChannel.isVoice()
+				) {
+					await interaction.editReply(
+						utils.XEmoji + "Must not be a voice channel"
+					);
+					return;
+				}
+
+				await prisma.degree.update({
+					where: { acronym },
+					data: { [key]: newChannel.id },
+				});
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Successfully set role of ${acronym} to <@&${newChannel.id}>`
 				);
 			} catch (e) {
 				await interaction.editReply(

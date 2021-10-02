@@ -1,20 +1,20 @@
 import { CommandDescriptor } from "./../bot.d";
 // Controller for everything courses
 
-import { PrismaClient } from "@prisma/client";
+import {
+	PrismaClient,
+	RoleGroup,
+	RoleGroupOption,
+	DegreeCourse,
+	Course,
+} from "@prisma/client";
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
-import { OrphanChannel } from "./courses.d";
+
 import * as fenix from "./fenix";
 import * as utils from "./utils";
-import {
-	SlashCommandBooleanOption,
-	SlashCommandChannelOption,
-	SlashCommandStringOption,
-	SlashCommandSubcommandBuilder,
-	SlashCommandSubcommandGroupBuilder,
-} from "@discordjs/builders";
+import { OrphanChannel } from "./courses.d";
 
 export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
@@ -30,7 +30,7 @@ export function provideCommands(): CommandDescriptor[] {
 		[...new Array(5)].reduce(
 			(builder, _, i) =>
 				builder.addChannelOption(
-					new SlashCommandChannelOption()
+					new Builders.SlashCommandChannelOption()
 						.setName(`category${i + 1}`)
 						.setDescription(`Category ${i + 1}`)
 						.setRequired(i === 0)
@@ -43,19 +43,19 @@ export function provideCommands(): CommandDescriptor[] {
 		)
 	);
 	cmd.addSubcommand(
-		new SlashCommandSubcommandBuilder()
+		new Builders.SlashCommandSubcommandBuilder()
 			.setName("toggle-channel-visibility")
 			.setDescription(
 				"Show or hide a course channel (and role) to remove clutter. This will delete course channel and role"
 			)
 			.addStringOption(
-				new SlashCommandStringOption()
+				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The display acroynm of the course")
 					.setRequired(true)
 			)
 			.addBooleanOption(
-				new SlashCommandBooleanOption()
+				new Builders.SlashCommandBooleanOption()
 					.setName("delete_role")
 					.setDescription(
 						"If hiding channel, delete the course role as well (true by default)"
@@ -64,17 +64,17 @@ export function provideCommands(): CommandDescriptor[] {
 			)
 	);
 	cmd.addSubcommand(
-		new SlashCommandSubcommandBuilder()
+		new Builders.SlashCommandSubcommandBuilder()
 			.setName("rename")
 			.setDescription("Set display acronym of course")
 			.addStringOption(
-				new SlashCommandStringOption()
+				new Builders.SlashCommandStringOption()
 					.setName("old_acronym")
 					.setDescription("The acronym of the course to be renamed")
 					.setRequired(true)
 			)
 			.addStringOption(
-				new SlashCommandStringOption()
+				new Builders.SlashCommandStringOption()
 					.setName("new_acronym")
 					.setDescription(
 						"The acronym to show on channel name and role (e.g. CDI-I)"
@@ -83,17 +83,17 @@ export function provideCommands(): CommandDescriptor[] {
 			)
 	);
 	cmd.addSubcommandGroup(
-		new SlashCommandSubcommandGroupBuilder()
+		new Builders.SlashCommandSubcommandGroupBuilder()
 			.setName("academic_year")
 			.setDescription("Manage the current academic year")
 			.addSubcommand(
-				new SlashCommandSubcommandBuilder()
+				new Builders.SlashCommandSubcommandBuilder()
 					.setName("set")
 					.setDescription(
 						"Set the current academic year (e.g. 2020-2021)"
 					)
 					.addStringOption(
-						new SlashCommandStringOption()
+						new Builders.SlashCommandStringOption()
 							.setName("academic_year")
 							.setDescription(
 								"The current academic year (e.g. 2020-2021)"
@@ -102,7 +102,7 @@ export function provideCommands(): CommandDescriptor[] {
 					)
 			)
 			.addSubcommand(
-				new SlashCommandSubcommandBuilder()
+				new Builders.SlashCommandSubcommandBuilder()
 					.setName("get")
 					.setDescription("Get the current academic year")
 			)
@@ -588,4 +588,83 @@ export async function refreshCourses(
 	}, Promise.resolve());
 
 	return channels.map((v) => v);
+}
+
+export async function generateRoleSelectionGroupsForCourseSelectionChannel(
+	client: Discord.Client,
+	prisma: PrismaClient,
+	channelId: Discord.Snowflake
+): Promise<(RoleGroup & { options: RoleGroupOption[] })[]> {
+	const courses = await prisma.degreeCourse.findMany({
+		where: {
+			degree: {
+				tier: { gte: 2 },
+				courseSelectionChannelId: channelId,
+			},
+			course: {
+				hideChannel: false,
+				roleId: { not: null },
+			},
+		},
+		include: { course: true },
+	});
+	courses.sort((a, b) =>
+		a.course.displayAcronym.localeCompare(b.course.displayAcronym)
+	);
+
+	const byYear: (DegreeCourse & { course: Course })[][] = [];
+	for (const course of courses) {
+		if (byYear[course.year] === undefined) {
+			byYear[course.year] = [];
+		}
+		byYear[course.year].push(course);
+	}
+
+	const channel = (await client.channels.fetch(
+		channelId
+	)) as Discord.TextChannel;
+
+	return byYear.map((yearCourses, year) =>
+		((groupId) => ({
+			id: groupId,
+			mode: "menu",
+			placeholder: `Escolhe cadeiras de ${year}º ano`,
+			message: `Para acederes aos respetivos canais e receberes anúncios, escolhe em que cadeiras de ${year}º ano tens interesse.`,
+			minValues: 0,
+			maxValues: -1,
+			channelId,
+			messageId: channel.topic,
+			options: yearCourses.map((c) => ({
+				label: c.course.displayAcronym,
+				description: `${c.course.name} (${c.semester}º Semestre)`,
+				value: c.course.roleId as string,
+				emoji: null,
+				roleGroupId: groupId,
+			})),
+		}))(`__dc-${channelId}-${year}`)
+	);
+}
+
+export async function getRoleSelectionGroupsForInjection(
+	client: Discord.Client,
+	prisma: PrismaClient
+): Promise<
+	ReturnType<typeof generateRoleSelectionGroupsForCourseSelectionChannel>
+> {
+	const channelIds = (
+		await prisma.degree.findMany({
+			where: { tier: { gt: 2 }, courseSelectionChannelId: { not: null } },
+		})
+	).map((d) => d.courseSelectionChannelId as Discord.Snowflake);
+	return [
+		...(await Promise.all(
+			channelIds.map((id) =>
+				generateRoleSelectionGroupsForCourseSelectionChannel(
+					client,
+					prisma,
+					id
+				)
+			)
+		)),
+	].flat();
 }

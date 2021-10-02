@@ -1,15 +1,18 @@
 // Handler for role selection
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, RoleGroup, RoleGroupOption } from "@prisma/client";
 import Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { getConfigFactory } from "./utils";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import * as courses from "./courses";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
+
+// * IMPORTANT: all injected group IDs must start with __ to prevent collisions!
 
 const TOURIST_GROUP_ID = "__tourist"; // must be unique in database
 const TOURIST_BUTTON_STYLE = "SECONDARY";
@@ -25,37 +28,7 @@ export async function sendRoleSelectionMessages(
 		include: { options: true },
 	});
 
-	const getTouristConfig = getConfigFactory(prisma, "tourist");
-
-	try {
-		groups.push({
-			id: TOURIST_GROUP_ID,
-			mode: "buttons",
-			placeholder: "N/A",
-			message:
-				(await getTouristConfig("message")) ??
-				"Press if you're not from IST",
-			channelId:
-				(await getTouristConfig("channel_id", true)) ?? "missing",
-			messageId: (await getTouristConfig("message_id")) ?? null,
-			minValues: null,
-			maxValues: null,
-			options: [
-				{
-					label: (await getTouristConfig("label")) ?? "I'm a TourIST",
-					description: TOURIST_BUTTON_STYLE,
-					value:
-						(await getTouristConfig("role_id", true)) ?? "missing",
-					emoji: null,
-					roleGroupId: TOURIST_GROUP_ID,
-				},
-			],
-		});
-	} catch (e) {
-		console.error(
-			`Failed to inject tourist group: ${(e as Error).message}`
-		);
-	}
+	await injectGroups(client, prisma, groups);
 
 	for (const group of groups) {
 		try {
@@ -78,7 +51,10 @@ export async function sendRoleSelectionMessages(
 				let components;
 
 				if (group.mode === "menu") {
-					if (group.options.length < (group.maxValues ?? 1)) {
+					if (
+						(group.maxValues ?? 1) > 0 &&
+						group.options.length < (group.maxValues ?? 1)
+					) {
 						throw new Error(
 							`Requires at least ${
 								group.maxValues ?? 1
@@ -92,7 +68,11 @@ export async function sendRoleSelectionMessages(
 								.setCustomId(`roleSelection:${group.id}`)
 								.setPlaceholder(group.placeholder)
 								.setMinValues(group.minValues ?? 1)
-								.setMaxValues(group.maxValues ?? 1)
+								.setMaxValues(
+									((v) => (v < 0 ? group.options.length : v))(
+										group.maxValues ?? 1
+									)
+								)
 								.addOptions(
 									group.options as Discord.MessageSelectOptionData[]
 								)
@@ -185,6 +165,58 @@ export async function sendRoleSelectionMessages(
 				} because: ${(e as Error).message}`
 			);
 		}
+	}
+}
+
+async function injectGroups(
+	client: Discord.Client,
+	prisma: PrismaClient,
+	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+) {
+	try {
+		await injectTouristGroup(prisma, groups);
+		(await courses.getRoleSelectionGroupsForInjection(client, prisma)).map(
+			(g) => groups.push(g)
+		);
+	} catch (e) {
+		await console.error(`Failed to inject groups: ${e}`);
+	}
+}
+
+async function injectTouristGroup(
+	prisma: PrismaClient,
+	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+) {
+	const getTouristConfig = getConfigFactory(prisma, "tourist");
+
+	try {
+		groups.push({
+			id: TOURIST_GROUP_ID,
+			mode: "buttons",
+			placeholder: "N/A",
+			message:
+				(await getTouristConfig("message")) ??
+				"Press if you're not from IST",
+			channelId:
+				(await getTouristConfig("channel_id", true)) ?? "missing",
+			messageId: (await getTouristConfig("message_id")) ?? null,
+			minValues: null,
+			maxValues: null,
+			options: [
+				{
+					label: (await getTouristConfig("label")) ?? "I'm a TourIST",
+					description: TOURIST_BUTTON_STYLE,
+					value:
+						(await getTouristConfig("role_id", true)) ?? "missing",
+					emoji: null,
+					roleGroupId: TOURIST_GROUP_ID,
+				},
+			],
+		});
+	} catch (e) {
+		console.error(
+			`Failed to inject tourist group: ${(e as Error).message}`
+		);
 	}
 }
 
@@ -341,7 +373,7 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected; default 1"
+								"At most how many options may be selected; default 1; negative = all"
 							)
 							.setRequired(false)
 					)
@@ -415,7 +447,7 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected"
+								"At most how many options may be selected; negative = all"
 							)
 							.setRequired(true)
 					)
@@ -603,6 +635,15 @@ export function provideCommands(): CommandDescriptor[] {
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
+function validMinAndMaxValues(minValues: number, maxValues: number): boolean {
+	return (
+		minValues > 0 &&
+		minValues <= 25 &&
+		maxValues <= 25 &&
+		(maxValues < 0 ? true : minValues <= maxValues)
+	);
+}
+
 async function createGroup(
 	prisma: PrismaClient,
 	id: string,
@@ -616,8 +657,11 @@ async function createGroup(
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
 			return [false, "Invalid id: must be snake_case"];
-		} else if (id === TOURIST_GROUP_ID) {
-			return [false, "Tourist group ID must be unique in the database"];
+		} else if (id.startsWith("__")) {
+			return [
+				false,
+				"IDs starting with double underscore are reserved for injected groups",
+			];
 		}
 
 		const goodModes = ["buttons", "menu"];
@@ -630,13 +674,7 @@ async function createGroup(
 
 		message = message.replace(/\\n/g, "\n");
 
-		if (
-			minValues < 0 ||
-			minValues > 25 ||
-			maxValues < 0 ||
-			maxValues > 25 ||
-			minValues > maxValues
-		) {
+		if (!validMinAndMaxValues(minValues, maxValues)) {
 			return [
 				false,
 				"Minimum and maximum number of options must be between 0 and 25 and min<=max",
@@ -733,13 +771,7 @@ async function setNumGroup(
 			return "Invalid id: must be snake_case";
 		}
 
-		if (
-			minValues < 0 ||
-			minValues > 25 ||
-			maxValues < 0 ||
-			maxValues > 25 ||
-			minValues > maxValues
-		) {
+		if (!validMinAndMaxValues(minValues, maxValues)) {
 			return "Minimum and maximum number of options must be between 0 and 25 and min<=max";
 		}
 
