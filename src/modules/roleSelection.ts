@@ -155,6 +155,8 @@ export async function sendRoleSelectionMessages(
 							create: { key, value: msg.id },
 							update: { value: msg.id },
 						});
+					} else if (group.id.startsWith("__")) {
+						await (channel as Discord.TextChannel).setTopic(msg.id); // FIXME: this probably shouldn't be so generic
 					} else {
 						await prisma.roleGroup.update({
 							where: { id: group.id },
