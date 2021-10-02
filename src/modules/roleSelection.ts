@@ -11,6 +11,8 @@ import * as utils from "./utils";
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
 
+// * IMPORTANT: all injected group IDs must start with __ to prevent collisions!
+
 const TOURIST_GROUP_ID = "__tourist"; // must be unique in database
 const TOURIST_BUTTON_STYLE = "SECONDARY";
 
@@ -632,8 +634,11 @@ async function createGroup(
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
 			return [false, "Invalid id: must be snake_case"];
-		} else if (id === TOURIST_GROUP_ID) {
-			return [false, "Tourist group ID must be unique in the database"];
+		} else if (id.startsWith("__")) {
+			return [
+				false,
+				"IDs starting with double underscore are reserved for injected groups",
+			];
 		}
 
 		const goodModes = ["buttons", "menu"];
