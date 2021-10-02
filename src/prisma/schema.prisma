@@ -54,7 +54,7 @@ model Degree {
     acronym                  String         @unique /// do not use this with fenix api! leti != lerc
     name                     String         @unique
     roleId                   String         @map("role_id") /// not unique, e.g. [lm]eic = leic + meic
-    tier                     Int /// 0 = none, 1 = degree channels (text + VC), 2 = +course channels (& course selection channel), 3 = +announcements channel
+    tier                     Int /// 0 = none, 1 = degree channels (text + VC), 2 = +course channels, 3 = +announcements channel
     degreeTextChannelId      String?        @map("degree_text_channel_id")
     degreeVoiceChannelId     String?        @map("degree_voice_channel_id")
     announcementsChannelId   String?        @map("announcements_channel_id")
