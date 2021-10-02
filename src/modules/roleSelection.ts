@@ -1,12 +1,13 @@
 // Handler for role selection
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, RoleGroup, RoleGroupOption } from "@prisma/client";
 import Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { getConfigFactory } from "./utils";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import * as courses from "./courses";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
@@ -27,37 +28,7 @@ export async function sendRoleSelectionMessages(
 		include: { options: true },
 	});
 
-	const getTouristConfig = getConfigFactory(prisma, "tourist");
-
-	try {
-		groups.push({
-			id: TOURIST_GROUP_ID,
-			mode: "buttons",
-			placeholder: "N/A",
-			message:
-				(await getTouristConfig("message")) ??
-				"Press if you're not from IST",
-			channelId:
-				(await getTouristConfig("channel_id", true)) ?? "missing",
-			messageId: (await getTouristConfig("message_id")) ?? null,
-			minValues: null,
-			maxValues: null,
-			options: [
-				{
-					label: (await getTouristConfig("label")) ?? "I'm a TourIST",
-					description: TOURIST_BUTTON_STYLE,
-					value:
-						(await getTouristConfig("role_id", true)) ?? "missing",
-					emoji: null,
-					roleGroupId: TOURIST_GROUP_ID,
-				},
-			],
-		});
-	} catch (e) {
-		console.error(
-			`Failed to inject tourist group: ${(e as Error).message}`
-		);
-	}
+	await injectGroups(client, prisma, groups);
 
 	for (const group of groups) {
 		try {
@@ -194,6 +165,58 @@ export async function sendRoleSelectionMessages(
 				} because: ${(e as Error).message}`
 			);
 		}
+	}
+}
+
+async function injectGroups(
+	client: Discord.Client,
+	prisma: PrismaClient,
+	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+) {
+	try {
+		await injectTouristGroup(prisma, groups);
+		(await courses.getRoleSelectionGroupsForInjection(client, prisma)).map(
+			(g) => groups.push(g)
+		);
+	} catch (e) {
+		await console.error(`Failed to inject groups: ${e}`);
+	}
+}
+
+async function injectTouristGroup(
+	prisma: PrismaClient,
+	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+) {
+	const getTouristConfig = getConfigFactory(prisma, "tourist");
+
+	try {
+		groups.push({
+			id: TOURIST_GROUP_ID,
+			mode: "buttons",
+			placeholder: "N/A",
+			message:
+				(await getTouristConfig("message")) ??
+				"Press if you're not from IST",
+			channelId:
+				(await getTouristConfig("channel_id", true)) ?? "missing",
+			messageId: (await getTouristConfig("message_id")) ?? null,
+			minValues: null,
+			maxValues: null,
+			options: [
+				{
+					label: (await getTouristConfig("label")) ?? "I'm a TourIST",
+					description: TOURIST_BUTTON_STYLE,
+					value:
+						(await getTouristConfig("role_id", true)) ?? "missing",
+					emoji: null,
+					roleGroupId: TOURIST_GROUP_ID,
+				},
+			],
+		});
+	} catch (e) {
+		console.error(
+			`Failed to inject tourist group: ${(e as Error).message}`
+		);
 	}
 }
 

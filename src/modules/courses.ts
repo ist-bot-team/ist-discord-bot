@@ -11,15 +11,10 @@ import {
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
-import { OrphanChannel } from "./courses.d";
+
 import * as fenix from "./fenix";
 import * as utils from "./utils";
-import {
-	SlashCommandBooleanOption,
-	SlashCommandChannelOption,
-	SlashCommandStringOption,
-	SlashCommandSubcommandBuilder,
-} from "@discordjs/builders";
+import { OrphanChannel } from "./courses.d";
 
 export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
@@ -35,7 +30,7 @@ export function provideCommands(): CommandDescriptor[] {
 		[...new Array(5)].reduce(
 			(builder, _, i) =>
 				builder.addChannelOption(
-					new SlashCommandChannelOption()
+					new Builders.SlashCommandChannelOption()
 						.setName(`category${i + 1}`)
 						.setDescription(`Category ${i + 1}`)
 						.setRequired(i === 0)
@@ -48,19 +43,19 @@ export function provideCommands(): CommandDescriptor[] {
 		)
 	);
 	cmd.addSubcommand(
-		new SlashCommandSubcommandBuilder()
+		new Builders.SlashCommandSubcommandBuilder()
 			.setName("toggle-channel-visibility")
 			.setDescription(
 				"Show or hide a course channel (and role) to remove clutter. This will delete course channel and role"
 			)
 			.addStringOption(
-				new SlashCommandStringOption()
+				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The display acroynm of the course")
 					.setRequired(true)
 			)
 			.addBooleanOption(
-				new SlashCommandBooleanOption()
+				new Builders.SlashCommandBooleanOption()
 					.setName("delete_role")
 					.setDescription(
 						"If hiding channel, delete the course role as well (true by default)"
@@ -69,17 +64,17 @@ export function provideCommands(): CommandDescriptor[] {
 			)
 	);
 	cmd.addSubcommand(
-		new SlashCommandSubcommandBuilder()
+		new Builders.SlashCommandSubcommandBuilder()
 			.setName("rename")
 			.setDescription("Set display acronym of course")
 			.addStringOption(
-				new SlashCommandStringOption()
+				new Builders.SlashCommandStringOption()
 					.setName("old_acronym")
 					.setDescription("The acronym of the course to be renamed")
 					.setRequired(true)
 			)
 			.addStringOption(
-				new SlashCommandStringOption()
+				new Builders.SlashCommandStringOption()
 					.setName("new_acronym")
 					.setDescription(
 						"The acronym to show on channel name and role (e.g. CDI-I)"
@@ -494,8 +489,8 @@ export async function refreshCourses(
 }
 
 export async function generateRoleSelectionGroupsForCourseSelectionChannel(
+	client: Discord.Client,
 	prisma: PrismaClient,
-	guild: Discord.Guild,
 	channelId: Discord.Snowflake
 ): Promise<(RoleGroup & { options: RoleGroupOption[] })[]> {
 	const courses = await prisma.degreeCourse.findMany({
@@ -523,7 +518,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 		byYear[course.year].push(course);
 	}
 
-	const channel = (await guild.channels.fetch(
+	const channel = (await client.channels.fetch(
 		channelId
 	)) as Discord.TextChannel;
 
@@ -539,13 +534,35 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 			messageId: channel.topic,
 			options: yearCourses.map((c) => ({
 				label: c.course.displayAcronym,
-				description: `${c.course.name} (${
-					c.semester === 1 ? "1º Semestre" : "2º Semestre"
-				})`,
+				description: `${c.course.name} (${c.semester}º Semestre)`,
 				value: c.course.roleId as string,
 				emoji: null,
 				roleGroupId: groupId,
 			})),
 		}))(`__dc-${channelId}-${year}`)
 	);
+}
+
+export async function getRoleSelectionGroupsForInjection(
+	client: Discord.Client,
+	prisma: PrismaClient
+): Promise<
+	ReturnType<typeof generateRoleSelectionGroupsForCourseSelectionChannel>
+> {
+	const channelIds = (
+		await prisma.degree.findMany({
+			where: { tier: { gt: 2 }, courseSelectionChannelId: { not: null } },
+		})
+	).map((d) => d.courseSelectionChannelId as Discord.Snowflake);
+	return [
+		...(await Promise.all(
+			channelIds.map((id) =>
+				generateRoleSelectionGroupsForCourseSelectionChannel(
+					client,
+					prisma,
+					id
+				)
+			)
+		)),
+	].flat();
 }
