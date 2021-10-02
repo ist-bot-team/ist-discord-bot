@@ -78,7 +78,10 @@ export async function sendRoleSelectionMessages(
 				let components;
 
 				if (group.mode === "menu") {
-					if (group.options.length < (group.maxValues ?? 1)) {
+					if (
+						(group.maxValues ?? 1) > 0 &&
+						group.options.length < (group.maxValues ?? 1)
+					) {
 						throw new Error(
 							`Requires at least ${
 								group.maxValues ?? 1
@@ -92,7 +95,11 @@ export async function sendRoleSelectionMessages(
 								.setCustomId(`roleSelection:${group.id}`)
 								.setPlaceholder(group.placeholder)
 								.setMinValues(group.minValues ?? 1)
-								.setMaxValues(group.maxValues ?? 1)
+								.setMaxValues(
+									((v) => (v < 0 ? group.options.length : v))(
+										group.maxValues ?? 1
+									)
+								)
 								.addOptions(
 									group.options as Discord.MessageSelectOptionData[]
 								)
@@ -341,7 +348,7 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected; default 1"
+								"At most how many options may be selected; default 1; negative = all"
 							)
 							.setRequired(false)
 					)
@@ -415,7 +422,7 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected"
+								"At most how many options may be selected; negative = all"
 							)
 							.setRequired(true)
 					)
@@ -603,6 +610,15 @@ export function provideCommands(): CommandDescriptor[] {
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
+function validMinAndMaxValues(minValues: number, maxValues: number): boolean {
+	return (
+		minValues > 0 &&
+		minValues <= 25 &&
+		maxValues <= 25 &&
+		(maxValues < 0 ? true : minValues <= maxValues)
+	);
+}
+
 async function createGroup(
 	prisma: PrismaClient,
 	id: string,
@@ -630,13 +646,7 @@ async function createGroup(
 
 		message = message.replace(/\\n/g, "\n");
 
-		if (
-			minValues < 0 ||
-			minValues > 25 ||
-			maxValues < 0 ||
-			maxValues > 25 ||
-			minValues > maxValues
-		) {
+		if (!validMinAndMaxValues(minValues, maxValues)) {
 			return [
 				false,
 				"Minimum and maximum number of options must be between 0 and 25 and min<=max",
@@ -733,13 +743,7 @@ async function setNumGroup(
 			return "Invalid id: must be snake_case";
 		}
 
-		if (
-			minValues < 0 ||
-			minValues > 25 ||
-			maxValues < 0 ||
-			maxValues > 25 ||
-			minValues > maxValues
-		) {
+		if (!validMinAndMaxValues(minValues, maxValues)) {
 			return "Minimum and maximum number of options must be between 0 and 25 and min<=max";
 		}
 
