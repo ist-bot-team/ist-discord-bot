@@ -17,6 +17,11 @@ const MAX_ROWS_PER_MESSAGE = 5;
 const TOURIST_GROUP_ID = "__tourist"; // must be unique in database
 const TOURIST_BUTTON_STYLE = "SECONDARY";
 
+const injectedGroups: {
+	// FIXME: find a better way to do this, without global vars
+	[groupId: string]: RoleGroup & { options: RoleGroupOption[] };
+} = {};
+
 // TODO: load from fénix into database
 
 export async function sendRoleSelectionMessages(
@@ -176,7 +181,7 @@ async function injectGroups(
 	try {
 		await injectTouristGroup(prisma, groups);
 		(await courses.getRoleSelectionGroupsForInjection(client, prisma)).map(
-			(g) => groups.push(g)
+			(g) => groups.push(g) && (injectedGroups[g.id] = g)
 		);
 	} catch (e) {
 		await console.error(`Failed to inject groups: ${e}`);
@@ -246,10 +251,10 @@ async function handleRoleSelection(
 			  ]
 			: (
 					(
-						await prisma.roleGroup.findFirst({
+						(await prisma.roleGroup.findFirst({
 							where: { id: groupId },
 							include: { options: true },
-						})
+						})) ?? injectedGroups[groupId]
 					)?.options.map((o) => o.value) ?? []
 			  ).concat(
 					[
