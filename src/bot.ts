@@ -20,6 +20,7 @@ import * as voiceThreads from "./modules/voiceThreads";
 import * as welcome from "./modules/welcome";
 import * as leaderboard from "./modules/leaderboard";
 import * as degrees from "./modules/degrees";
+import * as courses from "./modules/courses";
 import { getDegreeCourses } from "./modules/fenix";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
@@ -60,6 +61,7 @@ const commandProviders: CommandProvider[] = [
 	welcome.provideCommands,
 	leaderboard.provideCommands,
 	degrees.provideCommands,
+	courses.provideCommands,
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};

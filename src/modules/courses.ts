@@ -1,10 +1,122 @@
+import { CommandDescriptor } from "./../bot.d";
 // Controller for everything courses
 
 import { PrismaClient } from "@prisma/client";
 
 import * as Discord from "discord.js";
+import * as Builders from "@discordjs/builders";
 import { OrphanChannel } from "./courses.d";
 import * as fenix from "./fenix";
+import * as utils from "./utils";
+import { SlashCommandChannelOption } from "@discordjs/builders";
+
+export function provideCommands(): CommandDescriptor[] {
+	const cmd = new Builders.SlashCommandBuilder()
+		.setName("courses")
+		.setDescription("Manage courses");
+
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("refresh-channels")
+			.setDescription("Refresh course channels")
+	);
+	cmd.addSubcommand(
+		[...new Array(5)].reduce(
+			(builder, _, i) =>
+				builder.addChannelOption(
+					new SlashCommandChannelOption()
+						.setName(`category${i + 1}`)
+						.setDescription(`Category ${i + 1}`)
+						.setRequired(i === 0)
+				),
+			new Builders.SlashCommandSubcommandBuilder()
+				.setName("set-categories")
+				.setDescription(
+					"Set which categories the course channels should be created in"
+				)
+		)
+	);
+
+	return [{ builder: cmd, handler: handleCommand }];
+}
+
+export async function handleCommand(
+	interaction: Discord.CommandInteraction,
+	prisma: PrismaClient
+): Promise<void> {
+	if (!interaction.guild) return;
+
+	switch (interaction.options.getSubcommand()) {
+		case "refresh-channels": {
+			try {
+				const orphanChannels = await refreshCourses(
+					prisma,
+					interaction.guild
+				);
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						"Sucessfully updated course channels." +
+						(orphanChannels.length
+							? `\nConsider deleting the following ${orphanChannels.length} orphan channel(s):\n` +
+							  orphanChannels
+									.map((c) => `- <#${c.id}>`)
+									.join("\n")
+							: "")
+				);
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
+			}
+
+			break;
+		}
+		case "set-categories": {
+			try {
+				const categories = [...Array(5)]
+					.map((_, i) =>
+						interaction.options.getChannel(
+							`category${i + 1}`,
+							i === 0
+						)
+					)
+					.filter((v) => !!v && v.type === "GUILD_CATEGORY");
+
+				if (categories.length === 0) {
+					await interaction.editReply(
+						utils.XEmoji + "No category channels provided"
+					);
+				}
+
+				await prisma.config.upsert({
+					where: { key: "courses:category_channels" },
+					update: {
+						value: categories.map((c) => c?.id || "").join(","),
+					},
+					create: {
+						key: "courses:category_channels",
+						value: categories.map((c) => c?.id || "").join(","),
+					},
+				});
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						"Sucessfully updated course categories.\n" +
+						categories.map((c) => `- <#${c?.id}>`).join("\n")
+				);
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
+			}
+
+			break;
+		}
+	}
+}
 
 export async function importCoursesFromDegree(
 	prisma: PrismaClient,
@@ -47,12 +159,141 @@ export async function refreshCourses(
 	prisma: PrismaClient,
 	guild: Discord.Guild
 ): Promise<OrphanChannel[]> {
-	/*const degrees = await prisma.degree.findMany({});
+	const reason = "Course channels refresh";
 
-	degrees.forEach(async (degree) => {
-		console.log(degree.fenixId);
-		console.log(await fenix.getDegreeCourses(degree.fenixId));
-	});*/
+	const categoriesId = (
+		(
+			await prisma.config.findUnique({
+				where: { key: "courses:category_channels" },
+			})
+		)?.value || ""
+	)
+		.split(",")
+		.filter((v) => v !== "");
 
-	return [];
+	const categoriesChannels: Discord.CategoryChannel[] = (
+		await Promise.all(
+			categoriesId.map(
+				async (id) =>
+					(await guild.channels.fetch(id)) as Discord.CategoryChannel
+			)
+		)
+	).filter((channel) => channel?.type === "GUILD_CATEGORY");
+	if (!categoriesChannels.length) {
+		throw new Error("No category channels configured");
+	}
+
+	const getNextFreeCategory = () =>
+		categoriesChannels.find((v) => v.children.size < 50);
+
+	// Get courses with associated degrees over tier 2
+	const courses = await prisma.course.findMany({
+		where: {
+			perDegreeImplementations: {
+				some: {
+					degree: {
+						tier: {
+							gte: 2,
+						},
+					},
+				},
+			},
+		},
+	});
+	const channels = new Discord.Collection<
+		string,
+		Discord.GuildChannel
+	>().concat(...categoriesChannels.map((v) => v.children));
+	const roles = await guild.roles.fetch();
+
+	await courses.reduce(async (prevPromise, course) => {
+		await prevPromise;
+
+		let courseRole =
+			roles.get(course.roleId || "") ||
+			roles.find((v) => v.name === course.displayAcronym);
+		let courseChannel =
+			channels.get(course.channelId || "") ||
+			channels.find(
+				(v) => v.name === course.displayAcronym.toLowerCase()
+			);
+
+		if (!courseRole) {
+			courseRole = await guild.roles.create({
+				name: course.displayAcronym,
+				reason,
+			});
+			await prisma.course.update({
+				where: { acronym: course.acronym },
+				data: { roleId: courseRole.id },
+			});
+		} else if (courseRole.name !== course.acronym) {
+			await courseRole.setName(course.acronym, reason);
+		}
+
+		const courseChannelTopic = `${course.name} - ${course.displayAcronym}`;
+		if (!courseChannel) {
+			courseChannel = await guild.channels.create(
+				course.displayAcronym.toLowerCase(),
+				{
+					type: "GUILD_TEXT",
+					topic: courseChannelTopic,
+					parent: getNextFreeCategory(),
+					reason,
+					permissionOverwrites: [
+						{
+							id: guild.roles.everyone.id,
+							deny: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+						},
+						{
+							id: courseRole,
+							allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+						},
+					],
+				}
+			);
+			await prisma.course.update({
+				where: { acronym: course.acronym },
+				data: { channelId: courseChannel.id },
+			});
+		} else {
+			if (courseChannel.name !== course.displayAcronym.toLowerCase()) {
+				await courseChannel.setName(
+					course.displayAcronym.toLowerCase()
+				);
+			}
+			if (
+				courseChannel.type === "GUILD_TEXT" &&
+				(courseChannel as Discord.TextChannel).topic !==
+					courseChannelTopic
+			) {
+				await (courseChannel as Discord.TextChannel).setTopic(
+					courseChannelTopic,
+					reason
+				);
+			}
+			if (
+				!courseChannel
+					.permissionsFor(courseRole)
+					.has(Discord.Permissions.FLAGS.VIEW_CHANNEL)
+			) {
+				await courseChannel.edit({
+					permissionOverwrites: [
+						{
+							id: guild.roles.everyone.id,
+							deny: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+						},
+						{
+							id: courseRole,
+							allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+						},
+					],
+				});
+			}
+		}
+
+		channels.delete(courseChannel.id);
+	}, Promise.resolve());
+
+	return channels.map((v) => v);
 }

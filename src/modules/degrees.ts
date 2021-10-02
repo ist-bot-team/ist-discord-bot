@@ -375,13 +375,14 @@ export async function handleCommand(
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
 							"Sucessfully created degree." +
-							result.length
-							? `\nConsider deleting the following ${result.length} orphan channel(s):\n` +
-									result.map((c) => `- <#${c.id}>`).join("\n")
-							: ""
+							(result.length
+								? `\nConsider deleting the following ${result.length} orphan channel(s):\n` +
+								  result.map((c) => `- <#${c.id}>`).join("\n")
+								: "")
 					);
 				}
 			} catch (e) {
+				console.error(e);
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
