@@ -8,7 +8,12 @@ import * as Builders from "@discordjs/builders";
 import { OrphanChannel } from "./courses.d";
 import * as fenix from "./fenix";
 import * as utils from "./utils";
-import { SlashCommandChannelOption } from "@discordjs/builders";
+import {
+	SlashCommandBooleanOption,
+	SlashCommandChannelOption,
+	SlashCommandStringOption,
+	SlashCommandSubcommandBuilder,
+} from "@discordjs/builders";
 
 export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
@@ -35,6 +40,27 @@ export function provideCommands(): CommandDescriptor[] {
 					"Set which categories the course channels should be created in"
 				)
 		)
+	);
+	cmd.addSubcommand(
+		new SlashCommandSubcommandBuilder()
+			.setName("toggle-channel-visibility")
+			.setDescription(
+				"Show or hide a course channel (and role) to remove clutter. This will delete course channel and role"
+			)
+			.addStringOption(
+				new SlashCommandStringOption()
+					.setName("acronym")
+					.setDescription("The display acroynm of the course")
+					.setRequired(true)
+			)
+			.addBooleanOption(
+				new SlashCommandBooleanOption()
+					.setName("delete_role")
+					.setDescription(
+						"If hiding channel, delete the course role as well (true by default)"
+					)
+					.setRequired(false)
+			)
 	);
 
 	return [{ builder: cmd, handler: handleCommand }];
@@ -113,6 +139,79 @@ export async function handleCommand(
 				);
 			}
 
+			break;
+		}
+
+		case "toggle-channel-visibility": {
+			try {
+				const courseAcronym = interaction.options.getString(
+					"acronym",
+					true
+				);
+				const deleteRole =
+					interaction.options.getBoolean("delete_role", false) ??
+					true;
+
+				const course = await prisma.course.findUnique({
+					where: { displayAcronym: courseAcronym },
+				});
+				if (!course) {
+					await interaction.editReply(
+						utils.XEmoji + `Course \`${courseAcronym}\` not found!`
+					);
+					return;
+				}
+
+				const exists = !course.hideChannel;
+				await prisma.course.update({
+					where: { displayAcronym: courseAcronym },
+					data: { hideChannel: exists },
+				});
+
+				if (exists) {
+					try {
+						const courseChannel =
+							await interaction.guild.channels.fetch(
+								course.channelId || ""
+							);
+						if (courseChannel && courseChannel.deletable) {
+							courseChannel.delete();
+						}
+						if (deleteRole) {
+							const courseRole =
+								await interaction.guild.roles.fetch(
+									course.roleId || ""
+								);
+							if (courseRole) {
+								courseRole.delete(
+									`${interaction.user.discriminator} has hidden course`
+								);
+							}
+						}
+					} catch (e) {
+						await interaction.editReply(
+							utils.XEmoji +
+								"Could not delete channel and/or role, but settings were updated correctly. Please delete the channel/role manually."
+						);
+						return;
+					}
+					await interaction.editReply(
+						utils.CheckMarkEmoji +
+							`Course \`${course.name}\` is now hidden`
+					);
+				} else {
+					await refreshCourses(prisma, interaction.guild);
+					await interaction.editReply(
+						utils.CheckMarkEmoji +
+							`Course \`${course.name}\` is now being shown`
+					);
+				}
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
+			}
 			break;
 		}
 	}
@@ -198,6 +297,7 @@ export async function refreshCourses(
 					},
 				},
 			},
+			hideChannel: false,
 		},
 	});
 	const channels = new Discord.Collection<
