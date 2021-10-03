@@ -12,7 +12,7 @@ export function scheduleRSSFeedJob(
 	prisma: PrismaClient,
 	client: Discord.Client
 ): void {
-	cron.schedule("*/5 * * * *", runRSSFeedJob(prisma, client));
+	cron.schedule("*/2 * * * *", runRSSFeedJob(prisma, client));
 }
 
 export function runRSSFeedJob(
