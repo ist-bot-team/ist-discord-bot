@@ -16,6 +16,7 @@ import cron from "node-cron";
 
 import { PrismaClient, Poll } from "@prisma/client";
 import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
 
 const POLL_ACTION_ROW = new MessageActionRow();
 POLL_ACTION_ROW.addComponents([
@@ -273,11 +274,13 @@ export async function handleCommand(
 				}
 
 				await interaction.editReply(
-					`✅ Successfully added${cron ? " and scheduled" : ""}.`
+					utils.CheckMarkEmoji +
+						`Successfully added${cron ? " and scheduled" : ""}.`
 				);
 			} catch (e) {
 				await interaction.editReply(
-					"❌ Something went wrong, maybe the ID already exists?"
+					utils.XEmoji +
+						"Something went wrong, maybe the ID already exists?"
 				);
 			}
 
@@ -297,9 +300,13 @@ export async function handleCommand(
 
 				await prisma.poll.delete({ where: { id } });
 
-				await interaction.editReply("✅ Successfully removed.");
+				await interaction.editReply(
+					utils.CheckMarkEmoji + "Successfully removed."
+				);
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
@@ -326,7 +333,9 @@ export async function handleCommand(
 					],
 				});
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;
@@ -341,7 +350,7 @@ export async function handleCommand(
 
 				if (poll === null) {
 					await interaction.editReply(
-						"❌ No poll found with that ID."
+						utils.XEmoji + "No poll found with that ID."
 					);
 				} else {
 					await interaction.editReply({
@@ -365,7 +374,9 @@ export async function handleCommand(
 					});
 				}
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 
 			break;

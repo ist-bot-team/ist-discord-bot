@@ -5,6 +5,7 @@ import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
 
 const VC_CHAT_KEY = "voice_threads:vc_chat";
 
@@ -50,7 +51,7 @@ export async function handleCommand(
 
 				if (channel === undefined) {
 					await interaction.editReply(
-						"❌ No channel is currently set as vc-chat."
+						utils.XEmoji + "No channel is currently set as vc-chat."
 					);
 				} else {
 					await interaction.editReply(
@@ -58,7 +59,9 @@ export async function handleCommand(
 					);
 				}
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 			break;
 		}
@@ -71,7 +74,7 @@ export async function handleCommand(
 
 				if (!channel.isText()) {
 					await interaction.editReply(
-						"❌ Channel must be a text channel."
+						utils.XEmoji + "Channel must be a text channel."
 					);
 				} else {
 					await prisma.config.upsert({
@@ -83,11 +86,14 @@ export async function handleCommand(
 						},
 					});
 					await interaction.editReply(
-						`✅ Successfully set vc-chat to <#${channel.id}>.`
+						utils.CheckMarkEmoji +
+							`Successfully set vc-chat to <#${channel.id}>.`
 					);
 				}
 			} catch (e) {
-				await interaction.editReply("❌ Something went wrong.");
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
 			}
 			break;
 		}

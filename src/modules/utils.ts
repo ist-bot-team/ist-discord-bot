@@ -5,8 +5,10 @@ import { performance } from "perf_hooks";
 import { PrismaClient } from "@prisma/client";
 import * as Discord from "discord.js";
 
-// ThenArgRecursive from https://stackoverflow.com/a/49889856
-export type ThenArg<T> = T extends PromiseLike<infer U> ? ThenArg<U> : T;
+import { MessageCollection } from "./utils.d";
+
+export const XEmoji = "❌ ";
+export const CheckMarkEmoji = "✅ ";
 
 export async function timeFunction(
 	fun: () => Promise<unknown>
@@ -71,8 +73,6 @@ export async function fetchGalleries(
 		.filter((c) => c.length);
 }
 
-export type MessageCollection = Discord.Collection<string, Discord.Message>;
-
 export async function fetchAllChannelMessages(
 	channel: Discord.TextChannel | Discord.ThreadChannel,
 	after?: Date
@@ -92,4 +92,16 @@ export async function fetchAllChannelMessages(
 	);
 
 	return messages;
+}
+
+export function removeDuplicatesFromArray<T>(
+	array: T[],
+	getKey?: (item: T) => unknown
+): T[] {
+	if (!getKey) getKey = (v) => v;
+
+	return array.filter(
+		(value, i) =>
+			!array.some((v, j) => j < i && getKey?.(value) === getKey?.(v))
+	);
 }

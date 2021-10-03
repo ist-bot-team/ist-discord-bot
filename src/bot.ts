@@ -19,6 +19,8 @@ import * as galleryChannels from "./modules/galleryChannels";
 import * as voiceThreads from "./modules/voiceThreads";
 import * as welcome from "./modules/welcome";
 import * as leaderboard from "./modules/leaderboard";
+import * as degrees from "./modules/degrees";
+import * as courses from "./modules/courses";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
@@ -57,6 +59,8 @@ const commandProviders: CommandProvider[] = [
 	voiceThreads.provideCommands,
 	welcome.provideCommands,
 	leaderboard.provideCommands,
+	degrees.provideCommands,
+	courses.provideCommands,
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};

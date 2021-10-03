@@ -5,6 +5,7 @@ import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
 
 export function provideCommands(): CommandDescriptor[] {
 	const sudo = new Builders.SlashCommandBuilder()
@@ -50,7 +51,7 @@ export async function handleSudoCommand(
 
 		if (!roles.cache.has(aId) && !roles.cache.has(apId)) {
 			await interaction.editReply(
-				"❌ User does not have administrator permissions."
+				utils.XEmoji + "User does not have administrator permissions."
 			);
 			return;
 		}
@@ -58,14 +59,18 @@ export async function handleSudoCommand(
 		if (roles.cache.has(apId)) {
 			await roles.remove(apId);
 			await interaction.editReply(
-				"✅ Successfully removed `Admin+` role."
+				utils.CheckMarkEmoji + "Successfully removed `Admin+` role."
 			);
 		} else {
 			await roles.add(apId);
-			await interaction.editReply("✅ Successfully added `Admin+` role.");
+			await interaction.editReply(
+				utils.CheckMarkEmoji + "Successfully added `Admin+` role."
+			);
 		}
 	} catch (e) {
-		await interaction.editReply("❌ Failed to toggle `Admin+` role.");
+		await interaction.editReply(
+			utils.XEmoji + "Failed to toggle `Admin+` role."
+		);
 	}
 }
 
@@ -79,14 +84,18 @@ export async function handleResetAdminCommand(
 
 		if (!role) {
 			await interaction.editReply(
-				"❌ Could not locate the `Admin+` role"
+				utils.XEmoji + "Could not locate the `Admin+` role"
 			);
 		}
 
 		role?.members.forEach((member) => member.roles.remove(role));
 
-		await interaction.editReply("✅ Successfully reset the `Admin+` role.");
+		await interaction.editReply(
+			utils.CheckMarkEmoji + "Successfully reset the `Admin+` role."
+		);
 	} catch (e) {
-		await interaction.editReply("❌ Failed to reset the `Admin+` role.");
+		await interaction.editReply(
+			utils.XEmoji + "Failed to reset the `Admin+` role."
+		);
 	}
 }

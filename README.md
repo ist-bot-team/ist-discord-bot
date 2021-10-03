@@ -52,3 +52,13 @@ Replacing `CLIENT_ID` with the application's public ID, access the following lin
 ```
 https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot+applications.commands&permissions=8
 ```
+
+### Development
+
+If you're looking at the source code, you should probably run
+
+```sh
+npx prisma generate
+```
+
+first so you can have typings.

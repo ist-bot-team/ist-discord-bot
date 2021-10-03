@@ -16,14 +16,16 @@
 	"license": "MIT",
 	"engines": {
 		"node": ">=16.6.1",
-		"npm": "^7.23.0",
-		"yarn": "^1.22.10"
+		"npm": ">=7.23.0",
+		"yarn": ">=1.22.0"
 	},
 	"dependencies": {
 		"@discordjs/builders": "^0.6.0",
 		"@discordjs/rest": "^0.1.0-canary.0",
 		"@prisma/client": "^3.0.0",
 		"@types/better-sqlite3": "^5.4.3",
+		"axios": "^0.21.4",
+		"cheerio": "^1.0.0-rc.10",
 		"discord.js": "^13.0.1",
 		"node-cron": "^3.0.0",
 		"path": "^0.12.7"
@@ -46,7 +48,8 @@
 		"prepare": "husky install",
 		"build": "tsc",
 		"start": "node .",
-		"start:docker": "prisma migrate deploy && node ."
+		"start:docker": "prisma migrate deploy && node .",
+		"prisma:generate": "prisma generate"
 	},
 	"lint-staged": {
 		"**/*": "prettier --write --ignore-unknown"

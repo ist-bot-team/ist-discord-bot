@@ -1,17 +1,32 @@
 // Handler for role selection
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, RoleGroup, RoleGroupOption } from "@prisma/client";
 import Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { getConfigFactory } from "./utils";
 import { CommandDescriptor } from "../bot.d";
+import * as utils from "./utils";
+import * as courses from "./courses";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
 
+// * IMPORTANT: all injected group IDs must start with __ to prevent collisions!
+
 const TOURIST_GROUP_ID = "__tourist"; // must be unique in database
 const TOURIST_BUTTON_STYLE = "SECONDARY";
+
+const injectedGroups: {
+	// FIXME: find a better way to do this, without global vars
+	[groupId: string]: RoleGroup & {
+		options: RoleGroupOption[];
+		onSendCallback?: (
+			prisma: PrismaClient,
+			messageId: Discord.Snowflake
+		) => Promise<void>;
+	};
+} = {};
 
 // TODO: load from fénix into database
 
@@ -24,37 +39,7 @@ export async function sendRoleSelectionMessages(
 		include: { options: true },
 	});
 
-	const getTouristConfig = getConfigFactory(prisma, "tourist");
-
-	try {
-		groups.push({
-			id: TOURIST_GROUP_ID,
-			mode: "buttons",
-			placeholder: "N/A",
-			message:
-				(await getTouristConfig("message")) ??
-				"Press if you're not from IST",
-			channelId:
-				(await getTouristConfig("channel_id", true)) ?? "missing",
-			messageId: (await getTouristConfig("message_id")) ?? null,
-			minValues: null,
-			maxValues: null,
-			options: [
-				{
-					label: (await getTouristConfig("label")) ?? "I'm a TourIST",
-					description: TOURIST_BUTTON_STYLE,
-					value:
-						(await getTouristConfig("role_id", true)) ?? "missing",
-					emoji: null,
-					roleGroupId: TOURIST_GROUP_ID,
-				},
-			],
-		});
-	} catch (e) {
-		console.error(
-			`Failed to inject tourist group: ${(e as Error).message}`
-		);
-	}
+	await injectGroups(prisma, groups);
 
 	for (const group of groups) {
 		try {
@@ -77,7 +62,10 @@ export async function sendRoleSelectionMessages(
 				let components;
 
 				if (group.mode === "menu") {
-					if (group.options.length < (group.maxValues ?? 1)) {
+					if (
+						(group.maxValues ?? 1) > 0 &&
+						group.options.length < (group.maxValues ?? 1)
+					) {
 						throw new Error(
 							`Requires at least ${
 								group.maxValues ?? 1
@@ -91,7 +79,11 @@ export async function sendRoleSelectionMessages(
 								.setCustomId(`roleSelection:${group.id}`)
 								.setPlaceholder(group.placeholder)
 								.setMinValues(group.minValues ?? 1)
-								.setMaxValues(group.maxValues ?? 1)
+								.setMaxValues(
+									((v) => (v < 0 ? group.options.length : v))(
+										group.maxValues ?? 1
+									)
+								)
 								.addOptions(
 									group.options as Discord.MessageSelectOptionData[]
 								)
@@ -162,13 +154,11 @@ export async function sendRoleSelectionMessages(
 							? await message.edit(args)
 							: await (channel as Discord.TextChannel).send(args);
 
-					if (group.id === TOURIST_GROUP_ID) {
-						const key = "tourist:message_id";
-						await prisma.config.upsert({
-							where: { key },
-							create: { key, value: msg.id },
-							update: { value: msg.id },
-						});
+					if (group.id.startsWith("__")) {
+						await injectedGroups[group.id]?.onSendCallback?.(
+							prisma,
+							msg.id
+						);
 					} else {
 						await prisma.roleGroup.update({
 							where: { id: group.id },
@@ -184,6 +174,80 @@ export async function sendRoleSelectionMessages(
 				} because: ${(e as Error).message}`
 			);
 		}
+	}
+}
+
+async function injectGroups(
+	prisma: PrismaClient,
+	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+) {
+	try {
+		await injectTouristGroup(prisma, groups);
+		(await courses.getRoleSelectionGroupsForInjection(prisma)).map(
+			(g) =>
+				groups.push(g) &&
+				(injectedGroups[g.id] = {
+					...g,
+					onSendCallback: async (prisma, messageId) => {
+						await prisma.courseRoleSelectionMessage.upsert({
+							where: { injectedRoleGroupId: g.id },
+							update: { messageId },
+							create: { injectedRoleGroupId: g.id, messageId },
+						});
+					},
+				})
+		);
+	} catch (e) {
+		await console.error(`Failed to inject groups: ${e}`);
+	}
+}
+
+async function injectTouristGroup(
+	prisma: PrismaClient,
+	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+) {
+	const getTouristConfig = getConfigFactory(prisma, "tourist");
+
+	try {
+		const group = {
+			id: TOURIST_GROUP_ID,
+			mode: "buttons",
+			placeholder: "N/A",
+			message:
+				(await getTouristConfig("message")) ??
+				"Press if you're not from IST",
+			channelId:
+				(await getTouristConfig("channel_id", true)) ?? "missing",
+			messageId: (await getTouristConfig("message_id")) ?? null,
+			minValues: null,
+			maxValues: null,
+			options: [
+				{
+					label: (await getTouristConfig("label")) ?? "I'm a TourIST",
+					description: TOURIST_BUTTON_STYLE,
+					value:
+						(await getTouristConfig("role_id", true)) ?? "missing",
+					emoji: null,
+					roleGroupId: TOURIST_GROUP_ID,
+				},
+			],
+		};
+		groups.push(group);
+		injectedGroups[TOURIST_GROUP_ID] = {
+			...group,
+			onSendCallback: async (prisma, messageId) => {
+				const key = "tourist:message_id";
+				await prisma.config.upsert({
+					where: { key },
+					create: { key, value: messageId },
+					update: { value: messageId },
+				});
+			},
+		};
+	} catch (e) {
+		console.error(
+			`Failed to inject tourist group: ${(e as Error).message}`
+		);
 	}
 }
 
@@ -213,10 +277,10 @@ async function handleRoleSelection(
 			  ]
 			: (
 					(
-						await prisma.roleGroup.findFirst({
+						(await prisma.roleGroup.findFirst({
 							where: { id: groupId },
 							include: { options: true },
-						})
+						})) ?? injectedGroups[groupId]
 					)?.options.map((o) => o.value) ?? []
 			  ).concat(
 					[
@@ -258,9 +322,9 @@ export async function handleRoleSelectionMenu(
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 
 	if (await handleRoleSelection(groupId, roles, interaction.values, prisma)) {
-		await interaction.editReply("✅ Role applied.");
+		await interaction.editReply(utils.CheckMarkEmoji + "Role applied.");
 	} else {
-		await interaction.editReply("❌ Failed to apply role.");
+		await interaction.editReply(utils.XEmoji + "Failed to apply role.");
 	}
 }
 // FIXME: these two (v & ^) are a bit humid
@@ -274,9 +338,9 @@ export async function handleRoleSelectionButton(
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 
 	if (await handleRoleSelection(sp[1], roles, [sp[2]], prisma)) {
-		await interaction.editReply("✅ Role applied.");
+		await interaction.editReply(utils.CheckMarkEmoji + "Role applied.");
 	} else {
-		await interaction.editReply("❌ Failed to apply role.");
+		await interaction.editReply(utils.XEmoji + "Failed to apply role.");
 	}
 }
 
@@ -340,7 +404,7 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected; default 1"
+								"At most how many options may be selected; default 1; negative = all"
 							)
 							.setRequired(false)
 					)
@@ -414,7 +478,7 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected"
+								"At most how many options may be selected; negative = all"
 							)
 							.setRequired(true)
 					)
@@ -602,6 +666,15 @@ export function provideCommands(): CommandDescriptor[] {
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
+function validMinAndMaxValues(minValues: number, maxValues: number): boolean {
+	return (
+		minValues > 0 &&
+		minValues <= 25 &&
+		maxValues <= 25 &&
+		(maxValues < 0 ? true : minValues <= maxValues)
+	);
+}
+
 async function createGroup(
 	prisma: PrismaClient,
 	id: string,
@@ -615,8 +688,11 @@ async function createGroup(
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
 			return [false, "Invalid id: must be snake_case"];
-		} else if (id === TOURIST_GROUP_ID) {
-			return [false, "Tourist group ID must be unique in the database"];
+		} else if (id.startsWith("__")) {
+			return [
+				false,
+				"IDs starting with double underscore are reserved for injected groups",
+			];
 		}
 
 		const goodModes = ["buttons", "menu"];
@@ -629,13 +705,7 @@ async function createGroup(
 
 		message = message.replace(/\\n/g, "\n");
 
-		if (
-			minValues < 0 ||
-			minValues > 25 ||
-			maxValues < 0 ||
-			maxValues > 25 ||
-			minValues > maxValues
-		) {
+		if (!validMinAndMaxValues(minValues, maxValues)) {
 			return [
 				false,
 				"Minimum and maximum number of options must be between 0 and 25 and min<=max",
@@ -732,13 +802,7 @@ async function setNumGroup(
 			return "Invalid id: must be snake_case";
 		}
 
-		if (
-			minValues < 0 ||
-			minValues > 25 ||
-			maxValues < 0 ||
-			maxValues > 25 ||
-			minValues > maxValues
-		) {
+		if (!validMinAndMaxValues(minValues, maxValues)) {
 			return "Minimum and maximum number of options must be between 0 and 25 and min<=max";
 		}
 
@@ -934,11 +998,13 @@ export async function handleCommand(
 					);
 					if (succ) {
 						await interaction.editReply(
-							`✅ Role selection group \`${res}\` successfully created.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${res}\` successfully created.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not create group because: **${res}**`
+							utils.XEmoji +
+								`Could not create group because: **${res}**`
 						);
 					}
 					break;
@@ -952,11 +1018,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully deleted.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully deleted.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not delete group because: **${res}**`
+							utils.XEmoji +
+								`Could not delete group because: **${res}**`
 						);
 					}
 					break;
@@ -971,11 +1039,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully edited.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully edited.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not edit group because: **${res}**`
+							utils.XEmoji +
+								`Could not edit group because: **${res}**`
 						);
 					}
 					break;
@@ -990,11 +1060,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully edited.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully edited.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not edit group because: **${res}**`
+							utils.XEmoji +
+								`Could not edit group because: **${res}**`
 						);
 					}
 					break;
@@ -1008,11 +1080,13 @@ export async function handleCommand(
 					const res = await moveGroup(prisma, id, channel);
 					if (res === true) {
 						await interaction.editReply(
-							`✅ Role selection group \`${id}\` successfully moved to <#${channel.id}>.`
+							utils.CheckMarkEmoji +
+								`Role selection group \`${id}\` successfully moved to <#${channel.id}>.`
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not move group because: **${res}**`
+							utils.XEmoji +
+								`Could not move group because: **${res}**`
 						);
 					}
 					break;
@@ -1053,7 +1127,7 @@ export async function handleCommand(
 							(e as Error).message
 						);
 						await interaction.editReply(
-							"❌ Failed to list role groups."
+							utils.XEmoji + "Failed to list role groups."
 						);
 					}
 					break;
@@ -1076,11 +1150,12 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							"✅ Option successfully added."
+							utils.CheckMarkEmoji + "Option successfully added."
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not add option because: **${res}**`
+							utils.XEmoji +
+								`Could not add option because: **${res}**`
 						);
 					}
 					break;
@@ -1093,11 +1168,13 @@ export async function handleCommand(
 					);
 					if (res === true) {
 						await interaction.editReply(
-							"✅ Option successfully removed."
+							utils.CheckMarkEmoji +
+								"Option successfully removed."
 						);
 					} else {
 						await interaction.editReply(
-							`❌ Could not remove option because: **${res}**`
+							utils.XEmoji +
+								`Could not remove option because: **${res}**`
 						);
 					}
 					break;
@@ -1118,7 +1195,8 @@ export async function handleCommand(
 						);
 
 						await interaction.editReply(
-							"✅ Role selection messages successfully sent."
+							utils.CheckMarkEmoji +
+								"Role selection messages successfully sent."
 						);
 					} catch (e) {
 						console.error(
@@ -1126,7 +1204,8 @@ export async function handleCommand(
 							(e as Error).message
 						);
 						await interaction.editReply(
-							"❌ Failed to send role selection messages."
+							utils.XEmoji +
+								"Failed to send role selection messages."
 						);
 					}
 					break;
@@ -1146,7 +1225,9 @@ export async function handleCommand(
 							.replace(/\\n/g, "\n");
 
 						if (!["message", "label"].includes(field)) {
-							await interaction.editReply("❌ Invalid name.");
+							await interaction.editReply(
+								utils.XEmoji + "Invalid name."
+							);
 						}
 
 						const fqkey = `tourist:${field}`;
@@ -1158,11 +1239,12 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							`✅ Successfully set TourIST ${field}.`
+							utils.CheckMarkEmoji +
+								`Successfully set TourIST ${field}.`
 						);
 					} catch (e) {
 						await interaction.editReply(
-							"❌ Failed to set TourIST info."
+							utils.XEmoji + "Failed to set TourIST info."
 						);
 					}
 					break;
@@ -1174,7 +1256,9 @@ export async function handleCommand(
 						) as Discord.GuildChannel;
 
 						if (!channel.isText() && !channel.isThread()) {
-							await interaction.editReply("❌ Invalid channel.");
+							await interaction.editReply(
+								utils.XEmoji + "Invalid channel."
+							);
 						}
 
 						const fqkey = `tourist:channel_id`;
@@ -1186,11 +1270,12 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							`✅ Successfully set TourIST channel.`
+							utils.CheckMarkEmoji +
+								`Successfully set TourIST channel.`
 						);
 					} catch (e) {
 						await interaction.editReply(
-							"❌ Failed to set TourIST channel."
+							utils.XEmoji + "Failed to set TourIST channel."
 						);
 					}
 					break;
@@ -1210,11 +1295,12 @@ export async function handleCommand(
 						});
 
 						await interaction.editReply(
-							"✅ Successfully set TourIST role."
+							utils.CheckMarkEmoji +
+								"Successfully set TourIST role."
 						);
 					} catch (e) {
 						await interaction.editReply(
-							"❌ Failed to set TourIST role."
+							utils.XEmoji + "Failed to set TourIST role."
 						);
 					}
 					break;
@@ -1245,7 +1331,9 @@ export async function handleCommand(
 							);
 						await interaction.editReply({ embeds: [embed] });
 					} catch (e) {
-						await interaction.editReply("❌ Something went wrong.");
+						await interaction.editReply(
+							utils.XEmoji + "Something went wrong."
+						);
 					}
 
 					break;

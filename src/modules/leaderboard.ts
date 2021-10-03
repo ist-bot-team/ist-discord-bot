@@ -8,6 +8,7 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 
 import * as utils from "./utils";
+import { ThenArg } from "./utils.d";
 
 const MAX_PEOPLE = 50;
 
@@ -242,27 +243,28 @@ export async function handleCommand(
 								period,
 								prisma
 							)
-					)) as [
-						number,
-						utils.ThenArg<ReturnType<typeof sendLeaderboard>>
-					];
-				await interaction.editReply(`✅ Sent [here](https://discord.com/channels/${
-					interaction.guildId as string
-				}/${interaction.channelId as string}/${msgId})
+					)) as [number, ThenArg<ReturnType<typeof sendLeaderboard>>];
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Sent [here](https://discord.com/channels/${
+							interaction.guildId as string
+						}/${interaction.channelId as string}/${msgId})
 
 Took ${delta}ms, combed through ${channels} channels and ${msgs} messages.
 ${
 	failed.length
-		? "❌ Failed to go through the following channels: " +
+		? utils.XEmoji +
+		  "Failed to go through the following channels: " +
 		  failed.map((c) => "<#" + c.id + ">").join(", ") +
 		  "; as such, did not cache anything"
 		: "Did not fail to go through any channel; cached " +
 		  cached +
 		  " characters"
-}`);
+}`
+				);
 			} catch (e) {
 				await interaction
-					.editReply("❌ Something went wrong.")
+					.editReply(utils.XEmoji + "Something went wrong.")
 					.catch(() => console.error("Leaderboard took too long :("));
 			}
 			break;
