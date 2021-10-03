@@ -118,7 +118,7 @@ export async function handleCommand(
 	if (!interaction.guild) return;
 
 	switch (
-		interaction.options.getSubcommandGroup() ||
+		interaction.options.getSubcommandGroup(false) ||
 		interaction.options.getSubcommand()
 	) {
 		case "refresh-channels": {
