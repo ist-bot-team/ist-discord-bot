@@ -216,6 +216,10 @@ export async function handleCommand(
 				});
 
 				if (exists) {
+					await prisma.course.update({
+						where: { displayAcronym: courseAcronym },
+						data: { roleId: null, channelId: null },
+					});
 					try {
 						const courseChannel =
 							await interaction.guild.channels.fetch(
@@ -515,12 +519,14 @@ export async function refreshCourses(
 				mentionable: false,
 				reason,
 			});
+		} else if (courseRole.name !== course.acronym) {
+			await courseRole.setName(course.acronym, reason);
+		}
+		if (course.roleId !== courseRole.id) {
 			await prisma.course.update({
 				where: { acronym: course.acronym },
 				data: { roleId: courseRole.id },
 			});
-		} else if (courseRole.name !== course.acronym) {
-			await courseRole.setName(course.acronym, reason);
 		}
 
 		const courseChannelTopic = `${course.name} - ${course.displayAcronym}`;
@@ -544,10 +550,6 @@ export async function refreshCourses(
 					],
 				}
 			);
-			await prisma.course.update({
-				where: { acronym: course.acronym },
-				data: { channelId: courseChannel.id },
-			});
 		} else {
 			if (courseChannel.name !== course.displayAcronym.toLowerCase()) {
 				await courseChannel.setName(
@@ -583,6 +585,12 @@ export async function refreshCourses(
 				});
 			}
 		}
+		if (course.channelId !== courseChannel.id) {
+			await prisma.course.update({
+				where: { acronym: course.acronym },
+				data: { channelId: courseChannel.id },
+			});
+		}
 
 		channels.delete(courseChannel.id);
 	}, Promise.resolve());
@@ -591,14 +599,12 @@ export async function refreshCourses(
 }
 
 export async function generateRoleSelectionGroupsForCourseSelectionChannel(
-	client: Discord.Client,
 	prisma: PrismaClient,
 	channelId: Discord.Snowflake
 ): Promise<(RoleGroup & { options: RoleGroupOption[] })[]> {
 	const courses = await prisma.degreeCourse.findMany({
 		where: {
 			degree: {
-				tier: { gte: 2 },
 				courseSelectionChannelId: channelId,
 			},
 			course: {
@@ -612,7 +618,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 		a.course.displayAcronym.localeCompare(b.course.displayAcronym)
 	);
 
-	const byYear: (DegreeCourse & { course: Course })[][] = [];
+	const byYear: Record<string, (DegreeCourse & { course: Course })[]> = {};
 	for (const course of courses) {
 		if (byYear[course.year] === undefined) {
 			byYear[course.year] = [];
@@ -620,50 +626,61 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 		byYear[course.year].push(course);
 	}
 
-	const channel = (await client.channels.fetch(
-		channelId
-	)) as Discord.TextChannel;
+	return await Promise.all(
+		Object.keys(byYear)
+			.sort()
+			.map(async (year) => {
+				const yearCourses = utils.removeDuplicatesFromArray(
+					byYear[year],
+					(v) => v.course.roleId
+				);
+				const groupId = `__dc-${channelId}-${year}`;
 
-	return byYear.map((yearCourses, year) =>
-		((groupId) => ({
-			id: groupId,
-			mode: "menu",
-			placeholder: `Escolhe cadeiras de ${year}º ano`,
-			message: `Para acederes aos respetivos canais e receberes anúncios, escolhe em que cadeiras de ${year}º ano tens interesse.`,
-			minValues: 0,
-			maxValues: -1,
-			channelId,
-			messageId: channel.topic,
-			options: yearCourses.map((c) => ({
-				label: c.course.displayAcronym,
-				description: `${c.course.name} (${c.semester}º Semestre)`,
-				value: c.course.roleId as string,
-				emoji: null,
-				roleGroupId: groupId,
-			})),
-		}))(`__dc-${channelId}-${year}`)
+				return {
+					id: groupId,
+					mode: "menu",
+					placeholder: `Escolhe cadeiras de ${year}º ano`,
+					message: `Para acederes aos respetivos canais e receberes anúncios, escolhe em que cadeiras de ${year}º ano tens interesse.`,
+					minValues: 0,
+					maxValues: -1,
+					channelId,
+					messageId:
+						(
+							await prisma.courseRoleSelectionMessage.findFirst({
+								where: { injectedRoleGroupId: groupId },
+							})
+						)?.messageId ?? null,
+					options: yearCourses.map((c) => ({
+						label: c.course.displayAcronym,
+						description: `${c.course.name} (${c.semester}º Semestre)`,
+						value: c.course.roleId as string,
+						emoji: null,
+						roleGroupId: groupId,
+					})),
+				};
+			})
 	);
 }
 
 export async function getRoleSelectionGroupsForInjection(
-	client: Discord.Client,
 	prisma: PrismaClient
 ): Promise<
 	ReturnType<typeof generateRoleSelectionGroupsForCourseSelectionChannel>
 > {
 	const channelIds = (
 		await prisma.degree.findMany({
-			where: { tier: { gt: 2 }, courseSelectionChannelId: { not: null } },
+			where: {
+				courseSelectionChannelId: { not: null },
+			},
 		})
 	).map((d) => d.courseSelectionChannelId as Discord.Snowflake);
+
+	const uniqueChannelIds = utils.removeDuplicatesFromArray(channelIds);
+
 	return [
 		...(await Promise.all(
-			channelIds.map((id) =>
-				generateRoleSelectionGroupsForCourseSelectionChannel(
-					client,
-					prisma,
-					id
-				)
+			uniqueChannelIds.map((id) =>
+				generateRoleSelectionGroupsForCourseSelectionChannel(prisma, id)
 			)
 		)),
 	].flat();

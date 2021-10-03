@@ -93,3 +93,15 @@ export async function fetchAllChannelMessages(
 
 	return messages;
 }
+
+export function removeDuplicatesFromArray<T>(
+	array: T[],
+	getKey?: (item: T) => unknown
+): T[] {
+	if (!getKey) getKey = (v) => v;
+
+	return array.filter(
+		(value, i) =>
+			!array.some((v, j) => j < i && getKey?.(value) === getKey?.(v))
+	);
+}

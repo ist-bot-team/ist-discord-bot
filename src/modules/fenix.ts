@@ -5,6 +5,7 @@ import cheerio from "cheerio";
 import RSSParser from "rss-parser";
 
 import * as FenixTypings from "./fenix.d";
+import * as utils from "./utils";
 
 const parser = new RSSParser();
 
@@ -142,7 +143,10 @@ export async function getDegreeCourses(
 			})
 	);
 
-	return courses;
+	return utils.removeDuplicatesFromArray(
+		courses,
+		(courses) => courses.acronym
+	);
 }
 
 export async function getRSSFeed<T extends FenixTypings.RSSFeedItem>(

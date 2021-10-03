@@ -51,7 +51,8 @@
 		"prepare": "husky install",
 		"build": "tsc",
 		"start": "node .",
-		"start:docker": "prisma migrate deploy && node ."
+		"start:docker": "prisma migrate deploy && node .",
+		"prisma:generate": "prisma generate"
 	},
 	"lint-staged": {
 		"**/*": "prettier --write --ignore-unknown"
