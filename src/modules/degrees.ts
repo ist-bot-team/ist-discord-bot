@@ -275,58 +275,55 @@ export async function createDegree(
 			await degreeVoiceChannel.lockPermissions();
 		}
 
-		if (tier >= 2) {
-			const restricted = [
-				{
-					id: guild.roles.everyone,
-					deny: [
-						Discord.Permissions.FLAGS.VIEW_CHANNEL,
-						Discord.Permissions.FLAGS.SEND_MESSAGES,
-					],
-				},
-				{
-					id: role.id,
-					allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
-				},
-			];
+		const restricted = [
+			{
+				id: guild.roles.everyone,
+				deny: [
+					Discord.Permissions.FLAGS.VIEW_CHANNEL,
+					Discord.Permissions.FLAGS.SEND_MESSAGES,
+				],
+			},
+			{
+				id: role.id,
+				allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+			},
+		];
 
-			if (!courseSelectionChannel) {
-				courseSelectionChannel = await guild.channels.create(
-					acronym.toLowerCase() + "-cadeiras",
+		if (!courseSelectionChannel) {
+			courseSelectionChannel = await guild.channels.create(
+				acronym.toLowerCase() + "-cadeiras",
+				{
+					type: "GUILD_TEXT",
+					topic: "Selecionar cadeiras",
+					parent: category,
+					reason,
+					permissionOverwrites: restricted,
+				}
+			);
+		}
+
+		if (tier >= 3) {
+			if (!announcementsChannel) {
+				const announcer = (await guild.roles.fetch())
+					.filter((r) => r.name === "Announcer")
+					.first();
+				announcementsChannel = await guild.channels.create(
+					acronym.toLowerCase() + "-announcements",
 					{
 						type: "GUILD_TEXT",
-						topic: "Selecionar cadeiras",
+						topic: shortDegree.name + " Announcements",
 						parent: category,
 						reason,
-						permissionOverwrites: restricted,
+						permissionOverwrites: announcer
+							? restricted.concat({
+									id: announcer.id,
+									allow: [
+										Discord.Permissions.FLAGS.SEND_MESSAGES,
+									],
+							  })
+							: restricted,
 					}
 				);
-			}
-
-			if (tier >= 3) {
-				if (!announcementsChannel) {
-					const announcer = (await guild.roles.fetch())
-						.filter((r) => r.name === "Announcer")
-						.first();
-					announcementsChannel = await guild.channels.create(
-						acronym.toLowerCase() + "-announcements",
-						{
-							type: "GUILD_TEXT",
-							topic: shortDegree.name + " Announcements",
-							parent: category,
-							reason,
-							permissionOverwrites: announcer
-								? restricted.concat({
-										id: announcer.id,
-										allow: [
-											Discord.Permissions.FLAGS
-												.SEND_MESSAGES,
-										],
-								  })
-								: restricted,
-						}
-					);
-				}
 			}
 		}
 	}
@@ -604,10 +601,10 @@ export async function handleCommand(
 				) as Discord.GuildChannel;
 
 				const key = {
-					["degree-text"]: "degreeText",
-					["degree-voice"]: "degreeVoice",
-					["announcements"]: "announcements",
-					["course-selection"]: "courseSelection",
+					["degree-text"]: "degreeTextChannelId",
+					["degree-voice"]: "degreeVoiceChannelId",
+					["announcements"]: "announcementsChannelId",
+					["course-selection"]: "courseSelectionChannelId",
 				}[channelType];
 
 				if (key === undefined) {
@@ -639,9 +636,10 @@ export async function handleCommand(
 
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Successfully set role of ${acronym} to <@&${newChannel.id}>`
+						`Successfully set ${channelType} of ${acronym} to <@#${newChannel.id}>`
 				);
 			} catch (e) {
+				console.error(e);
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);

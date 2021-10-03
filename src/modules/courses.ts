@@ -417,12 +417,14 @@ export async function refreshCourses(
 				mentionable: false,
 				reason,
 			});
+		} else if (courseRole.name !== course.acronym) {
+			await courseRole.setName(course.acronym, reason);
+		}
+		if (course.roleId !== courseRole.id) {
 			await prisma.course.update({
 				where: { acronym: course.acronym },
 				data: { roleId: courseRole.id },
 			});
-		} else if (courseRole.name !== course.acronym) {
-			await courseRole.setName(course.acronym, reason);
 		}
 
 		const courseChannelTopic = `${course.name} - ${course.displayAcronym}`;
@@ -446,10 +448,6 @@ export async function refreshCourses(
 					],
 				}
 			);
-			await prisma.course.update({
-				where: { acronym: course.acronym },
-				data: { channelId: courseChannel.id },
-			});
 		} else {
 			if (courseChannel.name !== course.displayAcronym.toLowerCase()) {
 				await courseChannel.setName(
@@ -485,6 +483,12 @@ export async function refreshCourses(
 				});
 			}
 		}
+		if (course.channelId !== courseChannel.id) {
+			await prisma.course.update({
+				where: { acronym: course.acronym },
+				data: { channelId: courseChannel.id },
+			});
+		}
 
 		channels.delete(courseChannel.id);
 	}, Promise.resolve());
@@ -499,7 +503,6 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 	const courses = await prisma.degreeCourse.findMany({
 		where: {
 			degree: {
-				tier: { gte: 2 },
 				courseSelectionChannelId: channelId,
 			},
 			course: {
@@ -513,7 +516,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 		a.course.displayAcronym.localeCompare(b.course.displayAcronym)
 	);
 
-	const byYear: (DegreeCourse & { course: Course })[][] = [];
+	const byYear: Record<string, (DegreeCourse & { course: Course })[]> = {};
 	for (const course of courses) {
 		if (byYear[course.year] === undefined) {
 			byYear[course.year] = [];
@@ -522,9 +525,16 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 	}
 
 	return await Promise.all(
-		byYear.map(
-			async (yearCourses, year) =>
-				await (async (groupId) => ({
+		Object.keys(byYear)
+			.sort()
+			.map(async (year) => {
+				const yearCourses = utils.removeDuplicatesFromArray(
+					byYear[year],
+					(v) => v.course.roleId
+				);
+				const groupId = `__dc-${channelId}-${year}`;
+
+				return {
 					id: groupId,
 					mode: "menu",
 					placeholder: `Escolhe cadeiras de ${year}º ano`,
@@ -545,8 +555,8 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 						emoji: null,
 						roleGroupId: groupId,
 					})),
-				}))(`__dc-${channelId}-${year}`)
-		)
+				};
+			})
 	);
 }
 
@@ -558,14 +568,16 @@ export async function getRoleSelectionGroupsForInjection(
 	const channelIds = (
 		await prisma.degree.findMany({
 			where: {
-				tier: { gte: 2 },
 				courseSelectionChannelId: { not: null },
 			},
 		})
 	).map((d) => d.courseSelectionChannelId as Discord.Snowflake);
+
+	const uniqueChannelIds = utils.removeDuplicatesFromArray(channelIds);
+
 	return [
 		...(await Promise.all(
-			channelIds.map((id) =>
+			uniqueChannelIds.map((id) =>
 				generateRoleSelectionGroupsForCourseSelectionChannel(prisma, id)
 			)
 		)),

@@ -4,6 +4,7 @@ import axios from "axios";
 import cheerio from "cheerio";
 
 import * as FenixTypings from "./fenix.d";
+import * as utils from "./utils";
 
 export const axiosClient = axios.create({
 	baseURL: "https://fenix.tecnico.ulisboa.pt",
@@ -118,5 +119,8 @@ export async function getDegreeCourses(
 			})
 	);
 
-	return courses;
+	return utils.removeDuplicatesFromArray(
+		courses,
+		(courses) => courses.acronym
+	);
 }
