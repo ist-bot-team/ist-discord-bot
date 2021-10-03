@@ -149,19 +149,33 @@ export async function sendLeaderboard(
 		]);
 	}
 
-	chars.sort((v1, v2, k1, k2) => v2 - v1 || parseInt(k1) - parseInt(k2));
+	chars.sort((v1, v2, k1, k2) =>
+		v1 !== v2 ? v2 - v1 : parseInt(k2) - parseInt(k1)
+	);
 
 	const lines = [];
 
 	for (const [uid, cs] of chars) {
 		if (lines.length > MAX_PEOPLE) break;
+		let label = uid;
+		try {
+			try {
+				const member = await sendChannel.guild.members.fetch(uid);
+				label = member.toString();
+			} catch (e) {
+				const user = await sendChannel.client.users.fetch(uid);
+				label = user.tag;
+			}
+		} catch (e) {
+			// do nothing
+		}
 		lines.push(
 			`\`#${(lines.length + 1)
 				.toString()
 				.padStart(
 					Math.ceil(Math.log10(MAX_PEOPLE)),
 					"0"
-				)}\` <@${uid}> (${cs})`
+				)}\` ${label} (${cs})`
 		);
 	}
 
