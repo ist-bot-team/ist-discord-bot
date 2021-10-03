@@ -82,6 +82,17 @@ export function provideCommands(): CommandDescriptor[] {
 					.setRequired(true)
 			)
 	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("list-degrees-with-course")
+			.setDescription("Show which degrees have a specific course")
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("acronym")
+					.setDescription("The acronym of the course in question")
+					.setRequired(true)
+			)
+	);
 	cmd.addSubcommandGroup(
 		new Builders.SlashCommandSubcommandGroupBuilder()
 			.setName("academic-year")
@@ -333,6 +344,41 @@ export async function handleCommand(
 				);
 			}
 
+			break;
+		}
+		case "list-degrees-with-course": {
+			try {
+				const acronym = interaction.options.getString("acronym", true);
+				const degrees = await prisma.degree.findMany({
+					where: {
+						courses: { some: { courseAcronym: acronym } },
+					},
+				});
+
+				await interaction.editReply({
+					embeds: [
+						new Discord.MessageEmbed()
+							.setTitle("Degrees with Course")
+							.setDescription(
+								`Below are all degrees that need course \`${acronym}\`, as well as whether they have a tier high enough to justify having a channel for said course.`
+							)
+							.addFields(
+								degrees.map((d) => ({
+									name: d.acronym,
+									value: `Tier ${d.tier} ${
+										d.tier >= 2 ? "✅" : "❌"
+									}`,
+									inline: true,
+								}))
+							),
+					],
+				});
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong"
+				);
+			}
 			break;
 		}
 		case "academic-year": {
