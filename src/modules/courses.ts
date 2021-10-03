@@ -351,7 +351,16 @@ export async function handleCommand(
 				const acronym = interaction.options.getString("acronym", true);
 				const degrees = await prisma.degree.findMany({
 					where: {
-						courses: { some: { courseAcronym: acronym } },
+						courses: {
+							some: {
+								course: {
+									OR: {
+										acronym: acronym,
+										displayAcronym: acronym,
+									},
+								},
+							},
+						},
 					},
 				});
 
