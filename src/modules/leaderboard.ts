@@ -47,7 +47,11 @@ export async function getUsersCharacterCount(
 				) {
 					chars.set(
 						msg.author.id,
-						(chars.get(msg.author.id) ?? 0) + msg.content.length
+						(chars.get(msg.author.id) ?? 0) +
+							msg.content.replace(
+								/[^\p{Letter}\p{Number}\p{Punctuation}]/gu,
+								""
+							).length
 					);
 					msgCount++;
 
@@ -221,6 +225,11 @@ export function provideCommands(): CommandDescriptor[] {
 					.addChoice("Last 7 days", "week")
 			)
 	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("clear-cache")
+			.setDescription("Clear existing message cache")
+	);
 	return [
 		{
 			builder: cmd,
@@ -280,6 +289,27 @@ ${
 				await interaction
 					.editReply(utils.XEmoji + "Something went wrong.")
 					.catch(() => console.error("Leaderboard took too long :("));
+			}
+			break;
+		}
+		case "clear-cache": {
+			try {
+				await prisma.leaderboardEntry.deleteMany(); // CAREFUL! deletes everything!
+				const stamp = (
+					await prisma.config.delete({
+						where: { key: "leaderboard:cache_stamp" },
+					})
+				).value;
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Successfully reset cache; last stamp was ${stamp}`
+				);
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji +
+						"Something went wrong, maybe there was no cache?"
+				);
 			}
 			break;
 		}
