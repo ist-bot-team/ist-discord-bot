@@ -92,6 +92,7 @@ export async function handleAboutCommand(
 					[
 						["Rafael Oliveira", "RafDevX"],
 						["Diogo Correia", "diogotcorreia"],
+						["Luís Fonseca", "luishfonseca"],
 					].map((a) => ({
 						name: a[0],
 						value: "[GitHub](https://github.com/" + a[1] + ")",
