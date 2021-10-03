@@ -19,7 +19,13 @@ const TOURIST_BUTTON_STYLE = "SECONDARY";
 
 const injectedGroups: {
 	// FIXME: find a better way to do this, without global vars
-	[groupId: string]: RoleGroup & { options: RoleGroupOption[] };
+	[groupId: string]: RoleGroup & {
+		options: RoleGroupOption[];
+		onSendCallback?: (
+			prisma: PrismaClient,
+			messageId: Discord.Snowflake
+		) => Promise<void>;
+	};
 } = {};
 
 // TODO: load from fénix into database
@@ -33,7 +39,7 @@ export async function sendRoleSelectionMessages(
 		include: { options: true },
 	});
 
-	await injectGroups(client, prisma, groups);
+	await injectGroups(prisma, groups);
 
 	for (const group of groups) {
 		try {
@@ -148,15 +154,11 @@ export async function sendRoleSelectionMessages(
 							? await message.edit(args)
 							: await (channel as Discord.TextChannel).send(args);
 
-					if (group.id === TOURIST_GROUP_ID) {
-						const key = "tourist:message_id";
-						await prisma.config.upsert({
-							where: { key },
-							create: { key, value: msg.id },
-							update: { value: msg.id },
-						});
-					} else if (group.id.startsWith("__")) {
-						await (channel as Discord.TextChannel).setTopic(msg.id); // FIXME: this probably shouldn't be so generic
+					if (group.id.startsWith("__")) {
+						await injectedGroups[group.id]?.onSendCallback?.(
+							prisma,
+							msg.id
+						);
 					} else {
 						await prisma.roleGroup.update({
 							where: { id: group.id },
@@ -176,14 +178,24 @@ export async function sendRoleSelectionMessages(
 }
 
 async function injectGroups(
-	client: Discord.Client,
 	prisma: PrismaClient,
 	groups: (RoleGroup & { options: RoleGroupOption[] })[]
 ) {
 	try {
 		await injectTouristGroup(prisma, groups);
-		(await courses.getRoleSelectionGroupsForInjection(client, prisma)).map(
-			(g) => groups.push(g) && (injectedGroups[g.id] = g)
+		(await courses.getRoleSelectionGroupsForInjection(prisma)).map(
+			(g) =>
+				groups.push(g) &&
+				(injectedGroups[g.id] = {
+					...g,
+					onSendCallback: async (prisma, messageId) => {
+						await prisma.courseRoleSelectionMessage.upsert({
+							where: { injectedRoleGroupId: g.id },
+							update: { messageId },
+							create: { injectedRoleGroupId: g.id, messageId },
+						});
+					},
+				})
 		);
 	} catch (e) {
 		await console.error(`Failed to inject groups: ${e}`);
@@ -197,7 +209,7 @@ async function injectTouristGroup(
 	const getTouristConfig = getConfigFactory(prisma, "tourist");
 
 	try {
-		groups.push({
+		const group = {
 			id: TOURIST_GROUP_ID,
 			mode: "buttons",
 			placeholder: "N/A",
@@ -219,7 +231,19 @@ async function injectTouristGroup(
 					roleGroupId: TOURIST_GROUP_ID,
 				},
 			],
-		});
+		};
+		groups.push(group);
+		injectedGroups[TOURIST_GROUP_ID] = {
+			...group,
+			onSendCallback: async (prisma, messageId) => {
+				const key = "tourist:message_id";
+				await prisma.config.upsert({
+					where: { key },
+					create: { key, value: messageId },
+					update: { value: messageId },
+				});
+			},
+		};
 	} catch (e) {
 		console.error(
 			`Failed to inject tourist group: ${(e as Error).message}`

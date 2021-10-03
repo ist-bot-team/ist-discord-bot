@@ -493,7 +493,6 @@ export async function refreshCourses(
 }
 
 export async function generateRoleSelectionGroupsForCourseSelectionChannel(
-	client: Discord.Client,
 	prisma: PrismaClient,
 	channelId: Discord.Snowflake
 ): Promise<(RoleGroup & { options: RoleGroupOption[] })[]> {
@@ -522,33 +521,36 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 		byYear[course.year].push(course);
 	}
 
-	const channel = (await client.channels.fetch(
-		channelId
-	)) as Discord.TextChannel;
-
-	return byYear.map((yearCourses, year) =>
-		((groupId) => ({
-			id: groupId,
-			mode: "menu",
-			placeholder: `Escolhe cadeiras de ${year}º ano`,
-			message: `Para acederes aos respetivos canais e receberes anúncios, escolhe em que cadeiras de ${year}º ano tens interesse.`,
-			minValues: 0,
-			maxValues: -1,
-			channelId,
-			messageId: channel.topic,
-			options: yearCourses.map((c) => ({
-				label: c.course.displayAcronym,
-				description: `${c.course.name} (${c.semester}º Semestre)`,
-				value: c.course.roleId as string,
-				emoji: null,
-				roleGroupId: groupId,
-			})),
-		}))(`__dc-${channelId}-${year}`)
+	return await Promise.all(
+		byYear.map(
+			async (yearCourses, year) =>
+				await (async (groupId) => ({
+					id: groupId,
+					mode: "menu",
+					placeholder: `Escolhe cadeiras de ${year}º ano`,
+					message: `Para acederes aos respetivos canais e receberes anúncios, escolhe em que cadeiras de ${year}º ano tens interesse.`,
+					minValues: 0,
+					maxValues: -1,
+					channelId,
+					messageId:
+						(
+							await prisma.courseRoleSelectionMessage.findFirst({
+								where: { injectedRoleGroupId: groupId },
+							})
+						)?.messageId ?? null,
+					options: yearCourses.map((c) => ({
+						label: c.course.displayAcronym,
+						description: `${c.course.name} (${c.semester}º Semestre)`,
+						value: c.course.roleId as string,
+						emoji: null,
+						roleGroupId: groupId,
+					})),
+				}))(`__dc-${channelId}-${year}`)
+		)
 	);
 }
 
 export async function getRoleSelectionGroupsForInjection(
-	client: Discord.Client,
 	prisma: PrismaClient
 ): Promise<
 	ReturnType<typeof generateRoleSelectionGroupsForCourseSelectionChannel>
@@ -564,11 +566,7 @@ export async function getRoleSelectionGroupsForInjection(
 	return [
 		...(await Promise.all(
 			channelIds.map((id) =>
-				generateRoleSelectionGroupsForCourseSelectionChannel(
-					client,
-					prisma,
-					id
-				)
+				generateRoleSelectionGroupsForCourseSelectionChannel(prisma, id)
 			)
 		)),
 	].flat();
