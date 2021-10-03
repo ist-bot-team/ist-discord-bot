@@ -56,7 +56,7 @@ export function provideCommands(): CommandDescriptor[] {
 			)
 			.addBooleanOption(
 				new Builders.SlashCommandBooleanOption()
-					.setName("delete_role")
+					.setName("delete-role")
 					.setDescription(
 						"If hiding channel, delete the course role as well (true by default)"
 					)
@@ -69,22 +69,33 @@ export function provideCommands(): CommandDescriptor[] {
 			.setDescription("Set display acronym of course")
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
-					.setName("old_acronym")
+					.setName("old-acronym")
 					.setDescription("The acronym of the course to be renamed")
 					.setRequired(true)
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
-					.setName("new_acronym")
+					.setName("new-acronym")
 					.setDescription(
 						"The acronym to show on channel name and role (e.g. CDI-I)"
 					)
 					.setRequired(true)
 			)
 	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("list-degrees-with-course")
+			.setDescription("Show which degrees have a specific course")
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("acronym")
+					.setDescription("The acronym of the course in question")
+					.setRequired(true)
+			)
+	);
 	cmd.addSubcommandGroup(
 		new Builders.SlashCommandSubcommandGroupBuilder()
-			.setName("academic_year")
+			.setName("academic-year")
 			.setDescription("Manage the current academic year")
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
@@ -94,7 +105,7 @@ export function provideCommands(): CommandDescriptor[] {
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
-							.setName("academic_year")
+							.setName("academic-year")
 							.setDescription(
 								"The current academic year (e.g. 2020-2021)"
 							)
@@ -196,7 +207,7 @@ export async function handleCommand(
 					true
 				);
 				const deleteRole =
-					interaction.options.getBoolean("delete_role", false) ??
+					interaction.options.getBoolean("delete-role", false) ??
 					true;
 
 				const course = await prisma.course.findUnique({
@@ -268,11 +279,11 @@ export async function handleCommand(
 		case "rename": {
 			try {
 				const oldAcronym = interaction.options.getString(
-					"old_acronym",
+					"old-acronym",
 					true
 				);
 				const newAcronym = interaction.options.getString(
-					"new_acronym",
+					"new-acronym",
 					true
 				);
 
@@ -335,7 +346,51 @@ export async function handleCommand(
 
 			break;
 		}
-		case "academic_year": {
+		case "list-degrees-with-course": {
+			try {
+				const acronym = interaction.options.getString("acronym", true);
+				const degrees = await prisma.degree.findMany({
+					where: {
+						courses: {
+							some: {
+								course: {
+									OR: {
+										acronym: acronym,
+										displayAcronym: acronym,
+									},
+								},
+							},
+						},
+					},
+				});
+
+				await interaction.editReply({
+					embeds: [
+						new Discord.MessageEmbed()
+							.setTitle("Degrees with Course")
+							.setDescription(
+								`Below are all degrees that need course \`${acronym}\`, as well as whether they have a tier high enough to justify having a channel for said course.`
+							)
+							.addFields(
+								degrees.map((d) => ({
+									name: d.acronym,
+									value: `Tier ${d.tier} ${
+										d.tier >= 2 ? "✅" : "❌"
+									}`,
+									inline: true,
+								}))
+							),
+					],
+				});
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong"
+				);
+			}
+			break;
+		}
+		case "academic-year": {
 			const subcommand = interaction.options.getSubcommand();
 			switch (subcommand) {
 				case "get": {
@@ -366,7 +421,7 @@ export async function handleCommand(
 				case "set": {
 					try {
 						const academicYear = interaction.options.getString(
-							"academic_year",
+							"academic-year",
 							true
 						);
 

@@ -429,12 +429,12 @@ export async function handleCommand(
 						new Discord.MessageEmbed()
 							.setTitle("All Degrees")
 							.setDescription(
-								"Below are all known degrees, by acronym and Fénix ID"
+								"Below are all known degrees, by acronym, Fénix ID and tier"
 							)
 							.addFields(
 								degrees.map((d) => ({
 									name: d.acronym,
-									value: d.fenixId,
+									value: `${d.fenixId} (Tier ${d.tier})`,
 									inline: true,
 								}))
 							),
