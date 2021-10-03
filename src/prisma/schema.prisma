@@ -77,13 +77,16 @@ model Course {
 }
 
 model DegreeCourse {
-    id            String @id /// due to course groupings using the same fenixId, this should be `${degreeAcronym}-${fenixId}`
-    degree        Degree @relation(fields: [degreeFenixId], references: [fenixId], onDelete: Cascade)
-    degreeFenixId String @map("degree_fenix_id")
-    course        Course @relation(fields: [courseAcronym], references: [acronym], onDelete: Cascade)
-    courseAcronym String @map("course_acronym")
-    year          Int /// 1, 2, 3; not 2021, 2022, 2023
-    semester      Int /// 1 or 2
+    id                   String   @id /// due to course groupings using the same fenixId, this should be `${degreeAcronym}-${fenixId}`
+    degree               Degree   @relation(fields: [degreeFenixId], references: [fenixId], onDelete: Cascade)
+    degreeFenixId        String   @map("degree_fenix_id")
+    course               Course   @relation(fields: [courseAcronym], references: [acronym], onDelete: Cascade)
+    courseAcronym        String   @map("course_acronym")
+    year                 Int /// 1, 2, 3; not 2021, 2022, 2023
+    semester             Int /// 1 or 2
+    announcementsFeedUrl String?  @map("announcements_feed_url")
+    feedLastUpdated      DateTime @default(now()) @map("feed_last_updated")
+    color                String?
 
     @@map("degree_courses")
 }

@@ -190,6 +190,17 @@ export function provideCommands(): CommandDescriptor[] {
 					.setRequired(true)
 			)
 	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("refresh-courses")
+			.setDescription("Refresh degree courses from Fenix")
+			.addStringOption(
+				new Builders.SlashCommandStringOption()
+					.setName("acronym")
+					.setDescription("The acronym of the degree to refresh")
+					.setRequired(true)
+			)
+	);
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
@@ -646,6 +657,36 @@ export async function handleCommand(
 			}
 
 			break;
+		}
+		case "refresh-courses": {
+			try {
+				const acronym = interaction.options.getString("acronym", true);
+
+				const degree = await prisma.degree.findUnique({
+					where: { acronym },
+				});
+				if (!degree) {
+					await interaction.editReply(
+						utils.XEmoji + `Degree \`${acronym}\` not found!`
+					);
+					return;
+				}
+
+				await courses.importCoursesFromDegree(
+					prisma,
+					degree.fenixId,
+					true
+				);
+
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Degree \`${acronym}\`'s courses have been refreshed!`
+				);
+			} catch (e) {
+				await interaction.editReply(
+					utils.XEmoji + "Something went wrong."
+				);
+			}
 		}
 	}
 }

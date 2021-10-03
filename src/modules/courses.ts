@@ -82,6 +82,31 @@ export function provideCommands(): CommandDescriptor[] {
 					.setRequired(true)
 			)
 	);
+	cmd.addSubcommandGroup(
+		new Builders.SlashCommandSubcommandGroupBuilder()
+			.setName("academic_year")
+			.setDescription("Manage the current academic year")
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("set")
+					.setDescription(
+						"Set the current academic year (e.g. 2020-2021)"
+					)
+					.addStringOption(
+						new Builders.SlashCommandStringOption()
+							.setName("academic_year")
+							.setDescription(
+								"The current academic year (e.g. 2020-2021)"
+							)
+							.setRequired(true)
+					)
+			)
+			.addSubcommand(
+				new Builders.SlashCommandSubcommandBuilder()
+					.setName("get")
+					.setDescription("Get the current academic year")
+			)
+	);
 
 	return [{ builder: cmd, handler: handleCommand }];
 }
@@ -92,7 +117,10 @@ export async function handleCommand(
 ): Promise<void> {
 	if (!interaction.guild) return;
 
-	switch (interaction.options.getSubcommand()) {
+	switch (
+		interaction.options.getSubcommandGroup(false) ||
+		interaction.options.getSubcommand()
+	) {
 		case "refresh-channels": {
 			try {
 				const orphanChannels = await refreshCourses(
@@ -307,14 +335,87 @@ export async function handleCommand(
 
 			break;
 		}
+		case "academic_year": {
+			const subcommand = interaction.options.getSubcommand();
+			switch (subcommand) {
+				case "get": {
+					try {
+						const academicYear = (
+							await prisma.config.findUnique({
+								where: { key: "academic_year" },
+							})
+						)?.value;
+
+						if (academicYear) {
+							await interaction.editReply(
+								`The current academic year is \`${academicYear}\``
+							);
+						} else {
+							await interaction.editReply(
+								`No academic year is currently set`
+							);
+						}
+					} catch (e) {
+						console.error(e);
+						await interaction.editReply(
+							utils.XEmoji + "Something went wrong."
+						);
+					}
+					break;
+				}
+				case "set": {
+					try {
+						const academicYear = interaction.options.getString(
+							"academic_year",
+							true
+						);
+
+						await prisma.config.upsert({
+							where: { key: "academic_year" },
+							update: { value: academicYear },
+							create: {
+								key: "academic_year",
+								value: academicYear,
+							},
+						});
+
+						await interaction.editReply(
+							`The current academic year has been set to \`${academicYear}\``
+						);
+					} catch (e) {
+						console.error(e);
+						await interaction.editReply(
+							utils.XEmoji + "Something went wrong."
+						);
+					}
+					break;
+				}
+			}
+			break;
+		}
 	}
 }
 
 export async function importCoursesFromDegree(
 	prisma: PrismaClient,
-	degreeId: string
+	degreeId: string,
+	force = false
 ): Promise<void> {
-	const degreeCourses = await fenix.getDegreeCourses(degreeId);
+	const academicYear = (
+		await prisma.config.findUnique({ where: { key: "academic_year" } })
+	)?.value;
+
+	if (!academicYear) {
+		throw Error("Academic year is not defined");
+	}
+
+	const degreeCourses = await fenix.getDegreeCourses(degreeId, academicYear);
+
+	if (force) {
+		await prisma.degreeCourse.deleteMany({
+			where: { degreeFenixId: degreeId },
+		});
+	}
 
 	await Promise.all(
 		degreeCourses.map(async (course) => {
@@ -341,6 +442,8 @@ export async function importCoursesFromDegree(
 					courseAcronym: course.acronym,
 					year: course.year,
 					semester: course.semester,
+					announcementsFeedUrl: course.announcementsFeedUrl,
+					color: utils.generateHexCode(),
 				},
 			});
 		})

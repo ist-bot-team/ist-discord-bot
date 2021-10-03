@@ -21,6 +21,7 @@ import * as welcome from "./modules/welcome";
 import * as leaderboard from "./modules/leaderboard";
 import * as degrees from "./modules/degrees";
 import * as courses from "./modules/courses";
+import * as rss from "./modules/rss";
 
 for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
 	if (process.env[ev] === undefined) {
@@ -183,6 +184,13 @@ const startupChores: Chore[] = [
 			}
 		},
 		complete: "All slash command permissions overwritten",
+	},
+	{
+		summary: "Start RSS cron job",
+		fn: async () => {
+			rss.scheduleRSSFeedJob(prisma, client);
+		},
+		complete: "Finished starting RSS cron job",
 	},
 ];
 

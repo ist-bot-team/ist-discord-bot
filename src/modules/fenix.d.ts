@@ -22,4 +22,16 @@ export interface FenixDegreeCourse {
 	name: string;
 	year: number;
 	semester: number;
+	announcementsFeedUrl?: string;
+}
+
+export interface RSSFeedItem {
+	pubDate: string;
+}
+
+export interface RSSCourseAnnouncement extends RSSFeedItem {
+	title: string;
+	content: string;
+	link: string;
+	author: string;
 }
