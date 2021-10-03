@@ -188,6 +188,10 @@ export async function handleCommand(
 				});
 
 				if (exists) {
+					await prisma.course.update({
+						where: { displayAcronym: courseAcronym },
+						data: { roleId: null, channelId: null },
+					});
 					try {
 						const courseChannel =
 							await interaction.guild.channels.fetch(
