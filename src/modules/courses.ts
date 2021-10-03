@@ -520,8 +520,8 @@ export async function refreshCourses(
 				mentionable: false,
 				reason,
 			});
-		} else if (courseRole.name !== course.acronym) {
-			await courseRole.setName(course.acronym, reason);
+		} else if (courseRole.name !== course.displayAcronym) {
+			await courseRole.setName(course.displayAcronym, reason);
 		}
 		if (course.roleId !== courseRole.id) {
 			await prisma.course.update({
