@@ -84,8 +84,8 @@ model DegreeCourse {
     courseAcronym        String   @map("course_acronym")
     year                 Int /// 1, 2, 3; not 2021, 2022, 2023
     semester             Int /// 1 or 2
-    announcementsFeedUrl String?
-    feedLastUpdated      DateTime @default(now())
+    announcementsFeedUrl String?  @map("announcements_feed_url")
+    feedLastUpdated      DateTime @default(now()) @map("feed_last_updated")
 
     @@map("degree_courses")
 }
