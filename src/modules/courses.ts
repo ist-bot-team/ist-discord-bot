@@ -555,7 +555,10 @@ export async function getRoleSelectionGroupsForInjection(
 > {
 	const channelIds = (
 		await prisma.degree.findMany({
-			where: { tier: { gt: 2 }, courseSelectionChannelId: { not: null } },
+			where: {
+				tier: { gte: 2 },
+				courseSelectionChannelId: { not: null },
+			},
 		})
 	).map((d) => d.courseSelectionChannelId as Discord.Snowflake);
 	return [
