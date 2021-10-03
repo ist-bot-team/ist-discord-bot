@@ -60,6 +60,8 @@ model Degree {
     announcementsChannelId   String?        @map("announcements_channel_id")
     courseSelectionChannelId String?        @map("course_selection_channel_id")
     courses                  DegreeCourse[]
+
+    @@map("degrees")
 }
 
 model Course {
@@ -70,16 +72,27 @@ model Course {
     roleId                   String?        @unique @map("role_id")
     hideChannel              Boolean        @default(false)
     perDegreeImplementations DegreeCourse[]
+
+    @@map("courses")
 }
 
 model DegreeCourse {
     id            String @id /// due to course groupings using the same fenixId, this should be `${degreeAcronym}-${fenixId}`
     degree        Degree @relation(fields: [degreeFenixId], references: [fenixId], onDelete: Cascade)
-    degreeFenixId String
+    degreeFenixId String @map("degree_fenix_id")
     course        Course @relation(fields: [courseAcronym], references: [acronym], onDelete: Cascade)
-    courseAcronym String
+    courseAcronym String @map("course_acronym")
     year          Int /// 1, 2, 3; not 2021, 2022, 2023
     semester      Int /// 1 or 2
+
+    @@map("degree_courses")
+}
+
+model CourseRoleSelectionMessage {
+    injectedRoleGroupId String @id @map("injected_role_group_id")
+    messageId           String @map("message_id")
+
+    @@map("course_role_selection_messages")
 }
 
 model LeaderboardEntry {
