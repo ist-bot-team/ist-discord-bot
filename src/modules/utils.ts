@@ -105,3 +105,11 @@ export function removeDuplicatesFromArray<T>(
 			!array.some((v, j) => j < i && getKey?.(value) === getKey?.(v))
 	);
 }
+
+export function generateHexCode(): string {
+	let randomHexCode = "#";
+	while (randomHexCode.length < 7) {
+		randomHexCode += Math.floor(Math.random() * 15).toString(16);
+	}
+	return randomHexCode;
+}

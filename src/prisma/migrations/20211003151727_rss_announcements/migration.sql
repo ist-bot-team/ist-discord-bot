@@ -8,6 +8,7 @@ CREATE TABLE "new_degree_courses" (
     "semester" INTEGER NOT NULL,
     "announcements_feed_url" TEXT,
     "feed_last_updated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "color" TEXT,
     CONSTRAINT "degree_courses_degree_fenix_id_fkey" FOREIGN KEY ("degree_fenix_id") REFERENCES "degrees" ("fenix_id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "degree_courses_course_acronym_fkey" FOREIGN KEY ("course_acronym") REFERENCES "courses" ("acronym") ON DELETE CASCADE ON UPDATE CASCADE
 );

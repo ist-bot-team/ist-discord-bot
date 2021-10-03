@@ -25,6 +25,7 @@ export function runRSSFeedJob(
 				id: true,
 				announcementsFeedUrl: true,
 				feedLastUpdated: true,
+				color: true,
 				degree: true,
 				course: true,
 			},
@@ -67,7 +68,12 @@ export function runRSSFeedJob(
 										)
 										.substring(0, 2048),
 									url: announcement.link,
-									color: parseInt("#00a0e4".substring(1), 16),
+									color: parseInt(
+										(course.color || "#00a0e4").substring(
+											1
+										),
+										16
+									),
 									author: {
 										name:
 											announcement.author.match(

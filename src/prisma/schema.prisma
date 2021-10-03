@@ -86,6 +86,7 @@ model DegreeCourse {
     semester             Int /// 1 or 2
     announcementsFeedUrl String?  @map("announcements_feed_url")
     feedLastUpdated      DateTime @default(now()) @map("feed_last_updated")
+    color                String?
 
     @@map("degree_courses")
 }

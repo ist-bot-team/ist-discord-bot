@@ -443,6 +443,7 @@ export async function importCoursesFromDegree(
 					year: course.year,
 					semester: course.semester,
 					announcementsFeedUrl: course.announcementsFeedUrl,
+					color: utils.generateHexCode(),
 				},
 			});
 		})
