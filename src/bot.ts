@@ -23,12 +23,18 @@ import * as degrees from "./modules/degrees";
 import * as courses from "./modules/courses";
 import * as rss from "./modules/rss";
 
-for (const ev of ["DISCORD_TOKEN", "GUILD_ID", "ADMIN_ID", "ADMIN_PLUS_ID"]) {
+for (const ev of [
+	"DISCORD_TOKEN",
+	"GUILD_ID",
+	"ADMIN_ID",
+	"ADMIN_PLUS_ID",
+	"COMMAND_LOGS_CHANNEL_ID",
+]) {
 	if (process.env[ev] === undefined) {
 		throw new Error(`Missing environment variable; please set ${ev}!`);
 	}
 }
-const { DISCORD_TOKEN, GUILD_ID } = process.env;
+const { DISCORD_TOKEN, GUILD_ID, COMMAND_LOGS_CHANNEL_ID } = process.env;
 
 export enum CommandPermission {
 	Public,
@@ -76,6 +82,8 @@ const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
 const menuHandlers: InteractionHandlers<Discord.SelectMenuInteraction> = {
 	roleSelection: roleSelection.handleRoleSelectionMenu,
 };
+
+let commandLogsChannel: Discord.TextBasedChannels | undefined;
 
 const startupChores: Chore[] = [
 	{
@@ -192,6 +200,25 @@ const startupChores: Chore[] = [
 		},
 		complete: "Finished starting RSS cron job",
 	},
+	{
+		summary: "Find command logging channel",
+		fn: async () => {
+			try {
+				const c = await client.channels.fetch(
+					COMMAND_LOGS_CHANNEL_ID ?? ""
+				);
+				if (!c?.isText()) {
+					throw new Error("Wrong type");
+				} else {
+					commandLogsChannel =
+						(await c.fetch()) as typeof commandLogsChannel;
+				}
+			} catch (e) {
+				throw new Error("Failed to find channel");
+			}
+		},
+		complete: "Successfully set command logging channel",
+	},
 ];
 
 client.on("ready", async () => {
@@ -251,6 +278,20 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 					return;
 				}
 			}
+
+			try {
+				const str = utils.stringifyCommand(interaction);
+				console.log(str);
+				await commandLogsChannel?.send({
+					content: str,
+					allowedMentions: { parse: [] },
+				});
+			} catch (e) {
+				// do nothing
+			}
+			// TODO: show a X or CheckMark emoji before `str` to indicate whether
+			// TODO: the command was successful; that ruins the simplicity of the
+			// TODO: statement below vvvv, though :(
 
 			await commandHandlers[interaction.commandName]?.(
 				interaction,
