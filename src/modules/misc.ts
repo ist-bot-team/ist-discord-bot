@@ -59,6 +59,13 @@ export function provideCommands(): CommandDescriptor[] {
 			builder: whoSaid,
 			handler: handleWhoSaidCommand,
 		},
+		{
+			builder: new Builders.SlashCommandBuilder()
+				.setName("just-ask")
+				.setDescription("Send 'Don´t ask to ask' website"),
+			handler: handleJustAskCommand,
+			permission: CommandPermission.Public,
+		},
 	];
 }
 
@@ -163,5 +170,17 @@ export async function handleWhoSaidCommand(
 		await interaction.editReply(
 			utils.XEmoji + "Something went wrong, maybe wrong message ID?"
 		);
+	}
+}
+
+export async function handleJustAskCommand(
+	interaction: Discord.CommandInteraction
+): Promise<void> {
+	try {
+		await interaction.channel?.send("https://dontasktoask.com/");
+		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
+	} catch (e) {
+		console.error(e);
+		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }
