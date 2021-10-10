@@ -113,3 +113,38 @@ export function generateHexCode(): string {
 	}
 	return randomHexCode;
 }
+
+export function stringifyCommand(
+	interaction: Discord.CommandInteraction
+): string {
+	const subcommandGroup = interaction.options.getSubcommandGroup(false);
+	const subcommand = interaction.options.getSubcommand(false);
+
+	const options: string[] = [];
+
+	const extractOptions = (
+		opt: readonly Discord.CommandInteractionOption[] | undefined
+	): readonly Discord.CommandInteractionOption[] =>
+		opt === undefined
+			? []
+			: opt.length === 1 &&
+			  ["SUB_COMMAND", "SUB_COMMAND_GROUP"].includes(opt[0].type)
+			? extractOptions(opt[0].options)
+			: opt;
+
+	for (const opt of extractOptions(interaction.options.data)) {
+		const specialValue = opt.channel ?? opt.member ?? opt.user ?? opt.role;
+		options.push(
+			`${opt.name}: ${opt.value?.toString()}` +
+				(specialValue ? ` (${specialValue})` : "")
+		);
+	}
+
+	return (
+		`[${interaction.user.tag}]: /` +
+		interaction.commandName +
+		(subcommandGroup ? " " + subcommandGroup : "") +
+		(subcommand ? " " + subcommand : "") +
+		(options.length ? ["", ...options].join("\n-\t") : "none")
+	);
+}
