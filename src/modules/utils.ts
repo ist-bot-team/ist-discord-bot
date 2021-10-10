@@ -145,6 +145,6 @@ export function stringifyCommand(
 		interaction.commandName +
 		(subcommandGroup ? " " + subcommandGroup : "") +
 		(subcommand ? " " + subcommand : "") +
-		(options.length ? ["", ...options].join("\n-\t") : "none")
+		(options.length ? ["", ...options].join("\n-\t") : "")
 	);
 }
