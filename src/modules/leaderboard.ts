@@ -47,7 +47,11 @@ export async function getUsersCharacterCount(
 				) {
 					chars.set(
 						msg.author.id,
-						(chars.get(msg.author.id) ?? 0) + msg.content.length
+						(chars.get(msg.author.id) ?? 0) +
+							msg.content.replace(
+								/[^\p{Letter}\p{Number}\p{Punctuation}]/gu,
+								""
+							).length
 					);
 					msgCount++;
 
@@ -149,19 +153,33 @@ export async function sendLeaderboard(
 		]);
 	}
 
-	chars.sort((v1, v2, k1, k2) => v2 - v1 || parseInt(k1) - parseInt(k2));
+	chars.sort((v1, v2, k1, k2) =>
+		v1 !== v2 ? v2 - v1 : parseInt(k2) - parseInt(k1)
+	);
 
 	const lines = [];
 
 	for (const [uid, cs] of chars) {
 		if (lines.length > MAX_PEOPLE) break;
+		let label = uid;
+		try {
+			try {
+				const member = await sendChannel.guild.members.fetch(uid);
+				label = member.toString();
+			} catch (e) {
+				const user = await sendChannel.client.users.fetch(uid);
+				label = user.tag;
+			}
+		} catch (e) {
+			// do nothing
+		}
 		lines.push(
 			`\`#${(lines.length + 1)
 				.toString()
 				.padStart(
 					Math.ceil(Math.log10(MAX_PEOPLE)),
 					"0"
-				)}\` <@${uid}> (${cs})`
+				)}\` ${label} (${cs})`
 		);
 	}
 
@@ -206,6 +224,11 @@ export function provideCommands(): CommandDescriptor[] {
 					.addChoice("Last 30 days", "month")
 					.addChoice("Last 7 days", "week")
 			)
+	);
+	cmd.addSubcommand(
+		new Builders.SlashCommandSubcommandBuilder()
+			.setName("clear-cache")
+			.setDescription("Clear existing message cache")
 	);
 	return [
 		{
@@ -266,6 +289,27 @@ ${
 				await interaction
 					.editReply(utils.XEmoji + "Something went wrong.")
 					.catch(() => console.error("Leaderboard took too long :("));
+			}
+			break;
+		}
+		case "clear-cache": {
+			try {
+				await prisma.leaderboardEntry.deleteMany(); // CAREFUL! deletes everything!
+				const stamp = (
+					await prisma.config.delete({
+						where: { key: "leaderboard:cache_stamp" },
+					})
+				).value;
+				await interaction.editReply(
+					utils.CheckMarkEmoji +
+						`Successfully reset cache; last stamp was ${stamp}`
+				);
+			} catch (e) {
+				console.error(e);
+				await interaction.editReply(
+					utils.XEmoji +
+						"Something went wrong, maybe there was no cache?"
+				);
 			}
 			break;
 		}
