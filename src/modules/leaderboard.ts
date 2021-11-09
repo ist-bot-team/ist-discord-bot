@@ -45,21 +45,20 @@ export async function getUsersCharacterCount(
 					onlyCountAfter === undefined ||
 					msg.createdAt > onlyCountAfter
 				) {
+					const delta = msg.content.replace(
+						/[^\p{Letter}\p{Number}\p{Punctuation}]/gu,
+						""
+					).length;
 					chars.set(
 						msg.author.id,
-						(chars.get(msg.author.id) ?? 0) +
-							msg.content.replace(
-								/[^\p{Letter}\p{Number}\p{Punctuation}]/gu,
-								""
-							).length
+						(chars.get(msg.author.id) ?? 0) + delta
 					);
 					msgCount++;
 
 					if (cacheDate && msg.createdAt <= cacheDate) {
 						addToCache.set(
 							msg.author.id,
-							(addToCache.get(msg.author.id) ?? 0) +
-								msg.content.length
+							(addToCache.get(msg.author.id) ?? 0) + delta
 						);
 					}
 				} else {
