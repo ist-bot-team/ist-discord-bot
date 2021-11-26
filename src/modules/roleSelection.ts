@@ -265,7 +265,7 @@ async function handleRoleSelection(
 	const groupRoles =
 		groupId === TOURIST_GROUP_ID
 			? [
-					selectedRoles,
+					...selectedRoles,
 					...(
 						await prisma.roleGroup.findMany({
 							where: {
