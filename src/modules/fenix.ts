@@ -153,16 +153,24 @@ export async function getRSSFeed<T extends FenixTypings.RSSFeedItem>(
 	url: string,
 	after: Date
 ): Promise<T[]> {
-	const data = await callEndpoint(url);
-	const json = await parser.parseString(data as string);
+	try {
+		const data = await callEndpoint(url);
+		const json = await parser.parseString(data as string);
 
-	let item: T[] = (json?.items || []) as T[];
-	if (!Array.isArray(item)) item = [item];
+		let item: T[] = (json?.items || []) as T[];
+		if (!Array.isArray(item)) item = [item];
 
-	return item
-		.filter((v) => new Date(v.pubDate) > after)
-		.sort(
-			(a, b) =>
-				new Date(a.pubDate).getTime() - new Date(b.pubDate).getTime()
+		return item
+			.filter((v) => new Date(v.pubDate) > after)
+			.sort(
+				(a, b) =>
+					new Date(a.pubDate).getTime() -
+					new Date(b.pubDate).getTime()
+			);
+	} catch (e) {
+		console.error(
+			`Could not get RSS feed for '${url}': ${(e as Error).message}`
 		);
+		return [];
+	}
 }
