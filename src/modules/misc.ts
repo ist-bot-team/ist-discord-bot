@@ -62,7 +62,7 @@ export function provideCommands(): CommandDescriptor[] {
 		{
 			builder: new Builders.SlashCommandBuilder()
 				.setName("just-ask")
-				.setDescription("Send 'Don´t ask to ask' website"),
+				.setDescription("Send a link to the \"Don't ask to ask\" website"),
 			handler: handleJustAskCommand,
 			permission: CommandPermission.Public,
 		},
