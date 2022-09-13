@@ -43,6 +43,27 @@ export function provideCommands(): CommandDescriptor[] {
 			.setDescription("Message ID in question")
 			.setRequired(true)
 	);
+	const migrateMembersWithRole = new SlashCommandBuilder()
+		.setName("migrate-members-with-role")
+		.setDescription("Gives a role to everyone who has a certain role");
+	migrateMembersWithRole.addRoleOption(
+		new Builders.SlashCommandRoleOption()
+			.setName("old-role")
+			.setDescription("The role to migrate members from")
+			.setRequired(true)
+	);
+	migrateMembersWithRole.addRoleOption(
+		new Builders.SlashCommandRoleOption()
+			.setName("new-role")
+			.setDescription("The role to migrate members to")
+			.setRequired(true)
+	);
+	migrateMembersWithRole.addBooleanOption(
+		new Builders.SlashCommandBooleanOption()
+			.setName("remove-old")
+			.setDescription("Whether to remove the old role")
+			.setRequired(false)
+	);
 	return [
 		{
 			builder: new Builders.SlashCommandBuilder()
@@ -62,9 +83,15 @@ export function provideCommands(): CommandDescriptor[] {
 		{
 			builder: new Builders.SlashCommandBuilder()
 				.setName("just-ask")
-				.setDescription("Send a link to the \"Don't ask to ask\" website"),
+				.setDescription(
+					'Send a link to the "Don\'t ask to ask" website'
+				),
 			handler: handleJustAskCommand,
 			permission: CommandPermission.Public,
+		},
+		{
+			builder: migrateMembersWithRole,
+			handler: handleMigrateMembersWithRole,
 		},
 	];
 }
@@ -179,6 +206,41 @@ export async function handleJustAskCommand(
 	try {
 		await interaction.channel?.send("https://dontasktoask.com/");
 		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
+	} catch (e) {
+		console.error(e);
+		await interaction.editReply(utils.XEmoji + "Something went wrong.");
+	}
+}
+
+export async function handleMigrateMembersWithRole(
+	interaction: Discord.CommandInteraction
+): Promise<void> {
+	try {
+		const oldRole = interaction.options.getRole(
+			"old-role",
+			true
+		) as Discord.Role;
+		const newRole = interaction.options.getRole(
+			"new-role",
+			true
+		) as Discord.Role;
+		const removeOld = interaction.options.getBoolean("remove-old", false);
+
+		let count = 0;
+		oldRole.members.forEach((member) => {
+			member.roles.add(newRole);
+
+			if (removeOld) {
+				member.roles.remove(oldRole);
+			}
+
+			count++;
+		});
+
+		await interaction.editReply(
+			utils.CheckMarkEmoji +
+				`Migrated ${count} members from ${oldRole} to ${newRole}`
+		);
 	} catch (e) {
 		console.error(e);
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
