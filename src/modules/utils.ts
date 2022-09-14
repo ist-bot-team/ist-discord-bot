@@ -6,6 +6,7 @@ import { PrismaClient } from "@prisma/client";
 import * as Discord from "discord.js";
 
 import { MessageCollection } from "./utils.d";
+import { ApplicationCommandOptionType } from "discord.js";
 
 export const XEmoji = "❌ ";
 export const CheckMarkEmoji = "✅ ";
@@ -115,7 +116,7 @@ export function generateHexCode(): string {
 }
 
 export function stringifyCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): string {
 	const subcommandGroup = interaction.options.getSubcommandGroup(false);
 	const subcommand = interaction.options.getSubcommand(false);
@@ -128,7 +129,10 @@ export function stringifyCommand(
 		opt === undefined
 			? []
 			: opt.length === 1 &&
-			  ["SUB_COMMAND", "SUB_COMMAND_GROUP"].includes(opt[0].type)
+			  [
+					ApplicationCommandOptionType.Subcommand,
+					ApplicationCommandOptionType.SubcommandGroup,
+			  ].includes(opt[0].type)
 			? extractOptions(opt[0].options)
 			: opt;
 

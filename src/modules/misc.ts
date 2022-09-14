@@ -112,10 +112,10 @@ export async function handleAboutCommand(
 	// cannot easily import so reading it directly
 	await interaction.editReply({
 		embeds: [
-			new Discord.MessageEmbed()
+			new Discord.EmbedBuilder()
 				.setTitle("IST Discord Bot")
 				.setURL(pvar("homepage", "https://discord.leic.pt"))
-				.setAuthor(pvar("author"))
+				.setAuthor({ name: pvar("author") })
 				.setDescription(
 					`**Description:** ${pvar("description")}
 				**Version:** ${pvar("version")}
@@ -133,10 +133,11 @@ export async function handleAboutCommand(
 						inline: true,
 					}))
 				)
-				.setFooter(
-					"Uptime: " +
-						utils.durationString(interaction.client.uptime ?? 0)
-				),
+				.setFooter({
+					text:
+						"Uptime: " +
+						utils.durationString(interaction.client.uptime ?? 0),
+				}),
 		],
 	});
 }
@@ -144,7 +145,7 @@ export async function handleAboutCommand(
 const sayLogs: Discord.Collection<string, string> = new Discord.Collection();
 
 export async function handleSayCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const channel = (interaction.options.getChannel("channel", false) ||
@@ -153,7 +154,7 @@ export async function handleSayCommand(
 		const allowMentions =
 			interaction.options.getBoolean("allow-mentions", false) ?? false;
 
-		if (channel && channel.isText()) {
+		if (channel && channel.isTextBased()) {
 			const msg = await channel.send({
 				content: message.replace(/\\n/g, "\n"),
 				allowedMentions: allowMentions ? undefined : { parse: [] },
@@ -181,7 +182,7 @@ export async function handleSayCommand(
 }
 
 export async function handleWhoSaidCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const messageId = interaction.options.getString("message-id", true);
@@ -201,7 +202,7 @@ export async function handleWhoSaidCommand(
 }
 
 export async function handleJustAskCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		await interaction.channel?.send("https://dontasktoask.com/");
@@ -213,7 +214,7 @@ export async function handleJustAskCommand(
 }
 
 export async function handleMigrateMembersWithRole(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const oldRole = interaction.options.getRole(

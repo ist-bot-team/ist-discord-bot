@@ -23,7 +23,7 @@ export async function getUsersCharacterCount(
 		UsersCharacterCount,
 		number,
 		number,
-		Discord.Channel[],
+		Discord.BaseChannel[],
 		UsersCharacterCount
 	]
 > {
@@ -34,13 +34,13 @@ export async function getUsersCharacterCount(
 
 	const channels = Array.from(
 		(await guild.channels.fetch()).filter(
-			(channel) => channel.isText() || channel.isThread()
+			(channel) => channel.isTextBased() || channel.isThread()
 		)
 	).map((o) => o[1]) as (Discord.TextChannel | Discord.ThreadChannel)[];
 	const promises = channels.map(async (channel) => {
 		const messages = await utils.fetchAllChannelMessages(channel);
 		for (const [_id, msg] of messages) {
-			if (!msg.deleted && msg.author && !msg.author.bot) {
+			if (msg.author && !msg.author.bot) {
 				if (
 					onlyCountAfter === undefined ||
 					msg.createdAt > onlyCountAfter
@@ -81,7 +81,7 @@ export async function sendLeaderboard(
 	sendChannel: Discord.TextChannel | Discord.ThreadChannel,
 	period: string,
 	prisma: PrismaClient
-): Promise<[number, number, Discord.Channel[], number, Discord.Snowflake]> {
+): Promise<[number, number, Discord.BaseChannel[], number, Discord.Snowflake]> {
 	const now = new Date().getTime();
 	const day = 1000 * 60 * 60 * 24;
 
@@ -219,9 +219,9 @@ export function provideCommands(): CommandDescriptor[] {
 						"How recent do messages have to be to be considered; defaults to all"
 					)
 					.setRequired(false)
-					.addChoice("All messages", "all")
-					.addChoice("Last 30 days", "month")
-					.addChoice("Last 7 days", "week")
+					.addChoices({ name: "All messages", value: "all" })
+					.addChoices({ name: "Last 30 days", value: "month" })
+					.addChoices({ name: "Last 7 days", value: "week" })
 			)
 	);
 	cmd.addSubcommand(
@@ -238,7 +238,7 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleCommand(
-	interaction: Discord.CommandInteraction,
+	interaction: Discord.ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	switch (interaction.options.getSubcommand()) {

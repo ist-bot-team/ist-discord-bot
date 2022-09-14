@@ -1,4 +1,4 @@
-import Discord from "discord.js";
+import Discord, { EmbedBuilder, HexColorString } from "discord.js";
 import { PrismaClient } from "@prisma/client";
 import cron from "node-cron";
 import TurndownService from "turndown";
@@ -37,7 +37,7 @@ export function runRSSFeedJob(
 				const degreeChannel = await client.channels.fetch(
 					course.degree.degreeTextChannelId || ""
 				);
-				if (!degreeChannel?.isText()) return;
+				if (!degreeChannel?.isTextBased()) return;
 
 				const announcements =
 					await FenixAPI.getRSSFeed<FenixTypings.RSSCourseAnnouncement>(
@@ -56,35 +56,35 @@ export function runRSSFeedJob(
 									: ``
 							}`,
 							embeds: [
-								{
-									title: announcement.title?.substring(
-										0,
-										256
-									),
-									description: turndownService
-										.turndown(
-											announcement.content ||
-												"Não foi possível obter o conteúdo deste anúncio"
-										)
-										.substring(0, 2048),
-									url: announcement.link,
-									color: parseInt(
-										(course.color || "#00a0e4").substring(
-											1
-										),
-										16
-									),
-									author: {
+								new EmbedBuilder()
+									.setTitle(
+										announcement.title?.substring(0, 256)
+									)
+									.setDescription(
+										turndownService
+											.turndown(
+												announcement.content ||
+													"Não foi possível obter o conteúdo deste anúncio"
+											)
+											.substring(0, 2048)
+									)
+									.setURL(announcement.link)
+									.setColor(
+										(course.color as HexColorString) ||
+											"#00a0e4"
+									)
+									.setAuthor({
 										name:
 											announcement.author.match(
 												/\((.+)\)/
 											)?.[1] || announcement.author,
-									},
-									footer: {
+									})
+									.setFooter({
 										text: course.course.name,
-									},
-									timestamp: new Date(announcement.pubDate),
-								},
+									})
+									.setTimestamp(
+										new Date(announcement.pubDate)
+									),
 							],
 						});
 					},

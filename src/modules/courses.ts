@@ -123,7 +123,7 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleCommand(
-	interaction: Discord.CommandInteraction,
+	interaction: Discord.ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	if (!interaction.guild) return;
@@ -167,7 +167,9 @@ export async function handleCommand(
 							i === 0
 						)
 					)
-					.filter((v) => !!v && v.type === "GUILD_CATEGORY");
+					.filter(
+						(v) => v?.type === Discord.ChannelType.GuildCategory
+					);
 
 				if (categories.length === 0) {
 					await interaction.editReply(
@@ -311,13 +313,11 @@ export async function handleCommand(
 						course.roleId || ""
 					);
 					if (courseChannel) {
-						courseChannel.edit(
-							{
-								name: newAcronym.toLowerCase(),
-								topic: `${course.name} - ${newAcronym}`,
-							},
-							`Course rename by ${interaction.user.tag}`
-						);
+						courseChannel.edit({
+							name: newAcronym.toLowerCase(),
+							topic: `${course.name} - ${newAcronym}`,
+							reason: `Course rename by ${interaction.user.tag}`,
+						});
 					}
 					if (roleChannel) {
 						roleChannel.setName(
@@ -366,7 +366,7 @@ export async function handleCommand(
 
 				await interaction.editReply({
 					embeds: [
-						new Discord.MessageEmbed()
+						new Discord.EmbedBuilder()
 							.setTitle("Degrees with Course")
 							.setDescription(
 								`Below are all degrees that need course \`${acronym}\`, as well as whether they have a tier high enough to justify having a channel for said course.`
@@ -528,13 +528,13 @@ export async function refreshCourses(
 					(await guild.channels.fetch(id)) as Discord.CategoryChannel
 			)
 		)
-	).filter((channel) => channel?.type === "GUILD_CATEGORY");
+	).filter((channel) => channel?.type === Discord.ChannelType.GuildCategory);
 	if (!categoriesChannels.length) {
 		throw new Error("No category channels configured");
 	}
 
 	const getNextFreeCategory = () =>
-		categoriesChannels.find((v) => v.children.size < 50);
+		categoriesChannels.find((v) => v.children.cache.size < 50);
 
 	// Get courses with associated degrees over tier 2
 	const courses = await prisma.course.findMany({
@@ -554,7 +554,7 @@ export async function refreshCourses(
 	const channels = new Discord.Collection<
 		string,
 		Discord.GuildChannel
-	>().concat(...categoriesChannels.map((v) => v.children));
+	>().concat(...categoriesChannels.map((v) => v.children.cache));
 	const roles = await guild.roles.fetch();
 
 	await courses.reduce(async (prevPromise, course) => {
@@ -587,25 +587,23 @@ export async function refreshCourses(
 
 		const courseChannelTopic = `${course.name} - ${course.displayAcronym}`;
 		if (!courseChannel) {
-			courseChannel = await guild.channels.create(
-				course.displayAcronym.toLowerCase(),
-				{
-					type: "GUILD_TEXT",
-					topic: courseChannelTopic,
-					parent: getNextFreeCategory(),
-					reason,
-					permissionOverwrites: [
-						{
-							id: guild.roles.everyone.id,
-							deny: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
-						},
-						{
-							id: courseRole,
-							allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
-						},
-					],
-				}
-			);
+			courseChannel = await guild.channels.create({
+				name: course.displayAcronym.toLowerCase(),
+				type: Discord.ChannelType.GuildText,
+				topic: courseChannelTopic,
+				parent: getNextFreeCategory(),
+				reason,
+				permissionOverwrites: [
+					{
+						id: guild.roles.everyone.id,
+						deny: [Discord.PermissionFlagsBits.ViewChannel],
+					},
+					{
+						id: courseRole,
+						allow: [Discord.PermissionFlagsBits.ViewChannel],
+					},
+				],
+			});
 		} else {
 			if (courseChannel.name !== course.displayAcronym.toLowerCase()) {
 				await courseChannel.setName(
@@ -613,7 +611,7 @@ export async function refreshCourses(
 				);
 			}
 			if (
-				courseChannel.type === "GUILD_TEXT" &&
+				courseChannel.type === Discord.ChannelType.GuildText &&
 				(courseChannel as Discord.TextChannel).topic !==
 					courseChannelTopic
 			) {
@@ -625,17 +623,17 @@ export async function refreshCourses(
 			if (
 				!courseChannel
 					.permissionsFor(courseRole)
-					.has(Discord.Permissions.FLAGS.VIEW_CHANNEL)
+					.has(Discord.PermissionFlagsBits.ViewChannel)
 			) {
 				await courseChannel.edit({
 					permissionOverwrites: [
 						{
 							id: guild.roles.everyone.id,
-							deny: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+							deny: [Discord.PermissionFlagsBits.ViewChannel],
 						},
 						{
 							id: courseRole,
-							allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+							allow: [Discord.PermissionFlagsBits.ViewChannel],
 						},
 					],
 				});

@@ -36,13 +36,10 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleSudoCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
-		const target = interaction.options.getMember(
-			"target",
-			false
-		) as Discord.GuildMember | null;
+		const target = interaction.options.getMember("target");
 
 		const roles = (target ?? interaction.member)
 			?.roles as Discord.GuildMemberRoleManager;
@@ -75,7 +72,7 @@ export async function handleSudoCommand(
 }
 
 export async function handleResetAdminCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const role = await (

@@ -72,7 +72,7 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleCommand(
-	interaction: Discord.CommandInteraction,
+	interaction: Discord.ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	try {
@@ -82,7 +82,7 @@ export async function handleCommand(
 					"channel",
 					true
 				) as Discord.GuildChannel;
-				if (!channel.isText()) {
+				if (!channel.isTextBased()) {
 					await interaction.editReply(
 						utils.XEmoji + "Channel must be a text channel."
 					);
@@ -127,10 +127,14 @@ export async function handleCommand(
 				const channel = channelId ? `<#${channelId}>` : "[NONE]";
 				await interaction.editReply({
 					embeds: [
-						new Discord.MessageEmbed()
+						new Discord.EmbedBuilder()
 							.setTitle("Welcome Message Settings")
 							.setDescription(`**Message:** ${message}`)
-							.addField("Channel", channel, true),
+							.addFields({
+								name: "Channel",
+								value: channel,
+								inline: true,
+							}),
 					],
 				});
 				break;
