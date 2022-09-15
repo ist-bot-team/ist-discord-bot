@@ -229,16 +229,19 @@ export async function handleMigrateMembersWithRole(
 		) as Discord.Role;
 		const removeOld = interaction.options.getBoolean("remove-old", false);
 
+		// fetch all members, otherwise oldRole.members will be empty
+		await interaction.guild?.members.fetch();
+
 		let count = 0;
-		oldRole.members.forEach((member) => {
-			member.roles.add(newRole);
+		for (const [_, member] of oldRole.members) {
+			await member.roles.add(newRole);
 
 			if (removeOld) {
-				member.roles.remove(oldRole);
+				await member.roles.remove(oldRole);
 			}
 
 			count++;
-		});
+		}
 
 		await interaction.editReply(
 			utils.CheckMarkEmoji +
