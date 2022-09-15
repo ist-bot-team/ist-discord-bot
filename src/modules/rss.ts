@@ -66,7 +66,8 @@ export function runRSSFeedJob(
 												announcement.content ||
 													"Não foi possível obter o conteúdo deste anúncio"
 											)
-											.substring(0, 2048)
+											.substring(0, 2048) ||
+											"Não foi possível obter o conteúdo deste anúncio"
 									)
 									.setURL(announcement.link)
 									.setColor(
