@@ -1,15 +1,12 @@
-import { ChannelType } from "discord.js";
 // Main controller
 
 import Discord, {
-	ApplicationCommandPermissionType,
+	ChannelType,
 	Client,
 	GatewayIntentBits,
-} from "discord.js";
-import {
 	RESTPostAPIApplicationCommandsJSONBody,
 	Routes,
-} from "discord-api-types/v9";
+} from "discord.js";
 import { REST } from "@discordjs/rest";
 import { PrismaClient } from "@prisma/client";
 
@@ -43,15 +40,12 @@ for (const ev of [
 }
 const { DISCORD_TOKEN, GUILD_ID, COMMAND_LOGS_CHANNEL_ID } = process.env;
 
+// this cannot be in bot.d.ts since declaration files are not copied to dist/
+// and enums are needed at runtime
 export enum CommandPermission {
 	Public,
 	Admin,
-	ServerOwner,
 }
-// this cannot be in bot.d.ts since declaration files are not copied to dist/
-// and enums are needed at runtime
-
-const DEFAULT_COMMAND_PERMISSION: CommandPermission = CommandPermission.Admin;
 
 const prisma = new PrismaClient();
 
@@ -117,9 +111,14 @@ const startupChores: Chore[] = [
 					const name = descriptor.builder.name;
 					commands.push(
 						descriptor.builder
-							.setDefaultPermission(
+							// bot should only be used on the server
+							.setDMPermission(false)
+							// undefined leaves the default (everyone), 0 restricts to admins
+							.setDefaultMemberPermissions(
 								descriptor.permission ===
 									CommandPermission.Public
+									? undefined
+									: 0
 							)
 							.toJSON()
 					);
@@ -152,6 +151,7 @@ const startupChores: Chore[] = [
 		},
 		complete: "All slash commands registered",
 	},
+	/* This does not work with new Discord API
 	{
 		summary: "Update guild slash command permissions",
 		fn: async () => {
@@ -204,7 +204,7 @@ const startupChores: Chore[] = [
 			);
 		},
 		complete: "All slash command permissions overwritten",
-	},
+	},*/
 	{
 		summary: "Start RSS cron job",
 		fn: async () => {
