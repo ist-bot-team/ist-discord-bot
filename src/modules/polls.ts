@@ -1,13 +1,14 @@
 // Handler for polls
 
 import {
+	ActionRowBuilder,
+	ButtonBuilder,
 	ButtonInteraction,
+	ButtonStyle,
+	ChatInputCommandInteraction,
 	Client,
-	CommandInteraction,
-	Message,
-	MessageActionRow,
-	MessageButton,
-	MessageEmbed,
+	Embed,
+	EmbedBuilder,
 	Snowflake,
 	TextChannel,
 } from "discord.js";
@@ -17,20 +18,20 @@ import cron from "node-cron";
 import { PrismaClient, Poll } from "@prisma/client";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import logger from "../logger";
 
-const POLL_ACTION_ROW = new MessageActionRow();
-POLL_ACTION_ROW.addComponents([
-	new MessageButton()
+const POLL_ACTION_ROW = new ActionRowBuilder<ButtonBuilder>().addComponents([
+	new ButtonBuilder()
 		.setLabel("Yes")
-		.setStyle("SUCCESS")
+		.setStyle(ButtonStyle.Success)
 		.setCustomId("polls:yes"),
-	new MessageButton()
+	new ButtonBuilder()
 		.setLabel("No")
-		.setStyle("DANGER")
+		.setStyle(ButtonStyle.Danger)
 		.setCustomId("polls:no"),
-	new MessageButton()
+	new ButtonBuilder()
 		.setLabel("Clear")
-		.setStyle("SECONDARY")
+		.setStyle(ButtonStyle.Secondary)
 		.setCustomId("polls:clear"),
 ]);
 const POLL_NO_ONE = "*No one*";
@@ -52,12 +53,12 @@ export const handlePollButton = async (
 	}
 
 	const newEmbed = getNewPollEmbed(
-		oldEmbeds[0] as MessageEmbed,
+		oldEmbeds[0] as Embed,
 		fieldIndex,
 		interaction.user.id
 	);
 
-	(interaction.message as Message).edit({
+	interaction.message.edit({
 		embeds: [newEmbed],
 		components: [POLL_ACTION_ROW],
 	});
@@ -66,10 +67,10 @@ export const handlePollButton = async (
 };
 
 export const getNewPollEmbed = (
-	oldEmbed: MessageEmbed,
+	oldEmbed: Embed,
 	fieldIndex: number,
 	userId: Snowflake
-): MessageEmbed => {
+): Embed => {
 	oldEmbed.fields?.map((field, i) => {
 		field.value =
 			field.value
@@ -112,11 +113,11 @@ export const sendPollEmbed = async (
 
 	const message = await channel.send({
 		embeds: [
-			new MessageEmbed()
+			new EmbedBuilder()
 				.setTitle(poll.title)
-				.addField("Yes", POLL_NO_ONE, true)
-				.addField("No", POLL_NO_ONE, true)
-				.setFooter(poll.id)
+				.addFields({ name: "Yes", value: POLL_NO_ONE, inline: true })
+				.addFields({ name: "No", value: POLL_NO_ONE, inline: true })
+				.setFooter({ text: poll.id })
 				.setTimestamp(),
 		],
 		components: [POLL_ACTION_ROW],
@@ -137,8 +138,9 @@ export const schedulePolls = async (
 			);
 
 			if (!channel) {
-				console.error(
-					`Couldn't fetch channel ${poll.channelId} for poll ${poll.id}`
+				logger.error(
+					{ channel: poll.channelId, poll: poll.id },
+					"Couldn't fetch channel for poll"
 				);
 				return;
 			}
@@ -153,10 +155,7 @@ export const schedulePolls = async (
 						await sendPollEmbed(p, channel as TextChannel);
 					}
 				} catch (e) {
-					console.error(
-						"Could not verify (& send) poll:",
-						(e as Error).message
-					);
+					logger.error(e, "Could not verify (& send) poll");
 				}
 			});
 		})
@@ -244,7 +243,7 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleCommand(
-	interaction: CommandInteraction,
+	interaction: ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	switch (interaction.options.getSubcommand()) {
@@ -316,7 +315,7 @@ export async function handleCommand(
 				const polls = await prisma.poll.findMany();
 				await interaction.editReply({
 					embeds: [
-						new MessageEmbed()
+						new EmbedBuilder()
 							.setTitle("Polls")
 							.setDescription(
 								polls.length
@@ -355,21 +354,33 @@ export async function handleCommand(
 				} else {
 					await interaction.editReply({
 						embeds: [
-							new MessageEmbed()
+							new EmbedBuilder()
 								.setTitle("Poll Information")
-								.addField("ID", poll.id, true)
-								.addField("Type", poll.type, true)
-								.addField("Title", poll.title, true)
-								.addField(
-									"Schedule",
-									poll.cron ? poll.cron : "N/A",
-									true
-								)
-								.addField(
-									"Channel",
-									`<#${poll.channelId}>`,
-									true
-								),
+								.addFields({
+									name: "ID",
+									value: poll.id,
+									inline: true,
+								})
+								.addFields({
+									name: "Type",
+									value: poll.type,
+									inline: true,
+								})
+								.addFields({
+									name: "Title",
+									value: poll.title,
+									inline: true,
+								})
+								.addFields({
+									name: "Schedule",
+									value: poll.cron ? poll.cron : "N/A",
+									inline: true,
+								})
+								.addFields({
+									name: "Channel",
+									value: `<#${poll.channelId}>`,
+									inline: true,
+								}),
 						],
 					});
 				}

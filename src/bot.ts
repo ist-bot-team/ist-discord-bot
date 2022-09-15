@@ -1,10 +1,12 @@
 // Main controller
 
-import Discord from "discord.js";
-import {
+import Discord, {
+	ChannelType,
+	Client,
+	GatewayIntentBits,
 	RESTPostAPIApplicationCommandsJSONBody,
 	Routes,
-} from "discord-api-types/v9";
+} from "discord.js";
 import { REST } from "@discordjs/rest";
 import { PrismaClient } from "@prisma/client";
 
@@ -23,6 +25,8 @@ import * as degrees from "./modules/degrees";
 import * as courses from "./modules/courses";
 import * as rss from "./modules/rss";
 
+import logger from "./logger";
+
 for (const ev of [
 	"DISCORD_TOKEN",
 	"GUILD_ID",
@@ -36,24 +40,21 @@ for (const ev of [
 }
 const { DISCORD_TOKEN, GUILD_ID, COMMAND_LOGS_CHANNEL_ID } = process.env;
 
+// this cannot be in bot.d.ts since declaration files are not copied to dist/
+// and enums are needed at runtime
 export enum CommandPermission {
 	Public,
 	Admin,
-	ServerOwner,
 }
-// this cannot be in bot.d.ts since declaration files are not copied to dist/
-// and enums are needed at runtime
-
-const DEFAULT_COMMAND_PERMISSION: CommandPermission = CommandPermission.Admin;
 
 const prisma = new PrismaClient();
 
-const client = new Discord.Client({
+const client = new Client({
 	intents: [
-		Discord.Intents.FLAGS.GUILDS,
-		Discord.Intents.FLAGS.GUILD_MESSAGES,
-		Discord.Intents.FLAGS.GUILD_VOICE_STATES,
-		Discord.Intents.FLAGS.GUILD_MEMBERS, // THIS IS A PRIVILEGED INTENT! MANUAL ACTION REQUIRED TO ENABLE!
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.GuildMembers, // THIS IS A PRIVILEGED INTENT! MANUAL ACTION REQUIRED TO ENABLE!
 	],
 });
 
@@ -71,7 +72,8 @@ const commandProviders: CommandProvider[] = [
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};
-const commandHandlers: InteractionHandlers<Discord.CommandInteraction> = {};
+const commandHandlers: InteractionHandlers<Discord.ChatInputCommandInteraction> =
+	{};
 // two above will be dynamically loaded
 
 const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
@@ -83,7 +85,7 @@ const menuHandlers: InteractionHandlers<Discord.SelectMenuInteraction> = {
 	roleSelection: roleSelection.handleRoleSelectionMenu,
 };
 
-let commandLogsChannel: Discord.TextBasedChannels | undefined;
+let commandLogsChannel: Discord.TextBasedChannel | undefined;
 
 const startupChores: Chore[] = [
 	{
@@ -109,9 +111,14 @@ const startupChores: Chore[] = [
 					const name = descriptor.builder.name;
 					commands.push(
 						descriptor.builder
-							.setDefaultPermission(
+							// bot should only be used on the server
+							.setDMPermission(false)
+							// undefined leaves the default (everyone), 0 restricts to admins
+							.setDefaultMemberPermissions(
 								descriptor.permission ===
 									CommandPermission.Public
+									? undefined
+									: 0
 							)
 							.toJSON()
 					);
@@ -122,7 +129,7 @@ const startupChores: Chore[] = [
 				}
 			}
 
-			const rest = new REST({ version: "9" }).setToken(
+			const rest = new REST({ version: "10" }).setToken(
 				DISCORD_TOKEN as string
 			);
 
@@ -144,6 +151,7 @@ const startupChores: Chore[] = [
 		},
 		complete: "All slash commands registered",
 	},
+	/* This does not work with new Discord API
 	{
 		summary: "Update guild slash command permissions",
 		fn: async () => {
@@ -152,47 +160,51 @@ const startupChores: Chore[] = [
 
 			const fetched = await commands?.fetch();
 
-			if (fetched) {
-				await commands?.permissions.set({
-					fullPermissions: fetched.map((c) => {
-						let commandSpecificPermission:
-							| Discord.ApplicationCommandPermissionData
-							| undefined;
-						const perm =
-							commandPermissions[c.name] ??
-							DEFAULT_COMMAND_PERMISSION;
-						switch (perm) {
-							case CommandPermission.Admin:
+			if (!fetched) {
+				throw new Error("Failed to fetch commands from guild.");
+			}
+
+			await Promise.all(
+				fetched.map(async (c) => {
+					let commandSpecificPermission:
+						| Discord.ApplicationCommandPermissions
+						| undefined;
+					const perm =
+						commandPermissions[c.name] ??
+						DEFAULT_COMMAND_PERMISSION;
+					switch (perm) {
+						case CommandPermission.Admin:
+							commandSpecificPermission = {
+								id: process.env.ADMIN_ID as string,
+								type: ApplicationCommandPermissionType.Role,
+								permission: true,
+							};
+							break;
+						case CommandPermission.ServerOwner: {
+							const owner = guild?.ownerId;
+							if (owner) {
 								commandSpecificPermission = {
-									id: process.env.ADMIN_ID as string,
-									type: "ROLE",
+									id: owner,
+									type: ApplicationCommandPermissionType.User,
 									permission: true,
 								};
-								break;
-							case CommandPermission.ServerOwner: {
-								const owner = guild?.ownerId;
-								if (owner) {
-									commandSpecificPermission = {
-										id: owner,
-										type: "USER",
-										permission: true,
-									};
-								}
-								break;
 							}
+							break;
 						}
-						return {
-							id: c.id,
-							permissions: commandSpecificPermission
-								? [commandSpecificPermission]
-								: [],
-						};
-					}),
-				});
-			}
+					}
+
+					if (commandSpecificPermission) {
+						await commands?.permissions.set({
+							token: client.token as string,
+							command: c.id,
+							permissions: [commandSpecificPermission],
+						});
+					}
+				})
+			);
 		},
 		complete: "All slash command permissions overwritten",
-	},
+	},*/
 	{
 		summary: "Start RSS cron job",
 		fn: async () => {
@@ -207,7 +219,7 @@ const startupChores: Chore[] = [
 				const c = await client.channels.fetch(
 					COMMAND_LOGS_CHANNEL_ID ?? ""
 				);
-				if (!c?.isText()) {
+				if (c?.type !== ChannelType.GuildText) {
 					throw new Error("Wrong type");
 				} else {
 					commandLogsChannel =
@@ -222,16 +234,22 @@ const startupChores: Chore[] = [
 ];
 
 client.on("ready", async () => {
-	console.log(`Logged in as ${client.user?.tag}!`);
+	logger.info(`Logged in as ${client.user?.tag}!`);
 
-	console.log("Duty before self: starting chores...");
+	logger.info("Duty before self: starting chores...");
 
 	for (const [i, chore] of startupChores.entries()) {
 		const delta = await utils
 			.timeFunction(chore.fn)
-			.catch((e) => console.error("Chore error:", chore.summary, "-", e));
+			.catch((e) =>
+				logger.error(
+					e,
+					"An error occurred while executing chore '%s'",
+					chore.summary
+				)
+			);
 		if (delta) {
-			console.log(
+			logger.info(
 				`[${i + 1}/${startupChores.length}] ${
 					chore.complete
 				} (${delta}ms)`
@@ -239,7 +257,7 @@ client.on("ready", async () => {
 		}
 	}
 
-	console.log("Ready!");
+	logger.info("Ready!");
 });
 
 client.on("interactionCreate", async (interaction: Discord.Interaction) => {
@@ -260,18 +278,18 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 					prisma
 				);
 			}
-		} else if (interaction.isCommand()) {
+		} else if (interaction.isChatInputCommand()) {
 			await interaction.deferReply({ ephemeral: true });
 
 			if (!interaction.command?.guildId) {
 				// global commands
-				const perms: Discord.Permissions | undefined = (
+				const perms: Discord.PermissionsBitField | undefined = (
 					interaction.member as Discord.GuildMember
 				)?.permissions;
 				if (
 					!(
 						perms &&
-						perms.has(Discord.Permissions.FLAGS.MANAGE_GUILD, true)
+						perms.has(Discord.PermissionFlagsBits.ManageGuild, true)
 					)
 				) {
 					await interaction.editReply("Permission denied.");
@@ -281,7 +299,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 
 			try {
 				const str = utils.stringifyCommand(interaction);
-				console.log(str);
+				logger.debug({ interaction }, "Handling command %s", str);
 				await commandLogsChannel?.send({
 					content: str,
 					allowedMentions: { parse: [] },
@@ -299,7 +317,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 			);
 		}
 	} catch (e) {
-		console.error("Problem handling interaction: " + (e as Error).message);
+		logger.error(e, "An error occurred while handling an interaction");
 	}
 });
 
@@ -315,10 +333,7 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 		try {
 			await voiceThreads.handleVoiceLeave(oldState, prisma);
 		} catch (e) {
-			console.error(
-				"Someone left a VC, GONE WRONG!!!:",
-				(e as Error).message
-			);
+			logger.error(e, "Someone left a VC, GONE WRONG!!!:");
 		}
 	}
 
@@ -326,10 +341,7 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 		try {
 			await voiceThreads.handleVoiceJoin(newState, prisma);
 		} catch (e) {
-			console.error(
-				"Someone joined a VC, GONE WRONG!!!:",
-				(e as Error).message
-			);
+			logger.error(e, "Someone joined a VC, GONE WRONG!!!:");
 		}
 	}
 });

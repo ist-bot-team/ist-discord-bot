@@ -1,3 +1,4 @@
+import { ChannelType } from "discord.js";
 // Controller for vc-chat threads
 
 import { PrismaClient } from "@prisma/client";
@@ -37,7 +38,7 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleCommand(
-	interaction: Discord.CommandInteraction,
+	interaction: Discord.ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	switch (interaction.options.getSubcommand()) {
@@ -72,7 +73,7 @@ export async function handleCommand(
 					true
 				) as Discord.GuildChannel;
 
-				if (!channel.isText()) {
+				if (!channel.isTextBased()) {
 					await interaction.editReply(
 						utils.XEmoji + "Channel must be a text channel."
 					);
@@ -141,8 +142,8 @@ export async function handleVoiceJoin(
 
 	const threadName = normalizeVCName(newState.channel.name);
 	const threadType = newState.guild.features.includes("PRIVATE_THREADS")
-		? "GUILD_PRIVATE_THREAD"
-		: "GUILD_PUBLIC_THREAD";
+		? ChannelType.PrivateThread
+		: ChannelType.PublicThread;
 
 	const threads = (await vcChat.threads.fetch()).threads;
 	const td = threads.filter(
@@ -184,8 +185,8 @@ export async function handleVoiceLeave(
 
 	const threadName = normalizeVCName(oldState.channel.name);
 	const threadType = oldState.guild.features.includes("PRIVATE_THREADS")
-		? "GUILD_PRIVATE_THREAD"
-		: "GUILD_PUBLIC_THREAD";
+		? ChannelType.PrivateThread
+		: ChannelType.PublicThread;
 
 	const threads = (await vcChat.threads.fetch()).threads;
 	const td = threads.filter(

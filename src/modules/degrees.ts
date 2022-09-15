@@ -8,19 +8,18 @@ import * as utils from "./utils";
 import * as fenix from "./fenix";
 import * as courses from "./courses";
 import { OrphanChannel } from "./courses.d";
+import { ChannelType, PermissionFlagsBits } from "discord.js";
+import logger from "../logger";
 
 const tierChoices = [
 	"None",
 	"Degree channels (Text & VC)",
 	"Course channels (& course selection channel)",
 	"Announcements channel",
-].map(
-	(desc, i) =>
-		[`${i}: ${i > 1 ? i - 1 + " + " : ""}${desc}`, i.toString()] as [
-			name: string,
-			value: string
-		]
-);
+].map((desc, i) => ({
+	name: `${i}: ${i > 1 ? i - 1 + " + " : ""}${desc}`,
+	value: i.toString(),
+}));
 
 export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
@@ -47,7 +46,7 @@ export function provideCommands(): CommandDescriptor[] {
 					.setName("tier")
 					.setDescription("Degree tier within the server")
 					.setRequired(true)
-					.addChoices(tierChoices)
+					.addChoices(...tierChoices)
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
@@ -160,7 +159,7 @@ export function provideCommands(): CommandDescriptor[] {
 					.setName("new-tier")
 					.setDescription("What tier to set")
 					.setRequired(true)
-					.addChoices(tierChoices)
+					.addChoices(...tierChoices)
 			)
 	);
 	cmd.addSubcommand(
@@ -178,10 +177,16 @@ export function provideCommands(): CommandDescriptor[] {
 					.setName("channel-type")
 					.setDescription("What type channel to set")
 					.setRequired(true)
-					.addChoice("Degree Text", "degree-text")
-					.addChoice("Degree Voice", "degree-voice")
-					.addChoice("Announcements", "announcements")
-					.addChoice("Course Selection", "course-selection")
+					.addChoices({ name: "Degree Text", value: "degree-text" })
+					.addChoices({ name: "Degree Voice", value: "degree-voice" })
+					.addChoices({
+						name: "Announcements",
+						value: "announcements",
+					})
+					.addChoices({
+						name: "Course Selection",
+						value: "course-selection",
+					})
 			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
@@ -217,7 +222,7 @@ export async function createDegree(
 	announcementsChannel: Discord.GuildChannel | null
 ): Promise<OrphanChannel[] | string> {
 	// snowflakes are orphan channels; FIXME: change to course.OrphanChannel[]
-	if (!tierChoices.map((arr) => arr[1]).includes(tier.toString())) {
+	if (!tierChoices.map((arr) => arr.value).includes(tier.toString())) {
 		return "Invalid tier";
 	}
 
@@ -245,44 +250,42 @@ export async function createDegree(
 			)?.parent ??
 			((await guild.channels.fetch())
 				.filter(
-					(c) => c.type === "GUILD_CATEGORY" && c.name === catName
+					(c) =>
+						c.type === ChannelType.GuildText && c.name === catName
 				)
 				.first() as Discord.CategoryChannel | undefined) ??
-			(await guild.channels.create(catName, {
-				type: "GUILD_CATEGORY",
+			(await guild.channels.create({
+				name: catName,
+				type: ChannelType.GuildCategory,
 				permissionOverwrites: [
 					{
 						id: guild.roles.everyone.id,
-						deny: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+						deny: [Discord.PermissionFlagsBits.ViewChannel],
 					},
 					{
 						id: role.id,
-						allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+						allow: [Discord.PermissionFlagsBits.ViewChannel],
 					},
 				],
 				reason,
 			}));
 		if (!degreeTextChannel) {
-			degreeTextChannel = await guild.channels.create(
-				acronym.toLowerCase(),
-				{
-					type: "GUILD_TEXT",
-					topic: shortDegree.name,
-					parent: category,
-					reason,
-				}
-			);
+			degreeTextChannel = await guild.channels.create({
+				name: acronym.toLowerCase(),
+				type: ChannelType.GuildText,
+				topic: shortDegree.name,
+				parent: category,
+				reason,
+			});
 			await degreeTextChannel.lockPermissions();
 		}
 		if (!degreeVoiceChannel) {
-			degreeVoiceChannel = await guild.channels.create(
-				acronym.toUpperCase(),
-				{
-					type: "GUILD_VOICE",
-					parent: category,
-					reason,
-				}
-			);
+			degreeVoiceChannel = await guild.channels.create({
+				name: acronym.toUpperCase(),
+				type: ChannelType.GuildVoice,
+				parent: category,
+				reason,
+			});
 			await degreeVoiceChannel.lockPermissions();
 		}
 
@@ -290,27 +293,25 @@ export async function createDegree(
 			{
 				id: guild.roles.everyone,
 				deny: [
-					Discord.Permissions.FLAGS.VIEW_CHANNEL,
-					Discord.Permissions.FLAGS.SEND_MESSAGES,
+					PermissionFlagsBits.ViewChannel,
+					PermissionFlagsBits.SendMessages,
 				],
 			},
 			{
 				id: role.id,
-				allow: [Discord.Permissions.FLAGS.VIEW_CHANNEL],
+				allow: [PermissionFlagsBits.ViewChannel],
 			},
 		];
 
 		if (!courseSelectionChannel) {
-			courseSelectionChannel = await guild.channels.create(
-				acronym.toLowerCase() + "-cadeiras",
-				{
-					type: "GUILD_TEXT",
-					topic: "Selecionar cadeiras",
-					parent: category,
-					reason,
-					permissionOverwrites: restricted,
-				}
-			);
+			courseSelectionChannel = await guild.channels.create({
+				name: acronym.toLowerCase() + "-cadeiras",
+				type: ChannelType.GuildText,
+				topic: "Selecionar cadeiras",
+				parent: category,
+				reason,
+				permissionOverwrites: restricted,
+			});
 		}
 
 		if (tier >= 3) {
@@ -318,23 +319,21 @@ export async function createDegree(
 				const announcer = (await guild.roles.fetch())
 					.filter((r) => r.name === "Announcer")
 					.first();
-				announcementsChannel = await guild.channels.create(
-					acronym.toLowerCase() + "-announcements",
-					{
-						type: "GUILD_TEXT",
-						topic: shortDegree.name + " Announcements",
-						parent: category,
-						reason,
-						permissionOverwrites: announcer
-							? restricted.concat({
-									id: announcer.id,
-									allow: [
-										Discord.Permissions.FLAGS.SEND_MESSAGES,
-									],
-							  })
-							: restricted,
-					}
-				);
+				announcementsChannel = await guild.channels.create({
+					name: acronym.toLowerCase() + "-announcements",
+					type: ChannelType.GuildText,
+					topic: shortDegree.name + " Announcements",
+					parent: category,
+					reason,
+					permissionOverwrites: announcer
+						? restricted.concat({
+								id: announcer.id,
+								allow: [
+									Discord.PermissionFlagsBits.SendMessages,
+								],
+						  })
+						: restricted,
+				});
 			}
 		}
 	}
@@ -367,7 +366,7 @@ export async function createDegree(
 }
 
 export async function handleCommand(
-	interaction: Discord.CommandInteraction,
+	interaction: Discord.ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	if (!interaction.guild) return;
@@ -412,7 +411,7 @@ export async function handleCommand(
 					);
 				}
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while creating degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -426,7 +425,7 @@ export async function handleCommand(
 
 				await interaction.editReply({
 					embeds: [
-						new Discord.MessageEmbed()
+						new Discord.EmbedBuilder()
 							.setTitle("All Degrees")
 							.setDescription(
 								"Below are all known degrees, by acronym, Fénix ID and tier"
@@ -463,42 +462,64 @@ export async function handleCommand(
 				} else {
 					await interaction.editReply({
 						embeds: [
-							new Discord.MessageEmbed()
+							new Discord.EmbedBuilder()
 								.setTitle("Degree Information")
 								.setDescription(
 									"Below are all the available details on this degree."
 								)
-								.addField("Acronym", degree.acronym, true)
-								.addField("Name", degree.name, true)
-								.addField("Fénix ID", degree.fenixId, true)
-								.addField("Tier", degree.tier.toString(), true)
-								.addField("Role", `<@&${degree.roleId}>`, true)
-								.addField(
-									"Text Channel",
-									degree.degreeTextChannelId
+								.addFields({
+									name: "Acronym",
+									value: degree.acronym,
+									inline: true,
+								})
+								.addFields({
+									name: "Name",
+									value: degree.name,
+									inline: true,
+								})
+								.addFields({
+									name: "Fénix ID",
+									value: degree.fenixId,
+									inline: true,
+								})
+								.addFields({
+									name: "Tier",
+									value: degree.tier.toString(),
+									inline: true,
+								})
+								.addFields({
+									name: "Role",
+									value: `<@&${degree.roleId}>`,
+									inline: true,
+								})
+								.addFields({
+									name: "Text Channel",
+									value: degree.degreeTextChannelId
 										? `<#${degree.degreeTextChannelId}>`
 										: "[NOT SET]",
-									true
-								)
-								.addField(
-									"Voice Channel",
-									degree.degreeVoiceChannelId ?? "[NOT SET]",
-									true
-								)
-								.addField(
-									"Announcements Channel",
-									degree.announcementsChannelId
+									inline: true,
+								})
+								.addFields({
+									name: "Voice Channel",
+									value:
+										degree.degreeVoiceChannelId ??
+										"[NOT SET]",
+									inline: true,
+								})
+								.addFields({
+									name: "Announcements Channel",
+									value: degree.announcementsChannelId
 										? `<#${degree.announcementsChannelId}>`
 										: "[NOT SET]",
-									true
-								)
-								.addField(
-									"Course Selection Channel",
-									degree.courseSelectionChannelId
+									inline: true,
+								})
+								.addFields({
+									name: "Course Selection Channel",
+									value: degree.courseSelectionChannelId
 										? `<#${degree.courseSelectionChannelId}>`
 										: "[NOT SET",
-									true
-								),
+									inline: true,
+								}),
 						],
 					});
 				}
@@ -625,14 +646,17 @@ export async function handleCommand(
 					return;
 				}
 
-				if (channelType === "degreeVoice" && !newChannel.isVoice()) {
+				if (
+					channelType === "degreeVoice" &&
+					newChannel.type !== Discord.ChannelType.GuildVoice
+				) {
 					await interaction.editReply(
 						utils.XEmoji + "Must be a voice channel"
 					);
 					return;
 				} else if (
 					channelType !== "degreeVoice" &&
-					newChannel.isVoice()
+					newChannel.type === Discord.ChannelType.GuildVoice
 				) {
 					await interaction.editReply(
 						utils.XEmoji + "Must not be a voice channel"
@@ -650,7 +674,7 @@ export async function handleCommand(
 						`Successfully set ${channelType} of ${acronym} to <@#${newChannel.id}>`
 				);
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while setting channel of degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);

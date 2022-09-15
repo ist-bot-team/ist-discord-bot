@@ -9,6 +9,7 @@ import { CommandDescriptor } from "../bot.d";
 import { CommandPermission } from "../bot";
 import * as utils from "./utils";
 import { SlashCommandBuilder } from "@discordjs/builders";
+import logger from "../logger";
 
 export function provideCommands(): CommandDescriptor[] {
 	const say = new Builders.SlashCommandBuilder()
@@ -112,10 +113,10 @@ export async function handleAboutCommand(
 	// cannot easily import so reading it directly
 	await interaction.editReply({
 		embeds: [
-			new Discord.MessageEmbed()
+			new Discord.EmbedBuilder()
 				.setTitle("IST Discord Bot")
 				.setURL(pvar("homepage", "https://discord.leic.pt"))
-				.setAuthor(pvar("author"))
+				.setAuthor({ name: pvar("author") })
 				.setDescription(
 					`**Description:** ${pvar("description")}
 				**Version:** ${pvar("version")}
@@ -133,10 +134,11 @@ export async function handleAboutCommand(
 						inline: true,
 					}))
 				)
-				.setFooter(
-					"Uptime: " +
-						utils.durationString(interaction.client.uptime ?? 0)
-				),
+				.setFooter({
+					text:
+						"Uptime: " +
+						utils.durationString(interaction.client.uptime ?? 0),
+				}),
 		],
 	});
 }
@@ -144,7 +146,7 @@ export async function handleAboutCommand(
 const sayLogs: Discord.Collection<string, string> = new Discord.Collection();
 
 export async function handleSayCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const channel = (interaction.options.getChannel("channel", false) ||
@@ -153,7 +155,7 @@ export async function handleSayCommand(
 		const allowMentions =
 			interaction.options.getBoolean("allow-mentions", false) ?? false;
 
-		if (channel && channel.isText()) {
+		if (channel && channel.isTextBased()) {
 			const msg = await channel.send({
 				content: message.replace(/\\n/g, "\n"),
 				allowedMentions: allowMentions ? undefined : { parse: [] },
@@ -161,12 +163,13 @@ export async function handleSayCommand(
 			const uid = interaction.member?.user.id;
 			if (uid) {
 				sayLogs.set(msg.id, uid);
-				console.log(
-					`User ${
-						interaction.member?.user.username
-					} said «${message}» (w/${
-						allowMentions ? "" : "o"
-					} mentions)`
+				logger.info(
+					{
+						user: interaction.member?.user.username,
+						message,
+						allowMentions,
+					},
+					"User used /say command"
 				);
 			}
 			await interaction.editReply(
@@ -181,7 +184,7 @@ export async function handleSayCommand(
 }
 
 export async function handleWhoSaidCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const messageId = interaction.options.getString("message-id", true);
@@ -201,19 +204,19 @@ export async function handleWhoSaidCommand(
 }
 
 export async function handleJustAskCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		await interaction.channel?.send("https://dontasktoask.com/");
 		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
 	} catch (e) {
-		console.error(e);
+		logger.error(e, "Error while executing just ask command");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }
 
 export async function handleMigrateMembersWithRole(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const oldRole = interaction.options.getRole(
@@ -226,23 +229,26 @@ export async function handleMigrateMembersWithRole(
 		) as Discord.Role;
 		const removeOld = interaction.options.getBoolean("remove-old", false);
 
+		// fetch all members, otherwise oldRole.members will be empty
+		await interaction.guild?.members.fetch();
+
 		let count = 0;
-		oldRole.members.forEach((member) => {
-			member.roles.add(newRole);
+		for (const [_, member] of oldRole.members) {
+			await member.roles.add(newRole);
 
 			if (removeOld) {
-				member.roles.remove(oldRole);
+				await member.roles.remove(oldRole);
 			}
 
 			count++;
-		});
+		}
 
 		await interaction.editReply(
 			utils.CheckMarkEmoji +
 				`Migrated ${count} members from ${oldRole} to ${newRole}`
 		);
 	} catch (e) {
-		console.error(e);
+		logger.error(e, "Error while migrating members to new role");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }

@@ -1,13 +1,19 @@
 // Handler for role selection
 
 import { PrismaClient, RoleGroup, RoleGroupOption } from "@prisma/client";
-import Discord from "discord.js";
+import Discord, {
+	ButtonBuilder,
+	SelectMenuBuilder,
+	SelectMenuComponentOptionData,
+} from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { getConfigFactory } from "./utils";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
 import * as courses from "./courses";
+import { parseButtonStyle } from "../utils/buttonStyleUtils";
+import logger from "../logger";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
@@ -46,7 +52,7 @@ export async function sendRoleSelectionMessages(
 			const channel = client.channels.cache.find(
 				(c) => c.id === group.channelId
 			);
-			if (channel === undefined || !channel.isText()) {
+			if (channel === undefined || !channel.isTextBased()) {
 				throw new Error("Could not find channel");
 			}
 
@@ -73,9 +79,18 @@ export async function sendRoleSelectionMessages(
 						);
 					}
 
+					// discord.js does not accept `null` as a value for `emoji`
+					const options: SelectMenuComponentOptionData[] =
+						group.options.map((option) => ({
+							label: option.label,
+							description: option.description,
+							value: option.value,
+							emoji: option.emoji ?? undefined,
+						}));
+
 					components = [
-						new Discord.MessageActionRow().addComponents(
-							new Discord.MessageSelectMenu()
+						new Discord.ActionRowBuilder<SelectMenuBuilder>().addComponents(
+							new Discord.SelectMenuBuilder()
 								.setCustomId(`roleSelection:${group.id}`)
 								.setPlaceholder(group.placeholder)
 								.setMinValues(group.minValues ?? 1)
@@ -84,14 +99,12 @@ export async function sendRoleSelectionMessages(
 										group.maxValues ?? 1
 									)
 								)
-								.addOptions(
-									group.options as Discord.MessageSelectOptionData[]
-								)
+								.addOptions(options)
 						),
 					];
 				} else if (group.mode === "buttons") {
-					const rows: Discord.MessageButton[][] = [];
-					let curRow: Discord.MessageButton[] = [];
+					const rows: Discord.ButtonBuilder[][] = [];
+					let curRow: Discord.ButtonBuilder[] = [];
 
 					for (const opt of group.options) {
 						if (
@@ -102,22 +115,12 @@ export async function sendRoleSelectionMessages(
 							curRow = [];
 						}
 
-						const btn = new Discord.MessageButton()
+						const btn = new Discord.ButtonBuilder()
 							.setCustomId(
 								`roleSelection:${group.id}:${opt.value}`
 							)
 							.setLabel(opt.label)
-							.setStyle(
-								([
-									"PRIMARY",
-									"SECONDARY",
-									"SUCCESS",
-									"DANGER",
-									"LINK",
-								].includes(opt.description)
-									? opt.description
-									: "PRIMARY") as Discord.MessageButtonStyleResolvable
-							);
+							.setStyle(parseButtonStyle(opt.description));
 						if (opt.emoji !== null) {
 							btn.setEmoji(opt.emoji);
 						}
@@ -138,7 +141,9 @@ export async function sendRoleSelectionMessages(
 						);
 					}
 					components = rows.map((r) =>
-						new Discord.MessageActionRow().addComponents(r)
+						new Discord.ActionRowBuilder<ButtonBuilder>().addComponents(
+							r
+						)
 					);
 				} else {
 					throw new Error(`Unknown mode '${group.mode}'`);
@@ -168,10 +173,10 @@ export async function sendRoleSelectionMessages(
 				}
 			}
 		} catch (e) {
-			console.error(
-				`Could not send role selection message for group ${
-					group.id
-				} because: ${(e as Error).message}`
+			logger.error(
+				e,
+				"Could not send role selection message for group %s",
+				group.id
 			);
 		}
 	}
@@ -198,7 +203,7 @@ async function injectGroups(
 				})
 		);
 	} catch (e) {
-		await console.error(`Failed to inject groups: ${e}`);
+		logger.error(e, "Failed to inject groups");
 	}
 }
 
@@ -245,9 +250,7 @@ async function injectTouristGroup(
 			},
 		};
 	} catch (e) {
-		console.error(
-			`Failed to inject tourist group: ${(e as Error).message}`
-		);
+		logger.error(e, "Failed to inject tourist group");
 	}
 }
 
@@ -367,8 +370,11 @@ export function provideCommands(): CommandDescriptor[] {
 							.setName("mode")
 							.setDescription("How users may choose roles")
 							.setRequired(true)
-							.addChoice("Selection Menu", "menu")
-							.addChoice("Buttons", "buttons")
+							.addChoices({
+								name: "Selection Menu",
+								value: "menu",
+							})
+							.addChoices({ name: "Buttons", value: "buttons" })
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
@@ -449,9 +455,12 @@ export function provideCommands(): CommandDescriptor[] {
 							.setName("name")
 							.setDescription("Property to set")
 							.setRequired(true)
-							.addChoice("Mode", "mode")
-							.addChoice("Placeholder", "placeholder")
-							.addChoice("Message", "message")
+							.addChoices({ name: "Mode", value: "mode" })
+							.addChoices({
+								name: "Placeholder",
+								value: "placeholder",
+							})
+							.addChoices({ name: "Message", value: "message" })
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
@@ -623,8 +632,8 @@ export function provideCommands(): CommandDescriptor[] {
 							.setName("field")
 							.setDescription("Which field to change")
 							.setRequired(true)
-							.addChoice("Message", "message")
-							.addChoice("Label", "label")
+							.addChoices({ name: "Message", value: "message" })
+							.addChoices({ name: "Label", value: "label" })
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
@@ -712,7 +721,7 @@ async function createGroup(
 			];
 		}
 
-		if (!channel.isText()) {
+		if (!channel.isTextBased()) {
 			return [false, "Invalid channel: must be a text channel"];
 		}
 
@@ -827,7 +836,7 @@ async function moveGroup(
 			return "Invalid id: must be snake_case";
 		}
 
-		if (!channel.isText()) {
+		if (!channel.isTextBased()) {
 			return "Invalid channel: must be a text channel";
 		}
 
@@ -853,7 +862,7 @@ async function viewGroup(
 			include: { options: true },
 		});
 		if (group) {
-			const embed = new Discord.MessageEmbed().setTitle(
+			const embed = new Discord.EmbedBuilder().setTitle(
 				"Role Group Information"
 			).setDescription(`**ID**: ${group.id}
 				**Mode:** ${group.mode}
@@ -874,11 +883,11 @@ async function viewGroup(
 				}`);
 
 			for (const opt of group.options) {
-				embed.addField(
-					(opt.emoji ? opt.emoji + " " : "") + opt.label,
-					opt.value + " - " + opt.description,
-					true
-				);
+				embed.addFields({
+					name: (opt.emoji ? opt.emoji + " " : "") + opt.label,
+					value: opt.value + " - " + opt.description,
+					inline: true,
+				});
 			}
 
 			return {
@@ -972,7 +981,7 @@ async function removeOption(
 
 // TODO: dry this a bit
 export async function handleCommand(
-	interaction: Discord.CommandInteraction,
+	interaction: Discord.ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	const subCommandGroup = interaction.options.getSubcommandGroup();
@@ -1105,7 +1114,7 @@ export async function handleCommand(
 					try {
 						await interaction.editReply({
 							embeds: [
-								new Discord.MessageEmbed()
+								new Discord.EmbedBuilder()
 									.setTitle("Role Selection Groups")
 									.setDescription(
 										"All available role groups are listed below with their `mode` field."
@@ -1122,10 +1131,7 @@ export async function handleCommand(
 							],
 						});
 					} catch (e) {
-						console.error(
-							"Could not list role groups because: ",
-							(e as Error).message
-						);
+						logger.error(e, "Could not list role groups");
 						await interaction.editReply(
 							utils.XEmoji + "Failed to list role groups."
 						);
@@ -1199,9 +1205,9 @@ export async function handleCommand(
 								"Role selection messages successfully sent."
 						);
 					} catch (e) {
-						console.error(
-							"Could not send role selection messages:",
-							(e as Error).message
+						logger.error(
+							e,
+							"Could not send role selection messages"
 						);
 						await interaction.editReply(
 							utils.XEmoji +
@@ -1255,7 +1261,7 @@ export async function handleCommand(
 							true
 						) as Discord.GuildChannel;
 
-						if (!channel.isText() && !channel.isThread()) {
+						if (!channel.isTextBased() && !channel.isThread()) {
 							await interaction.editReply(
 								utils.XEmoji + "Invalid channel."
 							);
@@ -1314,21 +1320,25 @@ export async function handleCommand(
 						const role = await getConfig("role_id");
 						const msgId = await getConfig("message_id");
 
-						const embed = new Discord.MessageEmbed()
+						const embed = new Discord.EmbedBuilder()
 							.setTitle("TourIST Information")
-							.addField("Message", message)
-							.addField("Label", label)
-							.addField(
-								"Channel",
-								channel ? `<#${channel}>` : "[UNSET]"
-							)
-							.addField("Role", role ? `<@&${role}>` : "[UNSET]")
-							.addField(
-								"Location",
-								channel && msgId
-									? `[Here](https://discord.com/channels/${process.env.GUILD_ID}/${channel}/${msgId})`
-									: "[UNSET]"
-							);
+							.addFields({ name: "Message", value: message })
+							.addFields({ name: "Label", value: label })
+							.addFields({
+								name: "Channel",
+								value: channel ? `<#${channel}>` : "[UNSET]",
+							})
+							.addFields({
+								name: "Role",
+								value: role ? `<@&${role}>` : "[UNSET]",
+							})
+							.addFields({
+								name: "Location",
+								value:
+									channel && msgId
+										? `[Here](https://discord.com/channels/${process.env.GUILD_ID}/${channel}/${msgId})`
+										: "[UNSET]",
+							});
 						await interaction.editReply({ embeds: [embed] });
 					} catch (e) {
 						await interaction.editReply(

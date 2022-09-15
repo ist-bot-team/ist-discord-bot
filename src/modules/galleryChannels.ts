@@ -139,7 +139,7 @@ async function updateGalleries(
 }
 
 export async function handleCommand(
-	interaction: Discord.CommandInteraction,
+	interaction: Discord.ChatInputCommandInteraction,
 	prisma: PrismaClient
 ): Promise<void> {
 	const galleries = await utils.fetchGalleries(prisma);
@@ -215,11 +215,11 @@ export async function handleCommand(
 					[];
 				if (
 					channel === null ||
-					!(channel.isText() || channel.isThread())
+					!(channel.isTextBased() || channel.isThread())
 				) {
 					for (const c of galleries) {
 						const cf = await interaction.client.channels.fetch(c);
-						if (cf && (cf.isText() || cf.isThread())) {
+						if (cf && (cf.isTextBased() || cf.isThread())) {
 							channels.push(
 								cf as
 									| Discord.TextChannel
