@@ -130,7 +130,7 @@ const startupChores: Chore[] = [
 				}
 			}
 
-			const rest = new REST({ version: "9" }).setToken(
+			const rest = new REST({ version: "10" }).setToken(
 				DISCORD_TOKEN as string
 			);
 

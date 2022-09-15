@@ -1,7 +1,11 @@
 // Handler for role selection
 
 import { PrismaClient, RoleGroup, RoleGroupOption } from "@prisma/client";
-import Discord, { ButtonBuilder, SelectMenuBuilder } from "discord.js";
+import Discord, {
+	ButtonBuilder,
+	SelectMenuBuilder,
+	SelectMenuComponentOptionData,
+} from "discord.js";
 import * as Builders from "@discordjs/builders";
 
 import { getConfigFactory } from "./utils";
@@ -75,6 +79,15 @@ export async function sendRoleSelectionMessages(
 						);
 					}
 
+					// discord.js does not accept `null` as a value for `emoji`
+					const options: SelectMenuComponentOptionData[] =
+						group.options.map((option) => ({
+							label: option.label,
+							description: option.description,
+							value: option.value,
+							emoji: option.emoji ?? undefined,
+						}));
+
 					components = [
 						new Discord.ActionRowBuilder<SelectMenuBuilder>().addComponents(
 							new Discord.SelectMenuBuilder()
@@ -86,9 +99,7 @@ export async function sendRoleSelectionMessages(
 										group.maxValues ?? 1
 									)
 								)
-								.addOptions(
-									group.options as Discord.SelectMenuComponentOptionData[]
-								)
+								.addOptions(options)
 						),
 					];
 				} else if (group.mode === "buttons") {
