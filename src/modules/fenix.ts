@@ -3,6 +3,7 @@
 import axios from "axios";
 import cheerio from "cheerio";
 import RSSParser from "rss-parser";
+import logger from "../logger";
 
 import * as FenixTypings from "./fenix.d";
 import * as utils from "./utils";
@@ -20,11 +21,7 @@ export async function callEndpoint(endpoint: string): Promise<unknown> {
 	try {
 		return (await axiosClient.get(endpoint)).data;
 	} catch (e) {
-		console.error(
-			`Fénix broke while calling endpoint '${endpoint}': ${
-				(e as Error).message
-			}`
-		);
+		logger.error(e, `Fénix broke while calling endpoint '%s'`, endpoint);
 		throw e; // propagate
 	}
 }
@@ -168,9 +165,7 @@ export async function getRSSFeed<T extends FenixTypings.RSSFeedItem>(
 					new Date(b.pubDate).getTime()
 			);
 	} catch (e) {
-		console.error(
-			`Could not get RSS feed for '${url}': ${(e as Error).message}`
-		);
+		logger.error(e, "Could not get RSS feed for '%s'", url);
 		return [];
 	}
 }

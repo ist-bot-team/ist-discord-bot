@@ -8,4 +8,4 @@ RUN yarn install --frozen-lockfile
 COPY ./ ./
 RUN yarn run prisma generate
 RUN yarn build
-CMD [ "yarn", "start:docker" ]
+CMD [ "yarn", "start:docker:dev" ]

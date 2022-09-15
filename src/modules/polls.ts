@@ -18,6 +18,7 @@ import cron from "node-cron";
 import { PrismaClient, Poll } from "@prisma/client";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import logger from "../logger";
 
 const POLL_ACTION_ROW = new ActionRowBuilder<ButtonBuilder>().addComponents([
 	new ButtonBuilder()
@@ -137,8 +138,9 @@ export const schedulePolls = async (
 			);
 
 			if (!channel) {
-				console.error(
-					`Couldn't fetch channel ${poll.channelId} for poll ${poll.id}`
+				logger.error(
+					{ channel: poll.channelId, poll: poll.id },
+					"Couldn't fetch channel for poll"
 				);
 				return;
 			}
@@ -153,10 +155,7 @@ export const schedulePolls = async (
 						await sendPollEmbed(p, channel as TextChannel);
 					}
 				} catch (e) {
-					console.error(
-						"Could not verify (& send) poll:",
-						(e as Error).message
-					);
+					logger.error(e, "Could not verify (& send) poll");
 				}
 			});
 		})

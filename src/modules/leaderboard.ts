@@ -9,6 +9,7 @@ import { CommandDescriptor } from "../bot.d";
 
 import * as utils from "./utils";
 import { ThenArg } from "./utils.d";
+import logger from "../logger";
 
 const MAX_PEOPLE = 50;
 
@@ -287,7 +288,7 @@ ${
 			} catch (e) {
 				await interaction
 					.editReply(utils.XEmoji + "Something went wrong.")
-					.catch(() => console.error("Leaderboard took too long :("));
+					.catch(() => logger.error("Leaderboard took too long :("));
 			}
 			break;
 		}
@@ -304,7 +305,7 @@ ${
 						`Successfully reset cache; last stamp was ${stamp}`
 				);
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while crearing cache of leaderboard");
 				await interaction.editReply(
 					utils.XEmoji +
 						"Something went wrong, maybe there was no cache?"

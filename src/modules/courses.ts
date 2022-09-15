@@ -15,6 +15,7 @@ import * as Builders from "@discordjs/builders";
 import * as fenix from "./fenix";
 import * as utils from "./utils";
 import { OrphanChannel } from "./courses.d";
+import logger from "../logger";
 
 export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
@@ -150,7 +151,7 @@ export async function handleCommand(
 							: "")
 				);
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while refreshing channels");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -194,7 +195,7 @@ export async function handleCommand(
 						categories.map((c) => `- <#${c?.id}>`).join("\n")
 				);
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while settings categories");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -271,7 +272,7 @@ export async function handleCommand(
 					);
 				}
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while toggling channel visibility");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -326,7 +327,7 @@ export async function handleCommand(
 						);
 					}
 				} catch (e) {
-					console.error(e);
+					logger.error(e, "Error while renamming course channel");
 					await interaction.editReply(
 						utils.XEmoji +
 							"Failed to rename channel and/or role, but renamed course on database. Please rename channel and/or role manully."
@@ -337,7 +338,7 @@ export async function handleCommand(
 					utils.CheckMarkEmoji + "Course renamed succesfully!"
 				);
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while renamming course channel");
 				await interaction.editReply(
 					utils.XEmoji +
 						"Something went wrong. Maybe there is already another course with the desired acronym?"
@@ -383,7 +384,7 @@ export async function handleCommand(
 					],
 				});
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while listing degrees with course");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong"
 				);
@@ -411,7 +412,7 @@ export async function handleCommand(
 							);
 						}
 					} catch (e) {
-						console.error(e);
+						logger.error(e, "Error while getting academic year");
 						await interaction.editReply(
 							utils.XEmoji + "Something went wrong."
 						);
@@ -438,7 +439,7 @@ export async function handleCommand(
 							`The current academic year has been set to \`${academicYear}\``
 						);
 					} catch (e) {
-						console.error(e);
+						logger.error(e, "Error while setting academic year");
 						await interaction.editReply(
 							utils.XEmoji + "Something went wrong."
 						);

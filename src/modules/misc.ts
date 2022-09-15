@@ -9,6 +9,7 @@ import { CommandDescriptor } from "../bot.d";
 import { CommandPermission } from "../bot";
 import * as utils from "./utils";
 import { SlashCommandBuilder } from "@discordjs/builders";
+import logger from "../logger";
 
 export function provideCommands(): CommandDescriptor[] {
 	const say = new Builders.SlashCommandBuilder()
@@ -162,12 +163,13 @@ export async function handleSayCommand(
 			const uid = interaction.member?.user.id;
 			if (uid) {
 				sayLogs.set(msg.id, uid);
-				console.log(
-					`User ${
-						interaction.member?.user.username
-					} said «${message}» (w/${
-						allowMentions ? "" : "o"
-					} mentions)`
+				logger.info(
+					{
+						user: interaction.member?.user.username,
+						message,
+						allowMentions,
+					},
+					"User used /say command"
 				);
 			}
 			await interaction.editReply(
@@ -208,7 +210,7 @@ export async function handleJustAskCommand(
 		await interaction.channel?.send("https://dontasktoask.com/");
 		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
 	} catch (e) {
-		console.error(e);
+		logger.error(e, "Error while executing just ask command");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }
@@ -243,7 +245,7 @@ export async function handleMigrateMembersWithRole(
 				`Migrated ${count} members from ${oldRole} to ${newRole}`
 		);
 	} catch (e) {
-		console.error(e);
+		logger.error(e, "Error while migrating members to new role");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }

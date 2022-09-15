@@ -9,6 +9,7 @@ import * as fenix from "./fenix";
 import * as courses from "./courses";
 import { OrphanChannel } from "./courses.d";
 import { ChannelType, PermissionFlagsBits } from "discord.js";
+import logger from "../logger";
 
 const tierChoices = [
 	"None",
@@ -410,7 +411,7 @@ export async function handleCommand(
 					);
 				}
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while creating degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -673,7 +674,7 @@ export async function handleCommand(
 						`Successfully set ${channelType} of ${acronym} to <@#${newChannel.id}>`
 				);
 			} catch (e) {
-				console.error(e);
+				logger.error(e, "Error while setting channel of degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);

@@ -9,6 +9,7 @@ import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
 import * as courses from "./courses";
 import { parseButtonStyle } from "../utils/buttonStyleUtils";
+import logger from "../logger";
 
 const MAX_COMPONENTS_PER_ROW = 5;
 const MAX_ROWS_PER_MESSAGE = 5;
@@ -161,10 +162,10 @@ export async function sendRoleSelectionMessages(
 				}
 			}
 		} catch (e) {
-			console.error(
-				`Could not send role selection message for group ${
-					group.id
-				} because: ${(e as Error).message}`
+			logger.error(
+				e,
+				"Could not send role selection message for group %s",
+				group.id
 			);
 		}
 	}
@@ -191,7 +192,7 @@ async function injectGroups(
 				})
 		);
 	} catch (e) {
-		await console.error(`Failed to inject groups: ${e}`);
+		logger.error(e, "Failed to inject groups");
 	}
 }
 
@@ -238,9 +239,7 @@ async function injectTouristGroup(
 			},
 		};
 	} catch (e) {
-		console.error(
-			`Failed to inject tourist group: ${(e as Error).message}`
-		);
+		logger.error(e, "Failed to inject tourist group");
 	}
 }
 
@@ -1121,10 +1120,7 @@ export async function handleCommand(
 							],
 						});
 					} catch (e) {
-						console.error(
-							"Could not list role groups because: ",
-							(e as Error).message
-						);
+						logger.error(e, "Could not list role groups");
 						await interaction.editReply(
 							utils.XEmoji + "Failed to list role groups."
 						);
@@ -1198,9 +1194,9 @@ export async function handleCommand(
 								"Role selection messages successfully sent."
 						);
 					} catch (e) {
-						console.error(
-							"Could not send role selection messages:",
-							(e as Error).message
+						logger.error(
+							e,
+							"Could not send role selection messages"
 						);
 						await interaction.editReply(
 							utils.XEmoji +
