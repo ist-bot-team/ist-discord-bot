@@ -1,6 +1,6 @@
 {
 	"name": "ist-discord-bot",
-	"version": "2.5.5",
+	"version": "2.6.0",
 	"description": "Discord bot to manage the IST Hub server.",
 	"keywords": [
 		"discord",
