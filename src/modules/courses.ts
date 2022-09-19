@@ -498,37 +498,35 @@ export async function importCoursesFromDegree(
 		});
 	}
 
-	await Promise.all(
-		degreeCourses.map(async (course) => {
-			const globalCourse = await prisma.course.findUnique({
-				where: { acronym: course.acronym },
-			});
+	for (const course of degreeCourses) {
+		const globalCourse = await prisma.course.findUnique({
+			where: { acronym: course.acronym },
+		});
 
-			if (!globalCourse) {
-				// Create global course since it doesn't exist
+		if (!globalCourse) {
+			// Create global course since it doesn't exist
 
-				await prisma.course.create({
-					data: {
-						acronym: course.acronym,
-						displayAcronym: course.acronym,
-						name: course.name,
-					},
-				});
-			}
-
-			await prisma.degreeCourse.create({
+			await prisma.course.create({
 				data: {
-					id: `${degreeId}-${course.acronym}`,
-					degreeFenixId: degreeId,
-					courseAcronym: course.acronym,
-					year: course.year,
-					semester: course.semester,
-					announcementsFeedUrl: course.announcementsFeedUrl,
-					color: utils.generateHexCode(),
+					acronym: course.acronym,
+					displayAcronym: course.acronym,
+					name: course.name,
 				},
 			});
-		})
-	);
+		}
+
+		await prisma.degreeCourse.create({
+			data: {
+				id: `${degreeId}-${course.acronym}`,
+				degreeFenixId: degreeId,
+				courseAcronym: course.acronym,
+				year: course.year,
+				semester: course.semester,
+				announcementsFeedUrl: course.announcementsFeedUrl,
+				color: utils.generateHexCode(),
+			},
+		});
+	}
 }
 
 export async function refreshCourses(
