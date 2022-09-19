@@ -272,11 +272,13 @@ export async function handleCommand(
 					await sendPollEmbed(poll, channel as TextChannel);
 				}
 
+				logger.info({ id, title, channel, cron }, "Added poll");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Successfully added${cron ? " and scheduled" : ""}.`
 				);
 			} catch (e) {
+				logger.error(e, "Failed to add poll");
 				await interaction.editReply(
 					utils.XEmoji +
 						"Something went wrong, maybe the ID already exists?"
@@ -299,10 +301,12 @@ export async function handleCommand(
 
 				await prisma.poll.delete({ where: { id } });
 
+				logger.info({ id }, "Removed poll");
 				await interaction.editReply(
 					utils.CheckMarkEmoji + "Successfully removed."
 				);
 			} catch (e) {
+				logger.error(e, "Failed to remove poll");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -332,6 +336,7 @@ export async function handleCommand(
 					],
 				});
 			} catch (e) {
+				logger.error(e, "Failed to list all polls");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -385,6 +390,7 @@ export async function handleCommand(
 					});
 				}
 			} catch (e) {
+				logger.error(e, "Failed to list poll");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);

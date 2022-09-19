@@ -179,6 +179,7 @@ export async function handleSayCommand(
 		}
 		throw new Error("???");
 	} catch (e) {
+		logger.error(e, "Failed to send message through /say");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }
@@ -197,6 +198,7 @@ export async function handleWhoSaidCommand(
 			await interaction.editReply("I don't know who said it...");
 		}
 	} catch (e) {
+		logger.error(e, "Error while handling Who Said command");
 		await interaction.editReply(
 			utils.XEmoji + "Something went wrong, maybe wrong message ID?"
 		);
@@ -243,6 +245,10 @@ export async function handleMigrateMembersWithRole(
 			count++;
 		}
 
+		logger.info(
+			{ oldRole, newRole, count, removeOld },
+			"Migrated members from role to role"
+		);
 		await interaction.editReply(
 			utils.CheckMarkEmoji +
 				`Migrated ${count} members from ${oldRole} to ${newRole}`

@@ -6,6 +6,7 @@ import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import logger from "../logger";
 
 export function provideCommands(): CommandDescriptor[] {
 	const sudo = new Builders.SlashCommandBuilder()
@@ -65,6 +66,7 @@ export async function handleSudoCommand(
 			);
 		}
 	} catch (e) {
+		logger.error(e, "Failed to toggle sudo for user");
 		await interaction.editReply(
 			utils.XEmoji + "Failed to toggle `Admin+` role."
 		);
@@ -91,6 +93,7 @@ export async function handleResetAdminCommand(
 			utils.CheckMarkEmoji + "Successfully reset the `Admin+` role."
 		);
 	} catch (e) {
+		logger.error(e, "Failed to reset sudo for user");
 		await interaction.editReply(
 			utils.XEmoji + "Failed to reset the `Admin+` role."
 		);

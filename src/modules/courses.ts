@@ -140,6 +140,7 @@ export async function handleCommand(
 					interaction.guild
 				);
 
+				logger.info("Refreshed courses channels");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						"Sucessfully updated course channels." +
@@ -151,7 +152,7 @@ export async function handleCommand(
 							: "")
 				);
 			} catch (e) {
-				logger.error(e, "Error while refreshing channels");
+				logger.error(e, "Error while refreshing courses channels");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -189,13 +190,17 @@ export async function handleCommand(
 					},
 				});
 
+				logger.info({ categories }, "Set course channels' categories");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						"Sucessfully updated course categories.\n" +
 						categories.map((c) => `- <#${c?.id}>`).join("\n")
 				);
 			} catch (e) {
-				logger.error(e, "Error while settings categories");
+				logger.error(
+					e,
+					"Error while setting course channels' categories"
+				);
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -254,18 +259,27 @@ export async function handleCommand(
 							}
 						}
 					} catch (e) {
+						logger.error(
+							e,
+							"Failed to delete channel and/or role while toggling course's channel visibility"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								"Could not delete channel and/or role, but settings were updated correctly. Please delete the channel/role manually."
 						);
 						return;
 					}
+					logger.info({ course }, "Course channel has been hidden");
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
 							`Course \`${course.name}\` is now hidden`
 					);
 				} else {
 					await refreshCourses(prisma, interaction.guild);
+					logger.info(
+						{ course },
+						"Course channel is now being shown"
+					);
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
 							`Course \`${course.name}\` is now being shown`
@@ -334,6 +348,7 @@ export async function handleCommand(
 					);
 				}
 
+				logger.info({ oldAcronym, newAcronym }, "Renamed course");
 				await interaction.editReply(
 					utils.CheckMarkEmoji + "Course renamed succesfully!"
 				);
@@ -435,6 +450,10 @@ export async function handleCommand(
 							},
 						});
 
+						logger.info(
+							{ academicYear },
+							"Academic year has been set"
+						);
 						await interaction.editReply(
 							`The current academic year has been set to \`${academicYear}\``
 						);
@@ -466,6 +485,12 @@ export async function importCoursesFromDegree(
 	}
 
 	const degreeCourses = await fenix.getDegreeCourses(degreeId, academicYear);
+
+	logger.info(
+		{ degreeId },
+		"Got %d courses from Fénix for degree",
+		degreeCourses.length
+	);
 
 	if (force) {
 		await prisma.degreeCourse.deleteMany({

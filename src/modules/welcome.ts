@@ -6,6 +6,7 @@ import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import logger from "../logger";
 
 async function getWelcomeChannel(
 	prisma: PrismaClient,
@@ -95,6 +96,7 @@ export async function handleCommand(
 							value: channel.id,
 						},
 					});
+					logger.info({ channel }, "Set welcome channel");
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
 							`Welcome channel successfully set as <#${channel.id}>.`
@@ -110,6 +112,7 @@ export async function handleCommand(
 					update: { value },
 					create: { key: "welcome:message", value },
 				});
+				logger.info({ message }, "Set welcome message");
 				await interaction.editReply(
 					utils.CheckMarkEmoji + `Welcome message successfully set.`
 				);
@@ -141,6 +144,7 @@ export async function handleCommand(
 			}
 		}
 	} catch (e) {
+		logger.error(e, "Error while handling welcome command");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
 	}
 }

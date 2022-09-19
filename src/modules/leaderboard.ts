@@ -267,6 +267,10 @@ export async function handleCommand(
 								prisma
 							)
 					)) as [number, ThenArg<ReturnType<typeof sendLeaderboard>>];
+				logger.info(
+					{ delta, channels, msgs, failed },
+					"Send leaderboard"
+				);
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Sent [here](https://discord.com/channels/${
@@ -286,6 +290,7 @@ ${
 }`
 				);
 			} catch (e) {
+				logger.error(e, "Error while sending leaderboard");
 				await interaction
 					.editReply(utils.XEmoji + "Something went wrong.")
 					.catch(() => logger.error("Leaderboard took too long :("));
@@ -300,12 +305,13 @@ ${
 						where: { key: "leaderboard:cache_stamp" },
 					})
 				).value;
+				logger.info("Cleared leaderboard cache");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Successfully reset cache; last stamp was ${stamp}`
 				);
 			} catch (e) {
-				logger.error(e, "Error while crearing cache of leaderboard");
+				logger.error(e, "Error while clearing cache of leaderboard");
 				await interaction.editReply(
 					utils.XEmoji +
 						"Something went wrong, maybe there was no cache?"

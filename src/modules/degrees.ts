@@ -374,10 +374,11 @@ export async function handleCommand(
 	switch (interaction.options.getSubcommand()) {
 		case "create": {
 			try {
+				const acronym = interaction.options.getString("acronym", true);
 				const result = await createDegree(
 					prisma,
 					interaction.guild,
-					interaction.options.getString("acronym", true),
+					acronym,
 					interaction.options.getRole("role", true) as Discord.Role,
 					parseInt(interaction.options.getString("tier", true)),
 					interaction.options.getString("fenix-acronym", false),
@@ -399,8 +400,10 @@ export async function handleCommand(
 					) as Discord.GuildChannel | null
 				);
 				if (typeof result === "string") {
+					logger.error({ result }, "Error while creating degree");
 					await interaction.editReply(utils.XEmoji + result);
 				} else {
+					logger.info({ result, acronym }, "Created degree");
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
 							"Sucessfully created degree." +
@@ -440,6 +443,7 @@ export async function handleCommand(
 					],
 				});
 			} catch (e) {
+				logger.error(e, "Error while listing degrees");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -524,6 +528,7 @@ export async function handleCommand(
 					});
 				}
 			} catch (e) {
+				logger.error(e, "Error while viewing a degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -537,10 +542,12 @@ export async function handleCommand(
 
 				await prisma.degree.delete({ where: { acronym } });
 
+				logger.info({ acronym }, "Deleted a degree");
 				await interaction.editReply(
 					utils.CheckMarkEmoji + "Successfully removed."
 				);
 			} catch (e) {
+				logger.error(e, "Error while deleting a degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -558,11 +565,13 @@ export async function handleCommand(
 					data: { name: newName },
 				});
 
+				logger.info({ acronym, newName }, "Renamed a degree");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Successfully renamed ${acronym} to ${newName}`
 				);
 			} catch (e) {
+				logger.error(e, "Error while renaming a degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -580,11 +589,13 @@ export async function handleCommand(
 					data: { roleId: newRole.id },
 				});
 
+				logger.info({ acronym, newRole }, "Set role of degree");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Successfully set role of ${acronym} to <@&${newRole.id}>`
 				);
 			} catch (e) {
+				logger.error(e, "Error while setting role of degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -608,11 +619,16 @@ export async function handleCommand(
 					data: { tier: numTier },
 				});
 
+				logger.info(
+					{ acronym, newTier: numTier },
+					"Changed degree tier"
+				);
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Successfully set tier of ${acronym} to ${newTier}`
 				);
 			} catch (e) {
+				logger.error(e, "Error while setting tier of degree");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -647,7 +663,7 @@ export async function handleCommand(
 				}
 
 				if (
-					channelType === "degreeVoice" &&
+					channelType === "degree-voice" &&
 					newChannel.type !== Discord.ChannelType.GuildVoice
 				) {
 					await interaction.editReply(
@@ -655,7 +671,7 @@ export async function handleCommand(
 					);
 					return;
 				} else if (
-					channelType !== "degreeVoice" &&
+					channelType !== "degree-voice" &&
 					newChannel.type === Discord.ChannelType.GuildVoice
 				) {
 					await interaction.editReply(
@@ -669,6 +685,7 @@ export async function handleCommand(
 					data: { [key]: newChannel.id },
 				});
 
+				logger.info({ acronym, channelType, newChannel });
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Successfully set ${channelType} of ${acronym} to <@#${newChannel.id}>`
@@ -702,11 +719,19 @@ export async function handleCommand(
 					true
 				);
 
+				logger.info(
+					{ acronym },
+					"Refreshed degree's courses from Fénix"
+				);
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						`Degree \`${acronym}\`'s courses have been refreshed!`
 				);
 			} catch (e) {
+				logger.error(
+					e,
+					"Failed to refresh degree's courses from Fénix"
+				);
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);

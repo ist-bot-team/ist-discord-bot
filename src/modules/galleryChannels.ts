@@ -6,6 +6,7 @@ import * as Builders from "@discordjs/builders";
 
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
+import logger from "../logger";
 
 export async function handleMessage(
 	message: Discord.Message,
@@ -157,6 +158,7 @@ export async function handleCommand(
 						utils.XEmoji + "Channel is already a gallery."
 					);
 				} else {
+					logger.info({ channel }, "Added a gallery channel");
 					galleries.push(channel);
 					await updateGalleries(prisma, galleries);
 					await interaction.editReply(
@@ -164,6 +166,7 @@ export async function handleCommand(
 					);
 				}
 			} catch (e) {
+				logger.error(e, "Error while adding a gallery channel");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -186,11 +189,13 @@ export async function handleCommand(
 						prisma,
 						galleries.filter((c) => c != channel)
 					);
+					logger.info({ channel }, "Removed a gallery channel");
 					await interaction.editReply(
 						utils.CheckMarkEmoji + "Gallery successfully removed."
 					);
 				}
 			} catch (e) {
+				logger.error(e, "Error while removing a gallery channel");
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);
@@ -233,11 +238,20 @@ export async function handleCommand(
 					];
 				}
 				const n = await parseExistingMessages(prisma, channels);
+				logger.info(
+					{ channels },
+					"Cleaned %d messages from gallery channels",
+					n
+				);
 				await interaction.editReply(
 					utils.CheckMarkEmoji + `Cleaned \`${n}\` messages.`
 				);
 				break;
 			} catch (e) {
+				logger.error(
+					e,
+					"Error while cleaning gallery channel messages"
+				);
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
 				);

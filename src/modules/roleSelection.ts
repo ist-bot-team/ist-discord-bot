@@ -311,6 +311,10 @@ async function handleRoleSelection(
 			throw new Error("Role not in group");
 		}
 	} catch (e) {
+		logger.error(
+			{ groupId, selectedRoles, err: e },
+			"Failed to select role"
+		);
 		return false;
 	}
 }
@@ -742,6 +746,7 @@ async function createGroup(
 			).id,
 		];
 	} catch (e) {
+		logger.error(e, "Error while creating role selection group");
 		return [false, "Something went wrong"];
 	}
 }
@@ -764,6 +769,7 @@ async function deleteGroup(
 
 		return true;
 	} catch (e) {
+		logger.error(e, "Error while deleting role selection group");
 		return "Something went wrong; possibly, no role group was found with that ID";
 	}
 }
@@ -796,6 +802,7 @@ async function editGroup(
 
 		return true;
 	} catch (e) {
+		logger.error(e, "Error while editing role selection group");
 		return "Something went wrong; possibly, no role group was found with that ID";
 	}
 }
@@ -822,6 +829,10 @@ async function setNumGroup(
 
 		return true;
 	} catch (e) {
+		logger.error(
+			e,
+			"Error while setting maximum/minimum number of options of role selection group"
+		);
 		return "Something went wrong; possibly, no role group was found with that ID";
 	}
 }
@@ -847,6 +858,7 @@ async function moveGroup(
 
 		return true;
 	} catch (e) {
+		logger.error(e, "Error while moving role selection group");
 		return "Something went wrong; possibly, no role group was found with that ID";
 	}
 }
@@ -897,6 +909,7 @@ async function viewGroup(
 			return `No group was found with ID \`${id}\``;
 		}
 	} catch (e) {
+		logger.error(e, "Error while viewing role selection group");
 		return "Something went wrong";
 	}
 }
@@ -934,6 +947,7 @@ async function addOption(
 
 		return true;
 	} catch (e) {
+		logger.error(e, "Error while adding option to role selection group");
 		return "Something went wrong; possibly, that role is already associated with an option";
 	}
 }
@@ -975,6 +989,10 @@ async function removeOption(
 
 		return true;
 	} catch (e) {
+		logger.error(
+			e,
+			"Error while removing option from role selection group"
+		);
 		return "Something went wrong";
 	}
 }
@@ -1006,11 +1024,16 @@ export async function handleCommand(
 						// so I'm ignoring the possibility of it even existing
 					);
 					if (succ) {
+						logger.info({ res }, "Created role selection group");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								`Role selection group \`${res}\` successfully created.`
 						);
 					} else {
+						logger.error(
+							{ res },
+							"Failed to create role selection group"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								`Could not create group because: **${res}**`
@@ -1026,11 +1049,16 @@ export async function handleCommand(
 						interaction.options.getString("confirm-id", true)
 					);
 					if (res === true) {
+						logger.info({ id }, "Deleted role selection group");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								`Role selection group \`${id}\` successfully deleted.`
 						);
 					} else {
+						logger.error(
+							{ res },
+							"Failed to delete role selection group"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								`Could not delete group because: **${res}**`
@@ -1040,18 +1068,24 @@ export async function handleCommand(
 				}
 				case "edit": {
 					const id = interaction.options.getString("id", true);
-					const res = await editGroup(
-						prisma,
-						id,
-						interaction.options.getString("name", true),
-						interaction.options.getString("value", true)
-					);
+					const name = interaction.options.getString("name", true);
+					const value = interaction.options.getString("value", true);
+					const res = await editGroup(prisma, id, name, value);
+
 					if (res === true) {
+						logger.info(
+							{ id, name, value },
+							"Edited role selection group"
+						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								`Role selection group \`${id}\` successfully edited.`
 						);
 					} else {
+						logger.info(
+							{ id, name, value, res },
+							"Error while editing role selection group"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								`Could not edit group because: **${res}**`
@@ -1061,18 +1095,23 @@ export async function handleCommand(
 				}
 				case "set-num": {
 					const id = interaction.options.getString("id", true);
-					const res = await setNumGroup(
-						prisma,
-						id,
-						interaction.options.getInteger("min", true),
-						interaction.options.getInteger("max", true)
-					);
+					const min = interaction.options.getInteger("min", true);
+					const max = interaction.options.getInteger("max", true);
+					const res = await setNumGroup(prisma, id, min, max);
 					if (res === true) {
+						logger.info(
+							{ id, min, max },
+							"Set minimum/maximum of option selections for role selection group"
+						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								`Role selection group \`${id}\` successfully edited.`
 						);
 					} else {
+						logger.info(
+							{ id, min, max, res },
+							"Error while setting minimum/maximum of option selections for role selection group"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								`Could not edit group because: **${res}**`
@@ -1088,11 +1127,19 @@ export async function handleCommand(
 					) as Discord.GuildChannel;
 					const res = await moveGroup(prisma, id, channel);
 					if (res === true) {
+						logger.info(
+							{ id, channel },
+							"Moved role selection group"
+						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								`Role selection group \`${id}\` successfully moved to <#${channel.id}>.`
 						);
 					} else {
+						logger.info(
+							{ id, channel, res },
+							"Error while moving role selection group"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								`Could not move group because: **${res}**`
@@ -1143,22 +1190,41 @@ export async function handleCommand(
 		case "options":
 			switch (subCommand) {
 				case "add": {
+					const groupId = interaction.options.getString(
+						"group-id",
+						true
+					);
+					const label = interaction.options.getString("label", true);
+					const description = interaction.options.getString(
+						"description",
+						true
+					);
+					const role = interaction.options.getRole(
+						"role",
+						true
+					) as Discord.Role;
+					const emoji = interaction.options.getString("emoji", false);
 					const res = await addOption(
 						prisma,
-						interaction.options.getString("group-id", true),
-						interaction.options.getString("label", true),
-						interaction.options.getString("description", true),
-						interaction.options.getRole(
-							"role",
-							true
-						) as Discord.Role,
-						interaction.options.getString("emoji", false)
+						groupId,
+						label,
+						description,
+						role,
+						emoji
 					);
 					if (res === true) {
+						logger.info(
+							{ groupId, label, description, role, emoji },
+							"Added option to role selection group"
+						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji + "Option successfully added."
 						);
 					} else {
+						logger.error(
+							{ groupId, label, description, role, emoji, res },
+							"Error while adding option to role selection group"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								`Could not add option because: **${res}**`
@@ -1167,17 +1233,26 @@ export async function handleCommand(
 					break;
 				}
 				case "remove": {
-					const res = await removeOption(
-						prisma,
-						interaction.options.getString("group-id", true),
-						interaction.options.getString("label", true)
+					const groupId = interaction.options.getString(
+						"group-id",
+						true
 					);
+					const label = interaction.options.getString("label", true);
+					const res = await removeOption(prisma, groupId, label);
 					if (res === true) {
+						logger.info(
+							{ groupId, label },
+							"Removed option from role selection group"
+						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								"Option successfully removed."
 						);
 					} else {
+						logger.error(
+							{ groupId, label, res },
+							"Error while removing option from role selection group"
+						);
 						await interaction.editReply(
 							utils.XEmoji +
 								`Could not remove option because: **${res}**`
@@ -1191,15 +1266,20 @@ export async function handleCommand(
 			switch (subCommand) {
 				case "send-messages": {
 					try {
+						const editExisting = interaction.options.getBoolean(
+							"edit-existing",
+							true
+						);
 						await sendRoleSelectionMessages(
 							interaction.client,
 							prisma,
-							interaction.options.getBoolean(
-								"edit-existing",
-								true
-							)
+							editExisting
 						);
 
+						logger.info(
+							{ editExisting },
+							"Sent messages for all role selection groups"
+						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								"Role selection messages successfully sent."
@@ -1244,11 +1324,13 @@ export async function handleCommand(
 							create: { key: fqkey, value },
 						});
 
+						logger.info({ field, value }, "Set tourist info");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								`Successfully set TourIST ${field}.`
 						);
 					} catch (e) {
+						logger.error(e, "Failed to set tourist info");
 						await interaction.editReply(
 							utils.XEmoji + "Failed to set TourIST info."
 						);
@@ -1275,11 +1357,13 @@ export async function handleCommand(
 							create: { key: fqkey, value: channel.id },
 						});
 
+						logger.info({ channel }, "Set tourist channel");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								`Successfully set TourIST channel.`
 						);
 					} catch (e) {
+						logger.error(e, "Failed to set tourist channel");
 						await interaction.editReply(
 							utils.XEmoji + "Failed to set TourIST channel."
 						);
@@ -1300,11 +1384,13 @@ export async function handleCommand(
 							create: { key: fqkey, value: role.id },
 						});
 
+						logger.info({ role }, "Set tourist role");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
 								"Successfully set TourIST role."
 						);
 					} catch (e) {
+						logger.error(e, "Error while setting tourist role");
 						await interaction.editReply(
 							utils.XEmoji + "Failed to set TourIST role."
 						);
@@ -1341,6 +1427,7 @@ export async function handleCommand(
 							});
 						await interaction.editReply({ embeds: [embed] });
 					} catch (e) {
+						logger.error(e, "Error while getting tourist info");
 						await interaction.editReply(
 							utils.XEmoji + "Something went wrong."
 						);
