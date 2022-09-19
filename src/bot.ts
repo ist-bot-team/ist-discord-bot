@@ -18,7 +18,6 @@ import * as roleSelection from "./modules/roleSelection";
 import * as sudo from "./modules/sudo";
 import * as misc from "./modules/misc";
 import * as galleryChannels from "./modules/galleryChannels";
-import * as voiceThreads from "./modules/voiceThreads";
 import * as welcome from "./modules/welcome";
 import * as leaderboard from "./modules/leaderboard";
 import * as degrees from "./modules/degrees";
@@ -64,7 +63,6 @@ const commandProviders: CommandProvider[] = [
 	sudo.provideCommands,
 	misc.provideCommands,
 	galleryChannels.provideCommands,
-	voiceThreads.provideCommands,
 	welcome.provideCommands,
 	leaderboard.provideCommands,
 	degrees.provideCommands,
@@ -326,27 +324,6 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 
 client.on("messageCreate", async (message) => {
 	await galleryChannels.handleMessage(message, prisma);
-});
-
-client.on("voiceStateUpdate", async (oldState, newState) => {
-	if (oldState.channelId === newState.channelId) {
-		return;
-	}
-	if (oldState.channelId !== null) {
-		try {
-			await voiceThreads.handleVoiceLeave(oldState, prisma);
-		} catch (e) {
-			logger.error(e, "Someone left a VC, GONE WRONG!!!:");
-		}
-	}
-
-	if (newState.channelId !== null) {
-		try {
-			await voiceThreads.handleVoiceJoin(newState, prisma);
-		} catch (e) {
-			logger.error(e, "Someone joined a VC, GONE WRONG!!!:");
-		}
-	}
 });
 
 client.on("guildMemberAdd", async (member) => {
