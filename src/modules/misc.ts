@@ -211,6 +211,7 @@ export async function handleJustAskCommand(
 	try {
 		await interaction.channel?.send("https://dontasktoask.com/");
 		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
+		logger.info({ member: interaction.member }, "Used don't ask to ask");
 	} catch (e) {
 		logger.error(e, "Error while executing just ask command");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
