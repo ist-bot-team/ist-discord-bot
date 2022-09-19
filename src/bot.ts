@@ -281,7 +281,10 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 		} else if (interaction.isChatInputCommand()) {
 			await interaction.deferReply({ ephemeral: true });
 
-			if (!interaction.command?.guildId) {
+			if (
+				!interaction.command?.guildId &&
+				interaction.guildId !== GUILD_ID
+			) {
 				// global commands
 				const perms: Discord.PermissionsBitField | undefined = (
 					interaction.member as Discord.GuildMember
