@@ -205,6 +205,14 @@ export function provideCommands(): CommandDescriptor[] {
 					.setDescription("The acronym of the degree to refresh")
 					.setRequired(true)
 			)
+			.addBooleanOption(
+				new Builders.SlashCommandBooleanOption()
+					.setName("delete-orphans")
+					.setDescription(
+						"Delete courses that no longer belong to this degree"
+					)
+					.setRequired(false)
+			)
 	);
 	return [{ builder: cmd, handler: handleCommand }];
 }
@@ -702,6 +710,9 @@ export async function handleCommand(
 		case "refresh-courses": {
 			try {
 				const acronym = interaction.options.getString("acronym", true);
+				const deleteOrphans =
+					interaction.options.getBoolean("delete-orphans", false) ??
+					true;
 
 				const degree = await prisma.degree.findUnique({
 					where: { acronym },
@@ -716,11 +727,11 @@ export async function handleCommand(
 				await courses.importCoursesFromDegree(
 					prisma,
 					degree.fenixId,
-					true
+					deleteOrphans
 				);
 
 				logger.info(
-					{ acronym },
+					{ acronym, deleteOrphans },
 					"Refreshed degree's courses from Fénix"
 				);
 				await interaction.editReply(

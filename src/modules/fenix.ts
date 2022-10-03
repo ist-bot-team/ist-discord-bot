@@ -120,7 +120,7 @@ export async function getDegreeCourses(
 					.map((_, linkNode) => {
 						const executionCourseLink = $coursePage(linkNode)
 							.attr("href")
-							?.match(/\/disciplinas\/\w+\/([\w-]+)\/[\w-]+/);
+							?.match(/\/disciplinas\/[\w-]+\/([\w-]+)\/[\w-]+/);
 						if (
 							!executionCourseLink ||
 							executionCourseLink[1] !== academicYear

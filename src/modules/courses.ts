@@ -493,9 +493,18 @@ export async function importCoursesFromDegree(
 	);
 
 	if (force) {
-		await prisma.degreeCourse.deleteMany({
-			where: { degreeFenixId: degreeId },
+		const idsToKeep = degreeCourses.map(
+			(course) => `${degreeId}-${course.acronym}`
+		);
+		const deleteResult = await prisma.degreeCourse.deleteMany({
+			where: { degreeFenixId: degreeId, id: { notIn: idsToKeep } },
 		});
+
+		logger.info(
+			{ degreeId },
+			"Deleted %d orphan courses for degree",
+			deleteResult.count
+		);
 	}
 
 	for (const course of degreeCourses) {
@@ -515,8 +524,10 @@ export async function importCoursesFromDegree(
 			});
 		}
 
-		await prisma.degreeCourse.create({
-			data: {
+		logger.debug({ course, degreeId }, "Upserting degree course");
+
+		await prisma.degreeCourse.upsert({
+			create: {
 				id: `${degreeId}-${course.acronym}`,
 				degreeFenixId: degreeId,
 				courseAcronym: course.acronym,
@@ -524,6 +535,16 @@ export async function importCoursesFromDegree(
 				semester: course.semester,
 				announcementsFeedUrl: course.announcementsFeedUrl,
 				color: utils.generateHexCode(),
+			},
+			update: {
+				degreeFenixId: degreeId,
+				courseAcronym: course.acronym,
+				year: course.year,
+				semester: course.semester,
+				announcementsFeedUrl: course.announcementsFeedUrl,
+			},
+			where: {
+				id: `${degreeId}-${course.acronym}`,
 			},
 		});
 	}
