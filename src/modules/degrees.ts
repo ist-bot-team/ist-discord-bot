@@ -202,8 +202,10 @@ export function provideCommands(): CommandDescriptor[] {
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
-					.setDescription("The acronym of the degree to refresh")
-					.setRequired(true)
+					.setDescription(
+						"The acronym of the degree to refresh. If unset, all degrees will be refreshed"
+					)
+					.setRequired(false)
 			)
 			.addBooleanOption(
 				new Builders.SlashCommandBooleanOption()
@@ -709,39 +711,52 @@ export async function handleCommand(
 		}
 		case "refresh-courses": {
 			try {
-				const acronym = interaction.options.getString("acronym", true);
+				const acronym = interaction.options.getString("acronym", false);
 				const deleteOrphans =
 					interaction.options.getBoolean("delete-orphans", false) ??
 					true;
 
-				const degree = await prisma.degree.findUnique({
-					where: { acronym },
-				});
-				if (!degree) {
-					await interaction.editReply(
-						utils.XEmoji + `Degree \`${acronym}\` not found!`
-					);
-					return;
+				let degrees = [];
+
+				if (acronym == null) {
+					degrees = await prisma.degree.findMany();
+				} else {
+					const degree = await prisma.degree.findUnique({
+						where: { acronym },
+					});
+					if (!degree) {
+						await interaction.editReply(
+							utils.XEmoji + `Degree \`${acronym}\` not found!`
+						);
+						return;
+					}
+
+					degrees = [degree];
 				}
 
-				await courses.importCoursesFromDegree(
-					prisma,
-					degree.fenixId,
-					deleteOrphans
-				);
+				for (const degree of degrees) {
+					await courses.importCoursesFromDegree(
+						prisma,
+						degree.fenixId,
+						deleteOrphans
+					);
 
-				logger.info(
-					{ acronym, deleteOrphans },
-					"Refreshed degree's courses from Fénix"
-				);
+					logger.info(
+						{ acronym: degree.acronym, deleteOrphans },
+						"Refreshed degree's courses from Fénix"
+					);
+				}
+
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Degree \`${acronym}\`'s courses have been refreshed!`
+						`Refreshed courses for degree(s): ${degrees
+							.map((degree) => `\`${degree.acronym}\``)
+							.join(", ")}`
 				);
 			} catch (e) {
 				logger.error(
 					e,
-					"Failed to refresh degree's courses from Fénix"
+					"Failed to refresh degrees' courses from Fénix"
 				);
 				await interaction.editReply(
 					utils.XEmoji + "Something went wrong."
