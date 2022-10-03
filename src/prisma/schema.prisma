@@ -1,0 +1,106 @@
+datasource db {
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
+}
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+model Config {
+    key   String @id
+    value String
+
+    @@map("config")
+}
+
+model Poll {
+    id        String  @id /// identifier used to keep track of embed on pinned messages
+    type      String
+    title     String
+    cron      String? /// cron schedule
+    channelId String  @map("channel_id") /// channel where to post the poll
+
+    @@map("polls")
+}
+
+model RoleGroup {
+    id          String            @id
+    mode        String
+    placeholder String
+    message     String
+    minValues   Int?              @map("min_values")
+    maxValues   Int?              @map("max_values")
+    channelId   String            @map("channel_id")
+    messageId   String?           @map("message_id")
+    options     RoleGroupOption[]
+
+    @@map("role_groups")
+}
+
+model RoleGroupOption {
+    label       String
+    description String
+    value       String    @id
+    emoji       String?
+    RoleGroup   RoleGroup @relation(fields: [roleGroupId], references: [id], onDelete: Cascade)
+    roleGroupId String    @map("role_group_id")
+
+    @@map("role_group_options")
+}
+
+model Degree {
+    fenixId                  String         @id @map("fenix_id")
+    acronym                  String         @unique /// do not use this with fenix api! leti != lerc
+    name                     String         @unique
+    roleId                   String         @map("role_id") /// not unique, e.g. [lm]eic = leic + meic
+    tier                     Int /// 0 = none, 1 = degree channels (text + VC), 2 = +course channels, 3 = +announcements channel
+    degreeTextChannelId      String?        @map("degree_text_channel_id")
+    degreeVoiceChannelId     String?        @map("degree_voice_channel_id")
+    announcementsChannelId   String?        @map("announcements_channel_id")
+    courseSelectionChannelId String?        @map("course_selection_channel_id")
+    courses                  DegreeCourse[]
+
+    @@map("degrees")
+}
+
+model Course {
+    acronym                  String         @id /// let's hope this is unique
+    displayAcronym           String         @unique @map("display_acronym") // e.g., fp > fprog 
+    name                     String         @unique
+    channelId                String?        @unique @map("channel_id")
+    roleId                   String?        @unique @map("role_id")
+    hideChannel              Boolean        @default(false)
+    perDegreeImplementations DegreeCourse[]
+
+    @@map("courses")
+}
+
+model DegreeCourse {
+    id                   String   @id /// due to course groupings using the same fenixId, this should be `${degreeAcronym}-${fenixId}`
+    degree               Degree   @relation(fields: [degreeFenixId], references: [fenixId], onDelete: Cascade)
+    degreeFenixId        String   @map("degree_fenix_id")
+    course               Course   @relation(fields: [courseAcronym], references: [acronym], onDelete: Cascade)
+    courseAcronym        String   @map("course_acronym")
+    year                 Int /// 1, 2, 3; not 2021, 2022, 2023
+    semester             Int /// 1 or 2
+    announcementsFeedUrl String?  @map("announcements_feed_url")
+    feedLastUpdated      DateTime @default(now()) @map("feed_last_updated")
+    color                String?
+
+    @@map("degree_courses")
+}
+
+model CourseRoleSelectionMessage {
+    injectedRoleGroupId String @id @map("injected_role_group_id")
+    messageId           String @map("message_id")
+
+    @@map("course_role_selection_messages")
+}
+
+model LeaderboardEntry {
+    userId         String @id @map("user_id")
+    characterCount Int    @map("character_count")
+
+    @@map("leaderboard_entries")
+}

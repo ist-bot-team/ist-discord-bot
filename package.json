@@ -1,0 +1,65 @@
+{
+	"name": "ist-discord-bot",
+	"version": "2.7.2",
+	"description": "Discord bot to manage the IST Hub server.",
+	"keywords": [
+		"discord",
+		"bot",
+		"ist-hub",
+		"ist",
+		"tecnico"
+	],
+	"homepage": "https://discord.leic.pt",
+	"main": "dist/bot.js",
+	"repository": "git@github.com:ist-bot-team/ist-discord-bot",
+	"author": "IST Bot Team",
+	"license": "MIT",
+	"engines": {
+		"node": ">=16.9.0",
+		"npm": ">=7.23.0",
+		"yarn": ">=1.22.0"
+	},
+	"dependencies": {
+		"@discordjs/rest": "^1.1.0",
+		"@prisma/client": "^3.0.0",
+		"@types/better-sqlite3": "^5.4.3",
+		"axios": "^0.27.2",
+		"cheerio": "1.0.0-rc.10",
+		"discord.js": "^14.3.0",
+		"node-cron": "^3.0.2",
+		"path": "^0.12.7",
+		"pino": "^8.5.0",
+		"rss-parser": "^3.12.0",
+		"turndown": "^7.1.1"
+	},
+	"devDependencies": {
+		"@tsconfig/node16": "^1.0.3",
+		"@types/node": "^15.12.5",
+		"@types/node-cron": "^2.0.4",
+		"@types/turndown": "^5.0.1",
+		"@typescript-eslint/eslint-plugin": "^4.28.1",
+		"@typescript-eslint/parser": "^4.28.1",
+		"eslint": "^7.29.0",
+		"eslint-config-prettier": "^8.3.0",
+		"husky": "^6.0.0",
+		"lint-staged": "^11.0.0",
+		"pino-pretty": "^9.1.0",
+		"prettier": "^2.3.2",
+		"prisma": "^3.0.0",
+		"typescript": "^4.8.3"
+	},
+	"scripts": {
+		"prepare": "husky install",
+		"build": "tsc",
+		"start": "node .",
+		"start:docker": "prisma migrate deploy && node .",
+		"start:docker:dev": "npm run start:docker | pino-pretty -c",
+		"prisma:generate": "prisma generate"
+	},
+	"lint-staged": {
+		"**/*": "prettier --write --ignore-unknown"
+	},
+	"prisma": {
+		"schema": "src/prisma/schema.prisma"
+	}
+}

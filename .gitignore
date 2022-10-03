@@ -1,2 +1,8 @@
-.env
-.venv
+node_modules/
+dist/
+data/
+docker-compose.yml
+
+.vscode
+
+shell.nix
