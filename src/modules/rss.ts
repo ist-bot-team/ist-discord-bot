@@ -120,6 +120,7 @@ async function sendAnnouncementMessage(
 			authorName,
 			content,
 			courseName: course.course.name,
+			channel,
 		},
 		"Sending course announcement"
 	);
