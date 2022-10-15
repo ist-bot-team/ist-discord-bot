@@ -3,6 +3,7 @@
 import Discord, {
 	ChannelType,
 	Client,
+	CommandInteraction,
 	GatewayIntentBits,
 	RESTPostAPIApplicationCommandsJSONBody,
 	Routes,
@@ -10,7 +11,12 @@ import Discord, {
 import { REST } from "@discordjs/rest";
 import { PrismaClient } from "@prisma/client";
 
-import { InteractionHandlers, CommandProvider, Chore } from "./bot.d";
+import {
+	InteractionHandlers,
+	CommandProvider,
+	Chore,
+	InteractionHandler,
+} from "./bot.d";
 
 import * as utils from "./modules/utils";
 import * as polls from "./modules/polls";
@@ -70,8 +76,7 @@ const commandProviders: CommandProvider[] = [
 ];
 
 const commandPermissions: { [command: string]: CommandPermission } = {};
-const commandHandlers: InteractionHandlers<Discord.ChatInputCommandInteraction> =
-	{};
+const commandHandlers: InteractionHandlers<CommandInteraction> = {};
 // two above will be dynamically loaded
 
 const buttonHandlers: InteractionHandlers<Discord.ButtonInteraction> = {
@@ -101,7 +106,7 @@ const startupChores: Chore[] = [
 		complete: "Role selection messages deployed",
 	},
 	{
-		summary: "Register slash commands",
+		summary: "Register application commands",
 		fn: async () => {
 			const commands: RESTPostAPIApplicationCommandsJSONBody[] = [];
 			for (const provider of commandProviders) {
@@ -120,7 +125,8 @@ const startupChores: Chore[] = [
 							)
 							.toJSON()
 					);
-					commandHandlers[name] = descriptor.handler;
+					commandHandlers[name] =
+						descriptor.handler as InteractionHandler<CommandInteraction>;
 					if (descriptor.permission !== undefined) {
 						commandPermissions[name] = descriptor.permission;
 					}
@@ -147,7 +153,7 @@ const startupChores: Chore[] = [
 				);
 			}
 		},
-		complete: "All slash commands registered",
+		complete: "All application commands registered",
 	},
 	/* This does not work with new Discord API
 	{
@@ -276,7 +282,10 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 					prisma
 				);
 			}
-		} else if (interaction.isChatInputCommand()) {
+		} else if (
+			interaction.isChatInputCommand() ||
+			interaction.isContextMenuCommand()
+		) {
 			await interaction.deferReply({ ephemeral: true });
 
 			if (

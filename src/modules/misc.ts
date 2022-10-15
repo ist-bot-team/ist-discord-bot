@@ -8,7 +8,6 @@ import * as Builders from "@discordjs/builders";
 import { CommandDescriptor } from "../bot.d";
 import { CommandPermission } from "../bot";
 import * as utils from "./utils";
-import { SlashCommandBuilder } from "@discordjs/builders";
 import logger from "../logger";
 
 export function provideCommands(): CommandDescriptor[] {
@@ -35,7 +34,7 @@ export function provideCommands(): CommandDescriptor[] {
 			)
 			.setRequired(false)
 	);
-	const whoSaid = new SlashCommandBuilder()
+	const whoSaid = new Builders.SlashCommandBuilder()
 		.setName("who-said")
 		.setDescription("Shows who ordered the bot to say something");
 	whoSaid.addStringOption(
@@ -44,7 +43,7 @@ export function provideCommands(): CommandDescriptor[] {
 			.setDescription("Message ID in question")
 			.setRequired(true)
 	);
-	const migrateMembersWithRole = new SlashCommandBuilder()
+	const migrateMembersWithRole = new Builders.SlashCommandBuilder()
 		.setName("migrate-members-with-role")
 		.setDescription("Gives a role to everyone who has a certain role");
 	migrateMembersWithRole.addRoleOption(
