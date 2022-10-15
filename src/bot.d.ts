@@ -12,7 +12,7 @@ export type InteractionHandler<T extends Discord.BaseInteraction> = (
 	prisma: PrismaClient
 ) => Promise<void>;
 
-export type InteractionHandlers<T> = {
+export type InteractionHandlers<T extends Discord.BaseInteraction> = {
 	[prefix: string]: InteractionHandler<T>;
 };
 
