@@ -260,9 +260,9 @@ async function handleRoleSelection(
 	selectedRoles: string[],
 	prisma: PrismaClient
 ) {
+	const getTouristConfig = await getConfigFactory(prisma, "tourist");
 	const touristExclusive = (
-		(await getConfigFactory(prisma, "tourist")("exclusive_role_groups")) ??
-		"degree,year"
+		(await getTouristConfig("exclusive_role_groups")) ?? "degree,year"
 	).split(","); // TODO: allow changing this config with commands
 
 	const groupRoles =
@@ -288,11 +288,7 @@ async function handleRoleSelection(
 			  ).concat(
 					[
 						touristExclusive.includes(groupId)
-							? (
-									await prisma.config.findFirst({
-										where: { key: "tourist:role_id" },
-									})
-							  )?.value
+							? await getTouristConfig("role_id")
 							: undefined,
 					].filter((e) => e !== undefined) as string[]
 			  );
