@@ -259,7 +259,7 @@ async function handleRoleSelection(
 	roles: Discord.GuildMemberRoleManager,
 	selectedRoles: string[],
 	prisma: PrismaClient
-) {
+): Promise<boolean> {
 	const getTouristConfig = await getConfigFactory(prisma, "tourist");
 	const touristExclusive = (
 		(await getTouristConfig("exclusive_role_groups")) ?? "degree,year"
@@ -337,10 +337,33 @@ export async function handleRoleSelectionButton(
 ): Promise<void> {
 	await interaction.deferReply({ ephemeral: true });
 
-	const sp = interaction.customId.split(":");
+	const [_, groupId, selection] = interaction.customId.split(":");
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
 
-	if (await handleRoleSelection(sp[1], roles, [sp[2]], prisma)) {
+	const courseSelectionChannelId = groupId.match(/^__dc-(\d+)-remove$/)?.[1];
+
+	if (courseSelectionChannelId) {
+		try {
+			const num = await courses.handleRemoveCourseSelectionRoles(
+				courseSelectionChannelId,
+				roles,
+				selection,
+				prisma
+			);
+			await interaction.editReply(
+				utils.CheckMarkEmoji +
+					`Removed ${num} role${num != 1 ? "s" : ""}.`
+			);
+		} catch (e) {
+			logger.error(
+				{ courseSelectionChannelId, roleId: selection, err: e },
+				"Failed to remove course selection roles"
+			);
+			await interaction.editReply(
+				utils.XEmoji + "Failed to remove roles."
+			);
+		}
+	} else if (await handleRoleSelection(groupId, roles, [selection], prisma)) {
 		await interaction.editReply(utils.CheckMarkEmoji + "Role applied.");
 	} else {
 		await interaction.editReply(utils.XEmoji + "Failed to apply role.");
