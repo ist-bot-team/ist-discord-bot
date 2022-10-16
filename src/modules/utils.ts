@@ -8,6 +8,8 @@ import * as Discord from "discord.js";
 import { MessageCollection } from "./utils.d";
 import { ApplicationCommandOptionType } from "discord.js";
 
+import logger from "../logger";
+
 export const XEmoji = "❌ ";
 export const CheckMarkEmoji = "✅ ";
 
@@ -115,7 +117,7 @@ export function generateHexCode(): string {
 	return randomHexCode;
 }
 
-export function stringifyCommand(
+function stringifyChatInputCommand(
 	interaction: Discord.ChatInputCommandInteraction
 ): string {
 	const subcommandGroup = interaction.options.getSubcommandGroup(false);
@@ -151,4 +153,35 @@ export function stringifyCommand(
 		(subcommand ? " " + subcommand : "") +
 		(options.length ? ["", ...options].join("\n-\t") : "")
 	);
+}
+
+function stringifyContextMenuCommand(
+	interaction: Discord.ContextMenuCommandInteraction
+): string {
+	let target;
+	if (interaction.isUserContextMenuCommand()) {
+		target = `${interaction.targetUser}`;
+	} else if (interaction.isMessageContextMenuCommand()) {
+		target = `https://discord.com/channels/${
+			interaction.guildId ?? "@me"
+		}/${interaction.channelId}/${interaction.targetId}`;
+	}
+
+	return `[${interaction.user.tag}]: \`${interaction.commandName}\` @ ${target}`;
+}
+
+export function stringifyCommand(
+	interaction: Discord.CommandInteraction
+): string {
+	if (interaction.isChatInputCommand()) {
+		return stringifyChatInputCommand(interaction);
+	} else if (interaction.isContextMenuCommand()) {
+		return stringifyContextMenuCommand(interaction);
+	} else {
+		logger.error(
+			{ interaction },
+			"Failed to stringify command due to unknown type"
+		);
+		throw new Error("Unknown command type");
+	}
 }
