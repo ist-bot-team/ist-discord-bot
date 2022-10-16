@@ -34,13 +34,10 @@ export type CommandDescriptor =
 			SlashCommandBuilder,
 			Discord.ChatInputCommandInteraction
 	  >
+	// TODO: possibly split into Message and User here
 	| GenericCommandDescriptor<
-			ContextMenuCommandBuilder, // there isn't a `MessageContextMenuCommandBuilder`
-			Discord.MessageContextMenuCommandInteraction
-	  >
-	| GenericCommandDescriptor<
-			ContextMenuCommandBuilder, // there isn't a `UserContextMenuCommandBuilder`
-			Discord.UserContextMenuCommandInteraction
+			ContextMenuCommandBuilder,
+			Discord.ContextMenuCommandInteraction
 	  >;
 
 export type CommandProvider = () => CommandDescriptor[];
