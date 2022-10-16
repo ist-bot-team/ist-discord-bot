@@ -34,7 +34,6 @@ export type CommandDescriptor =
 			SlashCommandBuilder,
 			Discord.ChatInputCommandInteraction
 	  >
-	// TODO: possibly split into Message and User here
 	| GenericCommandDescriptor<
 			ContextMenuCommandBuilder,
 			Discord.ContextMenuCommandInteraction
