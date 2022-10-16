@@ -8,6 +8,8 @@ import * as Discord from "discord.js";
 import { MessageCollection } from "./utils.d";
 import { ApplicationCommandOptionType } from "discord.js";
 
+import logger from "../logger";
+
 export const XEmoji = "❌ ";
 export const CheckMarkEmoji = "✅ ";
 
@@ -176,6 +178,10 @@ export function stringifyCommand(
 	} else if (interaction.isContextMenuCommand()) {
 		return stringifyContextMenuCommand(interaction);
 	} else {
+		logger.error(
+			{ interaction },
+			"Failed to stringify command due to unknown type"
+		);
 		throw new Error("Unknown command type");
 	}
 }
