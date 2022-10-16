@@ -213,7 +213,9 @@ export async function handleWhoSaidCommand(
 
 export async function sendJustAsk(
 	interaction: Discord.CommandInteraction,
-	sender: typeof Discord.Message.prototype.reply
+	sender: (
+		...args: Parameters<typeof Discord.Message.prototype.reply>
+	) => Promise<unknown> // to allow optional chaining (?.)
 ): Promise<void> {
 	try {
 		await sender("https://dontasktoask.com/");
@@ -231,7 +233,7 @@ export async function handleJustAskSlashCommand(
 	if (interaction.channel) {
 		await sendJustAsk(
 			interaction,
-			interaction.channel.send.bind(interaction.channel)
+			async (...args) => await interaction.channel?.send(...args)
 		);
 	}
 }
@@ -242,7 +244,7 @@ export async function handleJustAskContextMenuCommand(
 	if (interaction.isMessageContextMenuCommand()) {
 		await sendJustAsk(
 			interaction,
-			interaction.targetMessage.reply.bind(interaction.targetMessage)
+			async (...args) => await interaction.targetMessage?.reply(...args)
 		);
 	}
 }
