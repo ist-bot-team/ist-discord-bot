@@ -86,7 +86,14 @@ export function provideCommands(): CommandDescriptor[] {
 				.setDescription(
 					'Send a link to the "Don\'t ask to ask" website'
 				),
-			handler: handleJustAskCommand,
+			handler: handleJustAskSlashCommand,
+			permission: CommandPermission.Public,
+		},
+		{
+			builder: new Builders.ContextMenuCommandBuilder()
+				.setName("Just Ask")
+				.setType(Discord.ApplicationCommandType.Message),
+			handler: handleJustAskContextMenuCommand,
 			permission: CommandPermission.Public,
 		},
 		{
@@ -204,16 +211,41 @@ export async function handleWhoSaidCommand(
 	}
 }
 
-export async function handleJustAskCommand(
-	interaction: Discord.ChatInputCommandInteraction
+export async function sendJustAsk(
+	interaction: Discord.CommandInteraction,
+	sender: (
+		...args: Parameters<typeof Discord.Message.prototype.reply>
+	) => Promise<unknown> // to allow optional chaining (?.)
 ): Promise<void> {
 	try {
-		await interaction.channel?.send("https://dontasktoask.com/");
+		await sender("https://dontasktoask.com/");
 		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
 		logger.info({ member: interaction.member }, "Used don't ask to ask");
 	} catch (e) {
 		logger.error(e, "Error while executing just ask command");
 		await interaction.editReply(utils.XEmoji + "Something went wrong.");
+	}
+}
+
+export async function handleJustAskSlashCommand(
+	interaction: Discord.ChatInputCommandInteraction
+): Promise<void> {
+	if (interaction.channel) {
+		await sendJustAsk(
+			interaction,
+			async (...args) => await interaction.channel?.send(...args)
+		);
+	}
+}
+
+export async function handleJustAskContextMenuCommand(
+	interaction: Discord.ContextMenuCommandInteraction
+): Promise<void> {
+	if (interaction.isMessageContextMenuCommand()) {
+		await sendJustAsk(
+			interaction,
+			async (...args) => await interaction.targetMessage?.reply(...args)
+		);
 	}
 }
 
