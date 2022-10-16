@@ -846,12 +846,16 @@ export async function handleRemoveCourseSelectionRoles(
 			},
 			year: selection === "[all]" ? undefined : parseInt(selection),
 		},
+		// distinct: ["course.roleId"], // not supported by Prisma (yet?)
 		include: { course: true },
 	});
 
-	const rolesToRemove = courses
-		.map((c) => c.course.roleId as Discord.Snowflake)
-		.filter((r) => roles.cache.has(r)); // not needed for remove, but to calculate returned length
+	// duplicate removal is needed in case multiple degrees share a course selection channel
+	const rolesToRemove = utils
+		.removeDuplicatesFromArray(
+			courses.map((c) => c.course.roleId as Discord.Snowflake)
+		)
+		.filter((r) => roles.cache.has(r)); // not needed for remove role, but to calculate returned length
 
 	await Promise.all(rolesToRemove.map((r) => roles.remove(r)));
 
