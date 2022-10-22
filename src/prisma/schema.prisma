@@ -70,7 +70,7 @@ model Course {
     name                     String         @unique
     channelId                String?        @unique @map("channel_id")
     roleId                   String?        @unique @map("role_id")
-    hideChannel              Boolean        @default(false)
+    hideChannel              Boolean        @default(false) @map("hide_channel")
     perDegreeImplementations DegreeCourse[]
 
     @@map("courses")
