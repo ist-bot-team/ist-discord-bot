@@ -215,10 +215,14 @@ export async function sendJustAsk(
 	interaction: Discord.CommandInteraction,
 	sender: (
 		...args: Parameters<typeof Discord.Message.prototype.reply>
-	) => Promise<unknown> // to allow optional chaining (?.)
+	) => Promise<Discord.Message | undefined> // to allow optional chaining (?.)
 ): Promise<void> {
 	try {
-		await sender("https://dontasktoask.com/");
+		const msg = await sender("https://dontasktoask.com/");
+		if (!msg) {
+			throw new Error("Failed to send message");
+		}
+		sayLogs.set(msg.id, interaction.user.id);
 		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
 		logger.info({ member: interaction.member }, "Used don't ask to ask");
 	} catch (e) {
