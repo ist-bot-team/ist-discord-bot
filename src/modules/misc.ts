@@ -78,7 +78,13 @@ export function provideCommands(): CommandDescriptor[] {
 		},
 		{
 			builder: whoSaid,
-			handler: handleWhoSaidCommand,
+			handler: handleWhoSaidSlashCommand,
+		},
+		{
+			builder: new Builders.ContextMenuCommandBuilder()
+				.setName("Tell me who said this")
+				.setType(Discord.ApplicationCommandType.Message),
+			handler: handleWhoSaidContextMenuCommand,
 		},
 		{
 			builder: new Builders.SlashCommandBuilder()
@@ -190,19 +196,39 @@ export async function handleSayCommand(
 	}
 }
 
-export async function handleWhoSaidCommand(
+export async function sendWhoSaid(
+	messageId: Discord.Snowflake,
+	interaction: Discord.CommandInteraction,
+	sender: (
+		...args: Parameters<typeof Discord.CommandInteraction.prototype.reply>
+	) => Promise<Discord.Message | undefined> // to allow optional chaining (?.)
+): Promise<void> {
+	try {
+		const who = sayLogs.get(messageId);
+
+		if (who) {
+			await sender(`<@${who}> said it!`);
+		} else {
+			await sender("I don't know who said it...");
+		}
+	} catch (e) {
+		logger.error(e, "Error while executing who said command");
+		await interaction.editReply(utils.XEmoji + "Something went wrong.");
+	}
+}
+
+export async function handleWhoSaidSlashCommand(
 	interaction: Discord.ChatInputCommandInteraction
 ): Promise<void> {
 	try {
 		const messageId = interaction.options.getString("message-id", true);
 		const split = messageId.split("-");
-		const who = sayLogs.get(split[split.length - 1]);
 
-		if (who) {
-			await interaction.editReply(`<@${who}> said it!`);
-		} else {
-			await interaction.editReply("I don't know who said it...");
-		}
+		await sendWhoSaid(
+			split[split.length - 1],
+			interaction,
+			async (...args) => await interaction.editReply(...args)
+		);
 	} catch (e) {
 		logger.error(e, "Error while handling Who Said command");
 		await interaction.editReply(
@@ -211,14 +237,30 @@ export async function handleWhoSaidCommand(
 	}
 }
 
+export async function handleWhoSaidContextMenuCommand(
+	interaction: Discord.ContextMenuCommandInteraction
+): Promise<void> {
+	if (interaction.isMessageContextMenuCommand()) {
+		sendWhoSaid(
+			interaction.targetMessage.id,
+			interaction,
+			async (...args) => interaction.editReply(...args)
+		);
+	}
+}
+
 export async function sendJustAsk(
 	interaction: Discord.CommandInteraction,
 	sender: (
 		...args: Parameters<typeof Discord.Message.prototype.reply>
-	) => Promise<unknown> // to allow optional chaining (?.)
+	) => Promise<Discord.Message | undefined> // to allow optional chaining (?.)
 ): Promise<void> {
 	try {
-		await sender("https://dontasktoask.com/");
+		const msg = await sender("https://dontasktoask.com/");
+		if (!msg) {
+			throw new Error("Failed to send message");
+		}
+		sayLogs.set(msg.id, interaction.user.id);
 		await interaction.editReply(utils.CheckMarkEmoji + "Sent");
 		logger.info({ member: interaction.member }, "Used don't ask to ask");
 	} catch (e) {
