@@ -60,6 +60,7 @@ const client = new Client({
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.GuildVoiceStates,
 		GatewayIntentBits.GuildMembers, // THIS IS A PRIVILEGED INTENT! MANUAL ACTION REQUIRED TO ENABLE!
+		GatewayIntentBits.MessageContent,
 	],
 });
 
