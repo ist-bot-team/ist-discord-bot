@@ -54,6 +54,10 @@ Replacing `CLIENT_ID` with the application's public ID, access the following lin
 https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot+applications.commands&permissions=8
 ```
 
+The bot needs the **Server Members Intent** and the **Message Content Intent** enabled
+on [Discord's Application](https://discord.com/developers/applications) -> Bot page.
+If this is not enabled, an error will be thrown on startup.
+
 ### Development
 
 If you're looking at the source code, you should probably run
