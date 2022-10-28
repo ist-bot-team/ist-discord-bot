@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Build + Prettier
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,5 +23,7 @@ jobs:
       - run: yarn build
       - name: Prettify code
         uses: creyD/prettier_action@v4.2
+        with:
+          prettier_options: --write **/*.ts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
