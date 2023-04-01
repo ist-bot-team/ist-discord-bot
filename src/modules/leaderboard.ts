@@ -35,7 +35,7 @@ export async function getUsersCharacterCount(
 
 	const channels = Array.from(
 		(await guild.channels.fetch()).filter(
-			(channel) => channel.isTextBased() || channel.isThread()
+			(channel) => channel?.isTextBased() || channel?.isThread()
 		)
 	).map((o) => o[1]) as (Discord.TextChannel | Discord.ThreadChannel)[];
 	const promises = channels.map(async (channel) => {

@@ -886,7 +886,7 @@ async function viewGroup(
 	prisma: PrismaClient,
 	id: string,
 	guildId: string
-): Promise<Discord.WebhookEditMessageOptions | string> {
+): Promise<Discord.InteractionEditReplyOptions | string> {
 	try {
 		const group = await prisma.roleGroup.findFirst({
 			where: { id },
