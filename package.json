@@ -21,7 +21,7 @@
 	},
 	"dependencies": {
 		"@discordjs/rest": "^1.1.0",
-		"@prisma/client": "^3.0.0",
+		"@prisma/client": "4.11.0",
 		"@types/better-sqlite3": "^5.4.3",
 		"axios": "^0.27.2",
 		"cheerio": "1.0.0-rc.10",
@@ -45,13 +45,13 @@
 		"lint-staged": "^11.0.0",
 		"pino-pretty": "^9.1.0",
 		"prettier": "^2.3.2",
-		"prisma": "^3.0.0",
+		"prisma": "4.11.0",
 		"typescript": "^4.8.3"
 	},
 	"scripts": {
 		"prepare": "husky install",
 		"build": "tsc",
-		"start": "node .",
+		"start": "node . | pino-pretty -c",
 		"start:docker": "prisma migrate deploy && node .",
 		"start:docker:dev": "npm run start:docker | pino-pretty -c",
 		"prisma:generate": "prisma generate"
