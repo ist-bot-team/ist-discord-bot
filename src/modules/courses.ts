@@ -244,7 +244,11 @@ export async function handleCommand(
 							await interaction.guild.channels.fetch(
 								course.channelId || ""
 							);
-						if (courseChannel && courseChannel.deletable) {
+						if (
+							courseChannel &&
+							!courseChannel.isThread() &&
+							courseChannel.deletable
+						) {
 							courseChannel.delete();
 						}
 						if (deleteRole) {

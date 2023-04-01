@@ -261,7 +261,7 @@ export async function createDegree(
 			((await guild.channels.fetch())
 				.filter(
 					(c) =>
-						c.type === ChannelType.GuildText && c.name === catName
+						c?.type === ChannelType.GuildText && c?.name === catName
 				)
 				.first() as Discord.CategoryChannel | undefined) ??
 			(await guild.channels.create({
