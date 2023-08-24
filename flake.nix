@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "flake:nixpkgs";
-      devenv.url = "github:cachix/devenv";
+    devenv.url = "github:cachix/devenv";
   };
 
   outputs = inputs@{ flake-parts, ... }:
@@ -13,7 +13,7 @@
         # 1. Add foo to inputs
         # 2. Add foo as a parameter to the outputs function
         # 3. Add here: foo.flakeModule
-          inputs.devenv.flakeModule
+        inputs.devenv.flakeModule
 
       ];
       systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
@@ -25,28 +25,44 @@
         # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
         # packages.default = pkgs.hello;
         # packages.default = pkgs.callPackage ./default.nix;
-        packages.default = pkgs.buildNpmPackage rec {
-            pname = "ist-discord-bot";
-            version = "1.0.0";
-            src = ./.;
-            npmDepsHash = "sha256-tuEfyePwlOy2/mOPdXbqJskO6IowvAP4DWg8xSZwbJw=";
-
+        packages.default = pkgs.mkYarnPackage {
+          src = ./.;
+          preBuild = ''
+            # somehow for linux, npm is not finding the prisma package with the
+            # packages installed with the lockfile.
+            # This generates a prisma version incompatibility warning and is a kludge
+            # until the upstream package-lock is modified.
+            ${pkgs.nodePackages.prisma}/bin/prisma generate
+          '';
+            installPhase = ''
+                runHook preInstall
+            
+                mkdir $out
+                cp -r $src/* $out/
+            
+                runHook postInstall
+              '';
         };
 
+
         devenv.shells.default = {
-            packages = with pkgs.nodePackages; [
-                pkgs.nodejs_18
-                pkgs.yarn
-                prettier
-                prisma
-            ];
-            env = {
-              PRISMA_MIGRATION_ENGINE_BINARY="${prisma-engines}/bin/migration-engine";
-              PRISMA_QUERY_ENGINE_BINARY="${prisma-engines}/bin/query-engine";
-              PRISMA_QUERY_ENGINE_LIBRARY="${prisma-engines}/lib/libquery_engine.node";
-              PRISMA_INTROSPECTION_ENGINE_BINARY="${prisma-engines}/bin/introspection-engine";
-              PRISMA_FMT_BINARY="${prisma-engines}/bin/prisma-fmt";
-            };
+          packages = with pkgs.nodePackages; [
+            pkgs.nodejs_18
+            pkgs.yarn
+            pkgs.yarn2nix
+            prettier
+            prisma
+            typescript
+          ];
+
+          env = with pkgs; {
+            PRISMA_MIGRATION_ENGINE_BINARY = "${prisma-engines}/bin/migration-engine";
+            PRISMA_QUERY_ENGINE_BINARY = "${prisma-engines}/bin/query-engine";
+            PRISMA_QUERY_ENGINE_LIBRARY = "${prisma-engines}/lib/libquery_engine.node";
+            PRISMA_INTROSPECTION_ENGINE_BINARY = "${prisma-engines}/bin/introspection-engine";
+            PRISMA_FMT_BINARY = "${prisma-engines}/bin/prisma-fmt";
+          };
+          dotenv.enable = true;
         };
       };
       flake = {
