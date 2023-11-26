@@ -6,3 +6,4 @@ docker-compose.yml
 .vscode
 
 shell.nix
+.direnv
