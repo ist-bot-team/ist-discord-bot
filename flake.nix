@@ -39,29 +39,9 @@
         # Per-system attributes can be defined here. The self' and inputs'
         # module parameters provide easy access to attributes of the same
         # system.
-    
+
         packages.default = pkgs.callPackage ./package.nix { inherit self; };
 
-        # packages.default = pkgs.mkYarnPackage {
-        #   src = ./.;
-        #   preBuild = ''
-        #     # somehow for linux, npm is not finding the prisma package with the
-        #     # packages installed with the lockfile.
-        #     # This generates a prisma version incompatibility warning and is a kludge
-        #     # until the upstream package-lock is modified.
-        #     # ${pkgs.nodePackages.prisma}/bin/prisma generate
-        #   '';
-
-        #     installPhase = ''
-        #         runHook preInstall
-            
-        #         mkdir $out
-        #         cp -r $src/* $out/
-        #         ${pkgs.nodePackages.prisma}/bin/prisma generate --schema=$out/src/prisma/schema.prisma
-            
-        #         runHook postInstall
-        #       '';
-        # };
 
         # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
         # packages.default = pkgs.hello;
@@ -73,11 +53,11 @@
             prisma
             typescript
           ];
-            PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
-            PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
-            PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
-            PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
-            PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
+          PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
+          PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
+          PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
+          PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
+          PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
 
           # Add build dependencies of the listed derivations to the nix-shell environment.
           # inputsFrom = [ pkgs.hello pkgs.gnutar ];

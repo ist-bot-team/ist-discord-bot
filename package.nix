@@ -1,15 +1,37 @@
-{ self, lib, buildNpmPackage, fetchFromGitHub, ... }:
+{ self, lib, buildNpmPackage, fetchFromGitHub, typescript, nodePackages, ... }:
 buildNpmPackage rec {
   pname = "ist-discord-bot";
-  version = "2.8.3";
+  version = "2.8.4";
 
-  src = self;
-  npmDepsHash = "sha256-raYtJfRRLNXWWqNnk11FEm9aAGSlvybDTgB7msRq5gI=";
+  src = ./.;
 
-  # The prepack script runs the build script, which we'd rather do in the build phase.
-  # npmPackFlags = [ "--ignore-scripts" ];
+  #  npmDepsHash = lib.fakeHash;
+  npmDepsHash = "sha256-8jeNHGTbUVksyYy1zmhDzoDnwVo0GUFtCifni1iBbg8=";
+  # npmDepsHash = "sha256-YKw64xtwJWU4EwdTfiHTisxiy8qVhWfd68zfIy1C+ek=";
 
-  # NODE_OPTIONS = "--openssl-legacy-provider";
+  dontNpmBuild = true;
+  #preBuildPhase = ''
+  #  ${nodePackages.prisma}/bin/prisma generate
+ # '';
+
+  configurePhase = ''
+      ${nodePackages.prisma}/bin/prisma generate
+  '';
+  
+  buildPhase = ''
+    ${typescript}/bin/tsc;
+ '';
+
+  postBuildPhase = ''
+    set -exu
+    export DEBUG=1
+    tmpdir=$(mktemp -d)
+    echo $tmpdir
+    mv $out/dist $tmpdir/
+    rm -rf $out/*
+    mv $tmpdir/dist $out/
+  '';
+
 
   meta = with lib; {
     # description = "A modern web UI for various torrent clients with a Node.js backend and React frontend";
