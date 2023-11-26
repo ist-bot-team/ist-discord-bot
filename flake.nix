@@ -35,7 +35,7 @@
         # ...
       ];
       # perSystem = { config, self', inputs', pkgs, system, ... }: {
-      perSystem = { pkgs, ... }: {
+      perSystem = { config, pkgs, ... }: {
         # Per-system attributes can be defined here. The self' and inputs'
         # module parameters provide easy access to attributes of the same
         # system.
@@ -65,16 +65,22 @@
           #  shellHook (default: ""). Bash statements that are executed by nix-shell.
           shellHook = ''
             export DEBUG=1
+            ${config.pre-commit.installationScript}
           '';
 
         };
         pre-commit = {
           check.enable = true;
+          settings.settings = {
+              deadnix.edit = true;
+          };
           settings.hooks = {
-            # shellcheck.enable = true;
+            actionlint.enable = true;
+            # denolint.enable = true;
             deadnix.enable = true;
             statix.enable = true;
-            markdownlint.enable = false;
+            markdownlint.enable = true;
+            prettier.enable = true;
           };
         };
         treefmt.projectRootFile = ./flake.nix;

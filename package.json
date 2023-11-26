@@ -41,23 +41,17 @@
 		"@typescript-eslint/parser": "^4.28.1",
 		"eslint": "^7.29.0",
 		"eslint-config-prettier": "^8.3.0",
-		"husky": "^6.0.0",
-		"lint-staged": "^11.0.0",
 		"pino-pretty": "^9.1.0",
 		"prettier": "^2.3.2",
 		"prisma": "4.13.0",
 		"typescript": "^5.0.4"
 	},
 	"scripts": {
-		"prepare": "husky install",
 		"build": "tsc",
 		"start": "node . | pino-pretty -c",
 		"start:docker": "prisma migrate deploy && node .",
 		"start:docker:dev": "npm run start:docker | pino-pretty -c",
 		"prisma:generate": "prisma generate"
-	},
-	"lint-staged": {
-		"**/*": "prettier --write --ignore-unknown"
 	},
 	"prisma": {
 		"schema": "src/prisma/schema.prisma"

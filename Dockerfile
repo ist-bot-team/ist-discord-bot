@@ -1,4 +1,4 @@
-FROM node:16.17.0-alpine3.16 as ts-compiler
+FROM node:16.17.0-alpine3.16 AS ts-compiler
 ARG DATABASE_URL
 ENV DATABASE_URL ${DATABASE_URL}
 WORKDIR /app

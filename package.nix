@@ -1,4 +1,4 @@
-{ self, lib, buildNpmPackage, fetchFromGitHub, typescript, nodePackages, ... }:
+{ lib, buildNpmPackage, typescript, nodePackages, ... }:
 buildNpmPackage rec {
   pname = "ist-discord-bot";
   version = "2.8.4";
