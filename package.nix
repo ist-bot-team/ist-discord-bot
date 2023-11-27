@@ -5,14 +5,10 @@ buildNpmPackage rec {
 
   src = ./.;
 
-  #  npmDepsHash = lib.fakeHash;
-  npmDepsHash = "sha256-8jeNHGTbUVksyYy1zmhDzoDnwVo0GUFtCifni1iBbg8=";
-  # npmDepsHash = "sha256-YKw64xtwJWU4EwdTfiHTisxiy8qVhWfd68zfIy1C+ek=";
+   npmDepsHash = lib.fakeHash;
+  # npmDepsHash = "sha256-GtacSNGPLBd+8YpPJwIVRjffPFTMjSaVoCNVVAm2Zmo=";
 
   dontNpmBuild = true;
-  #preBuildPhase = ''
-  #  ${nodePackages.prisma}/bin/prisma generate
- # '';
 
   configurePhase = ''
       ${nodePackages.prisma}/bin/prisma generate
