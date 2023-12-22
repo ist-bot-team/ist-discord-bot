@@ -21,7 +21,7 @@
 	},
 	"dependencies": {
 		"@discordjs/rest": "^1.6.0",
-		"@prisma/client": "5.4.1",
+		"@prisma/client": "4.13.0",
 		"@types/better-sqlite3": "^5.4.3",
 		"axios": "^0.27.2",
 		"cheerio": "1.0.0-rc.10",
@@ -43,7 +43,7 @@
 		"eslint-config-prettier": "^8.3.0",
 		"pino-pretty": "^9.1.0",
 		"prettier": "^2.3.2",
-		"prisma": "5.4.1",
+		"prisma": "4.13.0",
 		"typescript": "^5.0.4"
 	},
 	"scripts": {

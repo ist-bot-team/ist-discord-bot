@@ -39,7 +39,7 @@
       # perSystem = { config, self', inputs', pkgs, system, ... }: {
       perSystem = { config, pkgs, ... }:
         let
-          node = pkgs.nodejs-slim;
+          node = pkgs.nodejs_18;
         in
         {
           # Per-system attributes can be defined here. The self' and inputs'
@@ -67,17 +67,33 @@
 
           devShells.default = pkgs.mkShell {
             #Add executable packages to the nix-shell environment.
-            packages = with pkgs.nodePackages; [
+            packages = with pkgs; [
+              openssl
               node
-              npm
-              prettier
-              prisma
+              nodePackages.npm
+              nodePackages.prettier
+              nodePackages.prisma
               typescript
             ];
+            nativeBuildInputs = with pkgs; [
+              openssl
+            ];
+            buildInputs = with pkgs; [
+              openssl
+            ];
+
+
+            # PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
+
+
+            PRISMA_SKIP_POSTINSTALL_GENERATE = 1;
+            PRISMA_GENERATE_SKIP_AUTOINSTALL = 1;
+            PRISMA_CLI_QUERY_ENGINE_TYPE = "binary";
+            PRISMA_CLIENT_ENGINE_TYPE = "binary";
+
 
             PRISMA_SCHEMA_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/schema-engine";
             PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
-            PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
             PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
             PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
 

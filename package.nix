@@ -1,4 +1,4 @@
-{ lib, buildNpmPackage, typescript, nodePackages, ... }:
+{ lib, buildNpmPackage, typescript, nodePackages, prisma-engines, openssl, ... }:
 buildNpmPackage rec {
   pname = "ist-discord-bot";
   version = "2.8.4";
@@ -6,16 +6,24 @@ buildNpmPackage rec {
   src = lib.cleanSource ./.;
 
 
-  PRISMA_SCHEMA_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/schema-engine";
-  PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
-  PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
-  PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
-  PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
+  PRISMA_SCHEMA_ENGINE_BINARY = "${prisma-engines}/bin/schema-engine";
+  PRISMA_QUERY_ENGINE_BINARY = "${prisma-engines}/bin/query-engine";
+  PRISMA_INTROSPECTION_ENGINE_BINARY = "${prisma-engines}/bin/introspection-engine";
+  PRISMA_FMT_BINARY = "${prisma-engines}/bin/prisma-fmt";
 
-  # npmDepsHash = lib.fakeHash;
-  npmDepsHash = "sha256-TACCzj+LlSDpK/3mcdPFMPX9IliQOK9zIHknqpCJeS4=";
+  PRISMA_SKIP_POSTINSTALL_GENERATE = 1;
+  PRISMA_GENERATE_SKIP_AUTOINSTALL = 1;
+  PRISMA_CLI_QUERY_ENGINE_TYPE = "binary";
+  PRISMA_CLIENT_ENGINE_TYPE = "binary";
+
+
+  npmDepsHash = "sha256-GtacSNGPLBd+8YpPJwIVRjffPFTMjSaVoCNVVAm2Zmo=";
 
   dontNpmBuild = true;
+
+  buildInputs = [
+    openssl
+  ];
 
   configurePhase = ''
     ${nodePackages.prisma}/bin/prisma generate
