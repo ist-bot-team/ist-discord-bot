@@ -7,7 +7,7 @@ buildNpmPackage rec {
 
 
   # npmDepsHash = lib.fakeHash;
-  npmDepsHash = "sha256-GtacSNGPLBd+8YpPJwIVRjffPFTMjSaVoCNVVAm2Zmo=";
+  npmDepsHash = "sha256-TACCzj+LlSDpK/3mcdPFMPX9IliQOK9zIHknqpCJeS4=";
 
   dontNpmBuild = true;
 
