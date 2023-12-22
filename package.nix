@@ -6,6 +6,7 @@ buildNpmPackage rec {
   src = lib.cleanSource ./.;
 
 
+  PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
   PRISMA_SCHEMA_ENGINE_BINARY = "${prisma-engines}/bin/schema-engine";
   PRISMA_QUERY_ENGINE_BINARY = "${prisma-engines}/bin/query-engine";
   PRISMA_INTROSPECTION_ENGINE_BINARY = "${prisma-engines}/bin/introspection-engine";
