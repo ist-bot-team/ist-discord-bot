@@ -26,6 +26,9 @@ buildNpmPackage rec {
     openssl
   ];
 
+  nativeBuildInputs = with pkgs; [
+    openssl
+  ];
   configurePhase = ''
     ${nodePackages.prisma}/bin/prisma generate
   '';
