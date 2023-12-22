@@ -3,20 +3,21 @@ buildNpmPackage rec {
   pname = "ist-discord-bot";
   version = "2.8.4";
 
-  src = ./.;
+  src = lib.cleanSource ./.;
 
-   # npmDepsHash = lib.fakeHash;
+
+  # npmDepsHash = lib.fakeHash;
   npmDepsHash = "sha256-GtacSNGPLBd+8YpPJwIVRjffPFTMjSaVoCNVVAm2Zmo=";
 
   dontNpmBuild = true;
 
   configurePhase = ''
-      ${nodePackages.prisma}/bin/prisma generate
+    ${nodePackages.prisma}/bin/prisma generate
   '';
-  
+
   buildPhase = ''
     ${typescript}/bin/tsc;
- '';
+  '';
 
   postBuildPhase = ''
     set -exu

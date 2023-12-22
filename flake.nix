@@ -1,7 +1,10 @@
 {
   inputs = {
     nixpkgs.url = "flake:nixpkgs";
-    flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
     pre-commit-hooks-nix = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -39,11 +42,24 @@
         # module parameters provide easy access to attributes of the same
         # system.
 
-        packages = rec {
-          default = ist-discord-bot-env;
-          ist-discord-bot-env = pkgs.callPackage ./package.nix {  };
+        packages =
+          let
+            ist-discord-bot-env = pkgs.callPackage ./package.nix { };
+            binStub = pkgs.writeShellScriptBin "ist-discord-bot"
+              ''
+                exec ${pkgs.nodejs_18}/bin/node ${ist-discord-bot-env}/lib/node_modules/ist-discord-bot
+              '';
 
-        };
+          in
+          rec {
+            default = ist-discord-bot;
+            # adds symlinks of hello and stack to current build and prints "links added"
+            ist-discord-bot =
+              pkgs.symlinkJoin { name = "ist-discord-bot"; paths = [ ist-discord-bot-env binStub ]; };
+
+            inherit ist-discord-bot-env;
+            # docker-img = pkgs.callPackage ./dockerImage.nix { };
+          };
 
         devShells.default = pkgs.mkShell {
           #Add executable packages to the nix-shell environment.
@@ -65,26 +81,33 @@
             ${config.pre-commit.installationScript}
           '';
         };
-        pre-commit = {
-          check.enable = true;
-          settings.settings = {
-              deadnix.edit = true;
+
+        pre-commit.settings.hooks = {
+          treefmt.enable = true;
+          gitleaks = {
+            enable = true;
+            name = "gitleaks";
+            description = "Prevents commiting secrets";
+            entry = "${pkgs.gitleaks}/bin/gitleaks protect --verbose --redact --staged";
+            pass_filenames = false;
           };
-          settings.hooks = {
-            actionlint.enable = true;
-            # denolint.enable = true;
-            deadnix.enable = true;
-            statix.enable = true;
-            markdownlint.enable = true;
-            prettier.enable = true;
-          };
+          actionlint.enable = true;
         };
+
         treefmt.projectRootFile = ./flake.nix;
         treefmt.programs = {
-          nixpkgs-fmt.enable = true;
           yamlfmt.enable = true;
+          nixpkgs-fmt.enable = true;
+          shellcheck.enable = true;
           shfmt.enable = true;
           mdformat.enable = true;
+          deadnix.enable = true;
+          statix.enable = true;
+          prettier.enable = true;
+          statix.disabled-lints = [
+            "repeated_keys"
+          ];
+
         };
       };
     };
