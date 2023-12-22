@@ -6,3 +6,8 @@ docker-compose.yml
 .vscode
 
 shell.nix
+.direnv
+.pre-commit-config.yaml
+.env
+result
+README.md
