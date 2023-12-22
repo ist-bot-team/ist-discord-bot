@@ -37,78 +37,83 @@
         "aarch64-linux"
       ];
       # perSystem = { config, self', inputs', pkgs, system, ... }: {
-      perSystem = { config, pkgs, ... }: {
-        # Per-system attributes can be defined here. The self' and inputs'
-        # module parameters provide easy access to attributes of the same
-        # system.
+      perSystem = { config, pkgs, ... }:
+        let
+          node = pkgs.nodejs-slim;
+        in
+        {
+          # Per-system attributes can be defined here. The self' and inputs'
+          # module parameters provide easy access to attributes of the same
+          # system.
 
-        packages =
-          let
-            ist-discord-bot-env = pkgs.callPackage ./package.nix { };
-            binStub = pkgs.writeShellScriptBin "ist-discord-bot"
-              ''
-                exec ${pkgs.nodejs_18}/bin/node ${ist-discord-bot-env}/lib/node_modules/ist-discord-bot
-              '';
+          packages =
+            let
+              ist-discord-bot-env = pkgs.callPackage ./package.nix { };
+              binStub = pkgs.writeShellScriptBin "ist-discord-bot"
+                ''
+                  exec ${node}/bin/node ${ist-discord-bot-env}/lib/node_modules/ist-discord-bot
+                '';
 
-          in
-          rec {
-            default = ist-discord-bot;
-            # adds symlinks of hello and stack to current build and prints "links added"
-            ist-discord-bot =
-              pkgs.symlinkJoin { name = "ist-discord-bot"; paths = [ ist-discord-bot-env binStub ]; };
+            in
+            rec {
+              default = ist-discord-bot;
+              # adds symlinks of hello and stack to current build and prints "links added"
+              ist-discord-bot =
+                pkgs.symlinkJoin { name = "ist-discord-bot"; paths = [ ist-discord-bot-env binStub ]; };
 
-            inherit ist-discord-bot-env;
-            # docker-img = pkgs.callPackage ./dockerImage.nix { };
+              inherit ist-discord-bot-env;
+              # docker-img = pkgs.callPackage ./dockerImage.nix { };
+            };
+
+          devShells.default = pkgs.mkShell {
+            #Add executable packages to the nix-shell environment.
+            packages = with pkgs.nodePackages; [
+              node
+              npm
+              prettier
+              prisma
+              typescript
+            ];
+
+            PRISMA_SCHEMA_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/schema-engine";
+            PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
+            PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
+            PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
+            PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
+
+            shellHook = ''
+              export DEBUG=1
+              ${config.pre-commit.installationScript}
+            '';
           };
 
-        devShells.default = pkgs.mkShell {
-          #Add executable packages to the nix-shell environment.
-          packages = with pkgs.nodePackages; [
-            pkgs.nodejs_18
-            prettier
-            prisma
-            typescript
-          ];
-
-          PRISMA_MIGRATION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/migration-engine";
-          PRISMA_QUERY_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/query-engine";
-          PRISMA_QUERY_ENGINE_LIBRARY = "${pkgs.prisma-engines}/lib/libquery_engine.node";
-          PRISMA_INTROSPECTION_ENGINE_BINARY = "${pkgs.prisma-engines}/bin/introspection-engine";
-          PRISMA_FMT_BINARY = "${pkgs.prisma-engines}/bin/prisma-fmt";
-
-          shellHook = ''
-            export DEBUG=1
-            ${config.pre-commit.installationScript}
-          '';
-        };
-
-        pre-commit.settings.hooks = {
-          treefmt.enable = true;
-          gitleaks = {
-            enable = true;
-            name = "gitleaks";
-            description = "Prevents commiting secrets";
-            entry = "${pkgs.gitleaks}/bin/gitleaks protect --verbose --redact --staged";
-            pass_filenames = false;
+          pre-commit.settings.hooks = {
+            treefmt.enable = true;
+            gitleaks = {
+              enable = true;
+              name = "gitleaks";
+              description = "Prevents commiting secrets";
+              entry = "${pkgs.gitleaks}/bin/gitleaks protect --verbose --redact --staged";
+              pass_filenames = false;
+            };
+            actionlint.enable = true;
           };
-          actionlint.enable = true;
-        };
 
-        treefmt.projectRootFile = ./flake.nix;
-        treefmt.programs = {
-          yamlfmt.enable = true;
-          nixpkgs-fmt.enable = true;
-          shellcheck.enable = true;
-          shfmt.enable = true;
-          mdformat.enable = true;
-          deadnix.enable = true;
-          statix.enable = true;
-          prettier.enable = true;
-          statix.disabled-lints = [
-            "repeated_keys"
-          ];
+          treefmt.projectRootFile = ./flake.nix;
+          treefmt.programs = {
+            yamlfmt.enable = true;
+            nixpkgs-fmt.enable = true;
+            shellcheck.enable = true;
+            shfmt.enable = true;
+            mdformat.enable = true;
+            deadnix.enable = true;
+            statix.enable = true;
+            prettier.enable = true;
+            statix.disabled-lints = [
+              "repeated_keys"
+            ];
 
+          };
         };
-      };
     };
 }

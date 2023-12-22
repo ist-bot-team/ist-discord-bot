@@ -10,3 +10,4 @@ shell.nix
 .pre-commit-config.yaml
 .env
 result
+README.md
