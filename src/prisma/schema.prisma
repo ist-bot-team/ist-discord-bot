@@ -75,7 +75,7 @@ model Course {
   acronym                  String         @id
   /// e.g., fp > fprog
   displayAcronym           String         @unique @map("display_acronym")
-  name                     String         @unique
+  name                     String
   channelId                String?        @unique @map("channel_id")
   roleId                   String?        @unique @map("role_id")
   hideChannel              Boolean        @default(false) @map("hide_channel")
