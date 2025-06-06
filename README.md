@@ -4,7 +4,7 @@
 [![Discord](https://img.shields.io/discord/759576132227694642?label=discord&logo=discord)](https://discord.leic.pt)
 ![GitHub](https://img.shields.io/github/license/ist-bot-team/ist-discord-bot)
 
-Discord bot to manage the IST Hub server -- join [here](https://discord.leic.pt).
+Discord bot to manage the IST Hub server -- join [here](https://isthub.pt).
 
 ### Running
 
