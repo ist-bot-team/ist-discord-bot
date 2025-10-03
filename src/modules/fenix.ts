@@ -1,7 +1,7 @@
 // Handle everything that uses Fénix APIs
 
 import axios from "axios";
-import cheerio from "cheerio";
+import * as cheerio from "cheerio";
 import RSSParser from "rss-parser";
 import logger from "../logger";
 
