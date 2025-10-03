@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../prisma/generated/client";
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";

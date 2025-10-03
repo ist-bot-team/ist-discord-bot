@@ -1,22 +1,21 @@
-FROM node:16.17.0-alpine3.16 as ts-compiler
+FROM node:20-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 ARG DATABASE_URL
-ENV DATABASE_URL ${DATABASE_URL}
+ENV DATABASE_URL=${DATABASE_URL}
+RUN corepack enable
+COPY . /app
 WORKDIR /app
-COPY package.json .
-COPY yarn.lock .
-RUN yarn install --frozen-lockfile
-COPY ./ ./
-RUN yarn run prisma generate
-RUN yarn build
 
-FROM node:16.17.0-alpine3.16
-ARG DATABASE_URL
-ENV DATABASE_URL ${DATABASE_URL}
-WORKDIR /app
-COPY --from=ts-compiler /app/package.json .
-COPY --from=ts-compiler /app/yarn.lock .
-COPY --from=ts-compiler /app/src/prisma ./src/prisma
-COPY --from=ts-compiler /app/dist ./dist
-RUN yarn install --prod --frozen-lockfile
-RUN yarn run prisma generate
-CMD [ "yarn", "start:docker" ]
+FROM base AS prod-deps
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile --ignore-scripts
+
+FROM base AS build
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+RUN pnpm prisma:generate
+RUN pnpm run build
+
+FROM base
+COPY --from=prod-deps /app/node_modules /app/node_modules
+COPY --from=build /app/dist /app/dist
+CMD [ "pnpm", "start:docker" ]

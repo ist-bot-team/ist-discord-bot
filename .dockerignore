@@ -2,3 +2,11 @@ node_modules/
 data/
 dist/
 .husky/
+src/prisma/generated
+
+flake.nix
+flake.lock
+.github
+README.md
+Dockerfile
+Dockerfile.dev

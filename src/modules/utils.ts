@@ -2,7 +2,7 @@
 
 import { performance } from "perf_hooks";
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../prisma/generated/client";
 import * as Discord from "discord.js";
 
 import { MessageCollection } from "./utils.d";

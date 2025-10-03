@@ -10,7 +10,7 @@ import Discord, {
 	Routes,
 } from "discord.js";
 import { REST } from "@discordjs/rest";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "./prisma/generated/client";
 
 import {
 	InteractionHandlers,
