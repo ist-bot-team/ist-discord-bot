@@ -1,29 +1,24 @@
 name: Continuous Integration
 
 on:
-  pull_request:
-    branches:
-      - master
-  push:
-    branches:
-      - master
+    pull_request:
+        branches:
+            - master
+    push:
+        branches:
+            - master
 
 jobs:
-  build:
-    name: Build + Prettier
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '16.17.0'
-          cache: 'yarn'
-      - run: yarn install --frozen-lockfile
-      - run: yarn prisma generate
-      - run: yarn build
-      - name: Prettify code
-        uses: creyD/prettier_action@v4.2
-        with:
-          prettier_options: --write **/*.ts
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    build:
+        name: Build + Prettier
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+            - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+              with:
+                  node-version: "22.20.0"
+                  cache: "yarn"
+            - run: yarn install --frozen-lockfile
+            - run: yarn prisma generate
+            - run: yarn build
+            - run: yarn format:check

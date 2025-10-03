@@ -14,7 +14,7 @@ export const XEmoji = "❌ ";
 export const CheckMarkEmoji = "✅ ";
 
 export async function timeFunction(
-	fun: () => Promise<unknown>
+	fun: () => Promise<unknown>,
 ): Promise<number | [number, unknown]> {
 	const t0 = performance.now();
 	const res = await fun();
@@ -29,7 +29,7 @@ export async function timeFunction(
 
 export function getConfigFactory(
 	prisma: PrismaClient,
-	scope: string
+	scope: string,
 ): (key: string, throwIfMissing?: boolean) => Promise<string | undefined> {
 	return async (key: string, throwIfMissing?: boolean) => {
 		const result = (
@@ -66,7 +66,7 @@ export function durationString(time: number): string {
 }
 
 export async function fetchGalleries(
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<Discord.Snowflake[]> {
 	return (
 		(await prisma.config.findFirst({ where: { key: "gallery_channels" } }))
@@ -78,7 +78,7 @@ export async function fetchGalleries(
 
 export async function fetchAllChannelMessages(
 	channel: Discord.TextChannel | Discord.ThreadChannel,
-	after?: Date
+	after?: Date,
 ): Promise<MessageCollection> {
 	const messages = new Discord.Collection<string, Discord.Message>();
 	let fetched: MessageCollection | undefined;
@@ -99,13 +99,13 @@ export async function fetchAllChannelMessages(
 
 export function removeDuplicatesFromArray<T>(
 	array: T[],
-	getKey?: (item: T) => unknown
+	getKey?: (item: T) => unknown,
 ): T[] {
 	if (!getKey) getKey = (v) => v;
 
 	return array.filter(
 		(value, i) =>
-			!array.some((v, j) => j < i && getKey?.(value) === getKey?.(v))
+			!array.some((v, j) => j < i && getKey?.(value) === getKey?.(v)),
 	);
 }
 
@@ -118,7 +118,7 @@ export function generateHexCode(): string {
 }
 
 function stringifyChatInputCommand(
-	interaction: Discord.ChatInputCommandInteraction
+	interaction: Discord.ChatInputCommandInteraction,
 ): string {
 	const subcommandGroup = interaction.options.getSubcommandGroup(false);
 	const subcommand = interaction.options.getSubcommand(false);
@@ -126,23 +126,23 @@ function stringifyChatInputCommand(
 	const options: string[] = [];
 
 	const extractOptions = (
-		opt: readonly Discord.CommandInteractionOption[] | undefined
+		opt: readonly Discord.CommandInteractionOption[] | undefined,
 	): readonly Discord.CommandInteractionOption[] =>
 		opt === undefined
 			? []
 			: opt.length === 1 &&
-			  [
-					ApplicationCommandOptionType.Subcommand,
-					ApplicationCommandOptionType.SubcommandGroup,
-			  ].includes(opt[0].type)
-			? extractOptions(opt[0].options)
-			: opt;
+				  [
+						ApplicationCommandOptionType.Subcommand,
+						ApplicationCommandOptionType.SubcommandGroup,
+				  ].includes(opt[0].type)
+				? extractOptions(opt[0].options)
+				: opt;
 
 	for (const opt of extractOptions(interaction.options.data)) {
 		const specialValue = opt.channel ?? opt.member ?? opt.user ?? opt.role;
 		options.push(
 			`${opt.name}: ${opt.value?.toString()}` +
-				(specialValue ? ` (${specialValue})` : "")
+				(specialValue ? ` (${specialValue})` : ""),
 		);
 	}
 
@@ -156,7 +156,7 @@ function stringifyChatInputCommand(
 }
 
 function stringifyContextMenuCommand(
-	interaction: Discord.ContextMenuCommandInteraction
+	interaction: Discord.ContextMenuCommandInteraction,
 ): string {
 	let target;
 	if (interaction.isUserContextMenuCommand()) {
@@ -171,7 +171,7 @@ function stringifyContextMenuCommand(
 }
 
 export function stringifyCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.CommandInteraction,
 ): string {
 	if (interaction.isChatInputCommand()) {
 		return stringifyChatInputCommand(interaction);
@@ -180,7 +180,7 @@ export function stringifyCommand(
 	} else {
 		logger.error(
 			{ interaction },
-			"Failed to stringify command due to unknown type"
+			"Failed to stringify command due to unknown type",
 		);
 		throw new Error("Unknown command type");
 	}

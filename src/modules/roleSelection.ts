@@ -29,7 +29,7 @@ const injectedGroups: {
 		options: RoleGroupOption[];
 		onSendCallback?: (
 			prisma: PrismaClient,
-			messageId: Discord.Snowflake
+			messageId: Discord.Snowflake,
 		) => Promise<void>;
 	};
 } = {};
@@ -39,7 +39,7 @@ const injectedGroups: {
 export async function sendRoleSelectionMessages(
 	client: Discord.Client,
 	prisma: PrismaClient,
-	editExisting = false
+	editExisting = false,
 ): Promise<void> {
 	const groups = await prisma.roleGroup.findMany({
 		include: { options: true },
@@ -50,7 +50,7 @@ export async function sendRoleSelectionMessages(
 	for (const group of groups) {
 		try {
 			const channel = client.channels.cache.find(
-				(c) => c.id === group.channelId
+				(c) => c.id === group.channelId,
 			);
 			if (channel === undefined || !channel.isTextBased()) {
 				throw new Error("Could not find channel");
@@ -75,7 +75,7 @@ export async function sendRoleSelectionMessages(
 						throw new Error(
 							`Requires at least ${
 								group.maxValues ?? 1
-							} options, but got ${group.options.length}`
+							} options, but got ${group.options.length}`,
 						);
 					}
 
@@ -96,10 +96,10 @@ export async function sendRoleSelectionMessages(
 								.setMinValues(group.minValues ?? 1)
 								.setMaxValues(
 									((v) => (v < 0 ? group.options.length : v))(
-										group.maxValues ?? 1
-									)
+										group.maxValues ?? 1,
+									),
 								)
-								.addOptions(options)
+								.addOptions(options),
 						),
 					];
 				} else if (group.mode === "buttons") {
@@ -117,7 +117,7 @@ export async function sendRoleSelectionMessages(
 
 						const btn = new Discord.ButtonBuilder()
 							.setCustomId(
-								`roleSelection:${group.id}:${opt.value}`
+								`roleSelection:${group.id}:${opt.value}`,
 							)
 							.setLabel(opt.label)
 							.setStyle(parseButtonStyle(opt.description));
@@ -137,13 +137,13 @@ export async function sendRoleSelectionMessages(
 								rows[rows.length - 1].length
 							} > ${
 								MAX_COMPONENTS_PER_ROW * MAX_ROWS_PER_MESSAGE
-							})`
+							})`,
 						);
 					}
 					components = rows.map((r) =>
 						new Discord.ActionRowBuilder<ButtonBuilder>().addComponents(
-							r
-						)
+							r,
+						),
 					);
 				} else {
 					throw new Error(`Unknown mode '${group.mode}'`);
@@ -162,7 +162,7 @@ export async function sendRoleSelectionMessages(
 					if (group.id.startsWith("__")) {
 						await injectedGroups[group.id]?.onSendCallback?.(
 							prisma,
-							msg.id
+							msg.id,
 						);
 					} else {
 						await prisma.roleGroup.update({
@@ -176,7 +176,7 @@ export async function sendRoleSelectionMessages(
 			logger.error(
 				e,
 				"Could not send role selection message for group %s",
-				group.id
+				group.id,
 			);
 		}
 	}
@@ -184,7 +184,7 @@ export async function sendRoleSelectionMessages(
 
 async function injectGroups(
 	prisma: PrismaClient,
-	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+	groups: (RoleGroup & { options: RoleGroupOption[] })[],
 ) {
 	try {
 		await injectTouristGroup(prisma, groups);
@@ -200,7 +200,7 @@ async function injectGroups(
 							create: { injectedRoleGroupId: g.id, messageId },
 						});
 					},
-				})
+				}),
 		);
 	} catch (e) {
 		logger.error(e, "Failed to inject groups");
@@ -209,7 +209,7 @@ async function injectGroups(
 
 async function injectTouristGroup(
 	prisma: PrismaClient,
-	groups: (RoleGroup & { options: RoleGroupOption[] })[]
+	groups: (RoleGroup & { options: RoleGroupOption[] })[],
 ) {
 	const getTouristConfig = getConfigFactory(prisma, "tourist");
 
@@ -258,7 +258,7 @@ async function handleRoleSelection(
 	groupId: string,
 	roles: Discord.GuildMemberRoleManager,
 	selectedRoles: string[],
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<boolean> {
 	const getTouristConfig = await getConfigFactory(prisma, "tourist");
 	const touristExclusive = (
@@ -277,7 +277,7 @@ async function handleRoleSelection(
 							include: { options: true },
 						})
 					).flatMap((g) => g.options.map((o) => o.value)),
-			  ]
+				]
 			: (
 					(
 						(await prisma.roleGroup.findFirst({
@@ -285,13 +285,13 @@ async function handleRoleSelection(
 							include: { options: true },
 						})) ?? injectedGroups[groupId]
 					)?.options.map((o) => o.value) ?? []
-			  ).concat(
+				).concat(
 					[
 						touristExclusive.includes(groupId)
 							? await getTouristConfig("role_id")
 							: undefined,
-					].filter((e) => e !== undefined) as string[]
-			  );
+					].filter((e) => e !== undefined) as string[],
+				);
 
 	try {
 		if (selectedRoles.every((r) => groupRoles.includes(r))) {
@@ -309,7 +309,7 @@ async function handleRoleSelection(
 	} catch (e) {
 		logger.error(
 			{ groupId, selectedRoles, err: e },
-			"Failed to select role"
+			"Failed to select role",
 		);
 		return false;
 	}
@@ -317,7 +317,7 @@ async function handleRoleSelection(
 
 export async function handleRoleSelectionMenu(
 	interaction: Discord.SelectMenuInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	await interaction.deferReply({ ephemeral: true });
 
@@ -333,7 +333,7 @@ export async function handleRoleSelectionMenu(
 // FIXME: these two (v & ^) are a bit humid
 export async function handleRoleSelectionButton(
 	interaction: Discord.ButtonInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	await interaction.deferReply({ ephemeral: true });
 
@@ -348,19 +348,19 @@ export async function handleRoleSelectionButton(
 				courseSelectionChannelId,
 				roles,
 				selection,
-				prisma
+				prisma,
 			);
 			await interaction.editReply(
 				utils.CheckMarkEmoji +
-					`Removed ${num} role${num != 1 ? "s" : ""}.`
+					`Removed ${num} role${num != 1 ? "s" : ""}.`,
 			);
 		} catch (e) {
 			logger.error(
 				{ courseSelectionChannelId, roleId: selection, err: e },
-				"Failed to remove course selection roles"
+				"Failed to remove course selection roles",
 			);
 			await interaction.editReply(
-				utils.XEmoji + "Failed to remove roles."
+				utils.XEmoji + "Failed to remove roles.",
 			);
 		}
 	} else if (await handleRoleSelection(groupId, roles, [selection], prisma)) {
@@ -386,7 +386,7 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandStringOption()
 							.setName("id")
 							.setDescription("Unique identifier, snake_case")
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
@@ -397,81 +397,81 @@ export function provideCommands(): CommandDescriptor[] {
 								name: "Selection Menu",
 								value: "menu",
 							})
-							.addChoices({ name: "Buttons", value: "buttons" })
+							.addChoices({ name: "Buttons", value: "buttons" }),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("placeholder")
 							.setDescription(
-								"Shown in select menus when no options are selected; ignored otherwise"
+								"Shown in select menus when no options are selected; ignored otherwise",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("message")
 							.setDescription("Message sent with menu/buttons")
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addChannelOption(
 						new Builders.SlashCommandChannelOption()
 							.setName("channel")
 							.setDescription(
-								"Channel where to send role selection message"
+								"Channel where to send role selection message",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addIntegerOption(
 						new Builders.SlashCommandIntegerOption()
 							.setName("min")
 							.setDescription(
-								"At least how many options must be selected; default 1"
+								"At least how many options must be selected; default 1",
 							)
-							.setRequired(false)
+							.setRequired(false),
 					)
 					.addIntegerOption(
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected; default 1; negative = all"
+								"At most how many options may be selected; default 1; negative = all",
 							)
-							.setRequired(false)
-					)
+							.setRequired(false),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("delete")
 					.setDescription(
-						"Delete a role selection group (this action cannot be reverted!)"
+						"Delete a role selection group (this action cannot be reverted!)",
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("id")
 							.setDescription(
-								"Unique identifier of the role to delete"
+								"Unique identifier of the role to delete",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("confirm-id")
 							.setDescription("Type id again to confirm")
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("edit")
 					.setDescription(
-						"Change a setting for an existing role selection group"
+						"Change a setting for an existing role selection group",
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("id")
 							.setDescription(
-								"Unique identifier of the role group"
+								"Unique identifier of the role group",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
@@ -483,37 +483,37 @@ export function provideCommands(): CommandDescriptor[] {
 								name: "Placeholder",
 								value: "placeholder",
 							})
-							.addChoices({ name: "Message", value: "message" })
+							.addChoices({ name: "Message", value: "message" }),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("value")
 							.setDescription("New value to set")
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("set-num")
 					.setDescription(
-						"Set how many options may be selected at once"
+						"Set how many options may be selected at once",
 					)
 					.addIntegerOption(
 						new Builders.SlashCommandIntegerOption()
 							.setName("min")
 							.setDescription(
-								"At least how many options must be selected"
+								"At least how many options must be selected",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addIntegerOption(
 						new Builders.SlashCommandIntegerOption()
 							.setName("max")
 							.setDescription(
-								"At most how many options may be selected; negative = all"
+								"At most how many options may be selected; negative = all",
 							)
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
@@ -523,16 +523,16 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandStringOption()
 							.setName("id")
 							.setDescription(
-								"Unique identifier of the role group"
+								"Unique identifier of the role group",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addChannelOption(
 						new Builders.SlashCommandChannelOption()
 							.setName("channel")
 							.setDescription("New channel to send message to")
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
@@ -542,16 +542,16 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandStringOption()
 							.setName("id")
 							.setDescription(
-								"Unique identifier of the role group"
+								"Unique identifier of the role group",
 							)
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("list")
-					.setDescription("List all existing role selection groups")
-			)
+					.setDescription("List all existing role selection groups"),
+			),
 	);
 	cmd.addSubcommandGroup(
 		new Builders.SlashCommandSubcommandGroupBuilder()
@@ -561,44 +561,44 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("add")
 					.setDescription(
-						"Add a new option to a role selection group"
+						"Add a new option to a role selection group",
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("group-id")
 							.setDescription(
-								"Unique identifier of the role group"
+								"Unique identifier of the role group",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("label")
 							.setDescription("New option's name")
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("description")
 							.setDescription(
-								"For menus, shown to the user below the label. For buttons, specifies the button style (in caps)"
+								"For menus, shown to the user below the label. For buttons, specifies the button style (in caps)",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addRoleOption(
 						new Builders.SlashCommandRoleOption()
 							.setName("role")
 							.setDescription("Role corresponding to this option")
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("emoji")
 							.setDescription(
-								"Single emote to show next to label"
+								"Single emote to show next to label",
 							)
-							.setRequired(false)
-					)
+							.setRequired(false),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
@@ -608,25 +608,25 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandStringOption()
 							.setName("group-id")
 							.setDescription(
-								"Unique identifier of the role group"
+								"Unique identifier of the role group",
 							)
-							.setRequired(true)
+							.setRequired(true),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("label")
 							.setDescription(
-								"Label corresponding to the option to remove"
+								"Label corresponding to the option to remove",
 							)
-							.setRequired(true)
-					)
-			)
+							.setRequired(true),
+					),
+			),
 	);
 	cmd.addSubcommandGroup(
 		new Builders.SlashCommandSubcommandGroupBuilder()
 			.setName("apply")
 			.setDescription(
-				"Apply changes made to role groups and respective options"
+				"Apply changes made to role groups and respective options",
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
@@ -636,11 +636,11 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandBooleanOption()
 							.setName("edit-existing")
 							.setDescription(
-								"Whether to edit existing messages, updating them. Otherwise, you may delete some before running this"
+								"Whether to edit existing messages, updating them. Otherwise, you may delete some before running this",
 							)
-							.setRequired(true)
-					)
-			)
+							.setRequired(true),
+					),
+			),
 	);
 	cmd.addSubcommandGroup(
 		new Builders.SlashCommandSubcommandGroupBuilder()
@@ -656,14 +656,14 @@ export function provideCommands(): CommandDescriptor[] {
 							.setDescription("Which field to change")
 							.setRequired(true)
 							.addChoices({ name: "Message", value: "message" })
-							.addChoices({ name: "Label", value: "label" })
+							.addChoices({ name: "Label", value: "label" }),
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("value")
 							.setDescription("Value to change to")
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
@@ -673,8 +673,8 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandChannelOption()
 							.setName("channel")
 							.setDescription("Channel where to move to")
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
@@ -684,16 +684,16 @@ export function provideCommands(): CommandDescriptor[] {
 						new Builders.SlashCommandRoleOption()
 							.setName("role")
 							.setDescription("TourIST role")
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("info")
 					.setDescription(
-						"Get all information relative to the TourIST role"
-					)
-			)
+						"Get all information relative to the TourIST role",
+					),
+			),
 	);
 	return [{ builder: cmd, handler: handleCommand }];
 }
@@ -715,7 +715,7 @@ async function createGroup(
 	message: string,
 	minValues: number,
 	maxValues: number,
-	channel: Discord.GuildChannel
+	channel: Discord.GuildChannel,
 ): Promise<[boolean, string]> {
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
@@ -773,7 +773,7 @@ async function createGroup(
 async function deleteGroup(
 	prisma: PrismaClient,
 	id: string,
-	confirm: string
+	confirm: string,
 ): Promise<true | string> {
 	try {
 		if (id !== confirm) {
@@ -797,7 +797,7 @@ async function editGroup(
 	prisma: PrismaClient,
 	id: string,
 	name: string,
-	value: string
+	value: string,
 ): Promise<true | string> {
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
@@ -830,7 +830,7 @@ async function setNumGroup(
 	prisma: PrismaClient,
 	id: string,
 	minValues: number,
-	maxValues: number
+	maxValues: number,
 ): Promise<true | string> {
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
@@ -850,7 +850,7 @@ async function setNumGroup(
 	} catch (e) {
 		logger.error(
 			e,
-			"Error while setting maximum/minimum number of options of role selection group"
+			"Error while setting maximum/minimum number of options of role selection group",
 		);
 		return "Something went wrong; possibly, no role group was found with that ID";
 	}
@@ -859,7 +859,7 @@ async function setNumGroup(
 async function moveGroup(
 	prisma: PrismaClient,
 	id: string,
-	channel: Discord.GuildChannel
+	channel: Discord.GuildChannel,
 ): Promise<true | string> {
 	try {
 		if (!id.match(/^[a-z0-9_]+$/)) {
@@ -885,7 +885,7 @@ async function moveGroup(
 async function viewGroup(
 	prisma: PrismaClient,
 	id: string,
-	guildId: string
+	guildId: string,
 ): Promise<Discord.InteractionEditReplyOptions | string> {
 	try {
 		const group = await prisma.roleGroup.findFirst({
@@ -894,7 +894,7 @@ async function viewGroup(
 		});
 		if (group) {
 			const embed = new Discord.EmbedBuilder().setTitle(
-				"Role Group Information"
+				"Role Group Information",
 			).setDescription(`**ID**: ${group.id}
 				**Mode:** ${group.mode}
 				**Placeholder:** ${group.placeholder}
@@ -904,12 +904,12 @@ async function viewGroup(
 				**Message:** ${
 					group.messageId
 						? "[Here](https://discord.com/channels/" +
-						  guildId +
-						  "/" +
-						  group.channelId +
-						  "/" +
-						  group.messageId +
-						  " 'Message Link')"
+							guildId +
+							"/" +
+							group.channelId +
+							"/" +
+							group.messageId +
+							" 'Message Link')"
 						: "NONE"
 				}`);
 
@@ -939,7 +939,7 @@ async function addOption(
 	label: string,
 	description: string,
 	role: Discord.Role,
-	emoji: string | null
+	emoji: string | null,
 ): Promise<true | string> {
 	try {
 		if (!groupId.match(/^[a-z0-9_]+$/)) {
@@ -974,7 +974,7 @@ async function addOption(
 async function removeOption(
 	prisma: PrismaClient,
 	groupId: string,
-	label: string
+	label: string,
 ): Promise<true | string> {
 	try {
 		if (!groupId.match(/^[a-z0-9_]+$/)) {
@@ -1010,7 +1010,7 @@ async function removeOption(
 	} catch (e) {
 		logger.error(
 			e,
-			"Error while removing option from role selection group"
+			"Error while removing option from role selection group",
 		);
 		return "Something went wrong";
 	}
@@ -1019,7 +1019,7 @@ async function removeOption(
 // TODO: dry this a bit
 export async function handleCommand(
 	interaction: Discord.ChatInputCommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	const subCommandGroup = interaction.options.getSubcommandGroup();
 	const subCommand = interaction.options.getSubcommand();
@@ -1037,8 +1037,8 @@ export async function handleCommand(
 						interaction.options.getInteger("max", false) ?? 1,
 						interaction.options.getChannel(
 							"channel",
-							true
-						) as Discord.GuildChannel
+							true,
+						) as Discord.GuildChannel,
 						// FIXME: I've no clue what a APIInteractionDataResolvedChannel is
 						// so I'm ignoring the possibility of it even existing
 					);
@@ -1046,16 +1046,16 @@ export async function handleCommand(
 						logger.info({ res }, "Created role selection group");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								`Role selection group \`${res}\` successfully created.`
+								`Role selection group \`${res}\` successfully created.`,
 						);
 					} else {
 						logger.error(
 							{ res },
-							"Failed to create role selection group"
+							"Failed to create role selection group",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								`Could not create group because: **${res}**`
+								`Could not create group because: **${res}**`,
 						);
 					}
 					break;
@@ -1065,22 +1065,22 @@ export async function handleCommand(
 					const res = await deleteGroup(
 						prisma,
 						id,
-						interaction.options.getString("confirm-id", true)
+						interaction.options.getString("confirm-id", true),
 					);
 					if (res === true) {
 						logger.info({ id }, "Deleted role selection group");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								`Role selection group \`${id}\` successfully deleted.`
+								`Role selection group \`${id}\` successfully deleted.`,
 						);
 					} else {
 						logger.error(
 							{ res },
-							"Failed to delete role selection group"
+							"Failed to delete role selection group",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								`Could not delete group because: **${res}**`
+								`Could not delete group because: **${res}**`,
 						);
 					}
 					break;
@@ -1094,20 +1094,20 @@ export async function handleCommand(
 					if (res === true) {
 						logger.info(
 							{ id, name, value },
-							"Edited role selection group"
+							"Edited role selection group",
 						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								`Role selection group \`${id}\` successfully edited.`
+								`Role selection group \`${id}\` successfully edited.`,
 						);
 					} else {
 						logger.info(
 							{ id, name, value, res },
-							"Error while editing role selection group"
+							"Error while editing role selection group",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								`Could not edit group because: **${res}**`
+								`Could not edit group because: **${res}**`,
 						);
 					}
 					break;
@@ -1120,20 +1120,20 @@ export async function handleCommand(
 					if (res === true) {
 						logger.info(
 							{ id, min, max },
-							"Set minimum/maximum of option selections for role selection group"
+							"Set minimum/maximum of option selections for role selection group",
 						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								`Role selection group \`${id}\` successfully edited.`
+								`Role selection group \`${id}\` successfully edited.`,
 						);
 					} else {
 						logger.info(
 							{ id, min, max, res },
-							"Error while setting minimum/maximum of option selections for role selection group"
+							"Error while setting minimum/maximum of option selections for role selection group",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								`Could not edit group because: **${res}**`
+								`Could not edit group because: **${res}**`,
 						);
 					}
 					break;
@@ -1142,26 +1142,26 @@ export async function handleCommand(
 					const id = interaction.options.getString("id", true);
 					const channel = interaction.options.getChannel(
 						"channel",
-						true
+						true,
 					) as Discord.GuildChannel;
 					const res = await moveGroup(prisma, id, channel);
 					if (res === true) {
 						logger.info(
 							{ id, channel },
-							"Moved role selection group"
+							"Moved role selection group",
 						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								`Role selection group \`${id}\` successfully moved to <#${channel.id}>.`
+								`Role selection group \`${id}\` successfully moved to <#${channel.id}>.`,
 						);
 					} else {
 						logger.info(
 							{ id, channel, res },
-							"Error while moving role selection group"
+							"Error while moving role selection group",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								`Could not move group because: **${res}**`
+								`Could not move group because: **${res}**`,
 						);
 					}
 					break;
@@ -1171,8 +1171,8 @@ export async function handleCommand(
 						await viewGroup(
 							prisma,
 							interaction.options.getString("id", true),
-							interaction.guildId as string
-						)
+							interaction.guildId as string,
+						),
 					);
 					break;
 				}
@@ -1183,23 +1183,23 @@ export async function handleCommand(
 								new Discord.EmbedBuilder()
 									.setTitle("Role Selection Groups")
 									.setDescription(
-										"All available role groups are listed below with their `mode` field."
+										"All available role groups are listed below with their `mode` field.",
 									)
 									.addFields(
-										(
-											await prisma.roleGroup.findMany()
-										).map((g) => ({
-											name: g.id,
-											value: g.mode,
-											inline: true,
-										}))
+										(await prisma.roleGroup.findMany()).map(
+											(g) => ({
+												name: g.id,
+												value: g.mode,
+												inline: true,
+											}),
+										),
 									),
 							],
 						});
 					} catch (e) {
 						logger.error(e, "Could not list role groups");
 						await interaction.editReply(
-							utils.XEmoji + "Failed to list role groups."
+							utils.XEmoji + "Failed to list role groups.",
 						);
 					}
 					break;
@@ -1211,16 +1211,16 @@ export async function handleCommand(
 				case "add": {
 					const groupId = interaction.options.getString(
 						"group-id",
-						true
+						true,
 					);
 					const label = interaction.options.getString("label", true);
 					const description = interaction.options.getString(
 						"description",
-						true
+						true,
 					);
 					const role = interaction.options.getRole(
 						"role",
-						true
+						true,
 					) as Discord.Role;
 					const emoji = interaction.options.getString("emoji", false);
 					const res = await addOption(
@@ -1229,24 +1229,24 @@ export async function handleCommand(
 						label,
 						description,
 						role,
-						emoji
+						emoji,
 					);
 					if (res === true) {
 						logger.info(
 							{ groupId, label, description, role, emoji },
-							"Added option to role selection group"
+							"Added option to role selection group",
 						);
 						await interaction.editReply(
-							utils.CheckMarkEmoji + "Option successfully added."
+							utils.CheckMarkEmoji + "Option successfully added.",
 						);
 					} else {
 						logger.error(
 							{ groupId, label, description, role, emoji, res },
-							"Error while adding option to role selection group"
+							"Error while adding option to role selection group",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								`Could not add option because: **${res}**`
+								`Could not add option because: **${res}**`,
 						);
 					}
 					break;
@@ -1254,27 +1254,27 @@ export async function handleCommand(
 				case "remove": {
 					const groupId = interaction.options.getString(
 						"group-id",
-						true
+						true,
 					);
 					const label = interaction.options.getString("label", true);
 					const res = await removeOption(prisma, groupId, label);
 					if (res === true) {
 						logger.info(
 							{ groupId, label },
-							"Removed option from role selection group"
+							"Removed option from role selection group",
 						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								"Option successfully removed."
+								"Option successfully removed.",
 						);
 					} else {
 						logger.error(
 							{ groupId, label, res },
-							"Error while removing option from role selection group"
+							"Error while removing option from role selection group",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								`Could not remove option because: **${res}**`
+								`Could not remove option because: **${res}**`,
 						);
 					}
 					break;
@@ -1287,30 +1287,30 @@ export async function handleCommand(
 					try {
 						const editExisting = interaction.options.getBoolean(
 							"edit-existing",
-							true
+							true,
 						);
 						await sendRoleSelectionMessages(
 							interaction.client,
 							prisma,
-							editExisting
+							editExisting,
 						);
 
 						logger.info(
 							{ editExisting },
-							"Sent messages for all role selection groups"
+							"Sent messages for all role selection groups",
 						);
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								"Role selection messages successfully sent."
+								"Role selection messages successfully sent.",
 						);
 					} catch (e) {
 						logger.error(
 							e,
-							"Could not send role selection messages"
+							"Could not send role selection messages",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								"Failed to send role selection messages."
+								"Failed to send role selection messages.",
 						);
 					}
 					break;
@@ -1323,7 +1323,7 @@ export async function handleCommand(
 					try {
 						const field = interaction.options.getString(
 							"field",
-							true
+							true,
 						);
 						const value = interaction.options
 							.getString("value", true)
@@ -1331,7 +1331,7 @@ export async function handleCommand(
 
 						if (!["message", "label"].includes(field)) {
 							await interaction.editReply(
-								utils.XEmoji + "Invalid name."
+								utils.XEmoji + "Invalid name.",
 							);
 						}
 
@@ -1346,12 +1346,12 @@ export async function handleCommand(
 						logger.info({ field, value }, "Set tourist info");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								`Successfully set TourIST ${field}.`
+								`Successfully set TourIST ${field}.`,
 						);
 					} catch (e) {
 						logger.error(e, "Failed to set tourist info");
 						await interaction.editReply(
-							utils.XEmoji + "Failed to set TourIST info."
+							utils.XEmoji + "Failed to set TourIST info.",
 						);
 					}
 					break;
@@ -1359,12 +1359,12 @@ export async function handleCommand(
 					try {
 						const channel = interaction.options.getChannel(
 							"channel",
-							true
+							true,
 						) as Discord.GuildChannel;
 
 						if (!channel.isTextBased() && !channel.isThread()) {
 							await interaction.editReply(
-								utils.XEmoji + "Invalid channel."
+								utils.XEmoji + "Invalid channel.",
 							);
 						}
 
@@ -1379,12 +1379,12 @@ export async function handleCommand(
 						logger.info({ channel }, "Set tourist channel");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								`Successfully set TourIST channel.`
+								`Successfully set TourIST channel.`,
 						);
 					} catch (e) {
 						logger.error(e, "Failed to set tourist channel");
 						await interaction.editReply(
-							utils.XEmoji + "Failed to set TourIST channel."
+							utils.XEmoji + "Failed to set TourIST channel.",
 						);
 					}
 					break;
@@ -1392,7 +1392,7 @@ export async function handleCommand(
 					try {
 						const role = interaction.options.getRole(
 							"role",
-							true
+							true,
 						) as Discord.Role;
 
 						const fqkey = `tourist:role_id`;
@@ -1406,12 +1406,12 @@ export async function handleCommand(
 						logger.info({ role }, "Set tourist role");
 						await interaction.editReply(
 							utils.CheckMarkEmoji +
-								"Successfully set TourIST role."
+								"Successfully set TourIST role.",
 						);
 					} catch (e) {
 						logger.error(e, "Error while setting tourist role");
 						await interaction.editReply(
-							utils.XEmoji + "Failed to set TourIST role."
+							utils.XEmoji + "Failed to set TourIST role.",
 						);
 					}
 					break;
@@ -1448,7 +1448,7 @@ export async function handleCommand(
 					} catch (e) {
 						logger.error(e, "Error while getting tourist info");
 						await interaction.editReply(
-							utils.XEmoji + "Something went wrong."
+							utils.XEmoji + "Something went wrong.",
 						);
 					}
 

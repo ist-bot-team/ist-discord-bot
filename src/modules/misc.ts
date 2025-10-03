@@ -18,21 +18,21 @@ export function provideCommands(): CommandDescriptor[] {
 		new Builders.SlashCommandStringOption()
 			.setName("message")
 			.setDescription("What message to send")
-			.setRequired(true)
+			.setRequired(true),
 	);
 	say.addChannelOption(
 		new Builders.SlashCommandChannelOption()
 			.setName("channel")
 			.setDescription("Where to send the message; defaults to current")
-			.setRequired(false)
+			.setRequired(false),
 	);
 	say.addBooleanOption(
 		new Builders.SlashCommandBooleanOption()
 			.setName("allow-mentions")
 			.setDescription(
-				"Whether to allow mentions in the message; defaults to false"
+				"Whether to allow mentions in the message; defaults to false",
 			)
-			.setRequired(false)
+			.setRequired(false),
 	);
 	const whoSaid = new Builders.SlashCommandBuilder()
 		.setName("who-said")
@@ -41,7 +41,7 @@ export function provideCommands(): CommandDescriptor[] {
 		new Builders.SlashCommandStringOption()
 			.setName("message-id")
 			.setDescription("Message ID in question")
-			.setRequired(true)
+			.setRequired(true),
 	);
 	const migrateMembersWithRole = new Builders.SlashCommandBuilder()
 		.setName("migrate-members-with-role")
@@ -50,19 +50,19 @@ export function provideCommands(): CommandDescriptor[] {
 		new Builders.SlashCommandRoleOption()
 			.setName("old-role")
 			.setDescription("The role to migrate members from")
-			.setRequired(true)
+			.setRequired(true),
 	);
 	migrateMembersWithRole.addRoleOption(
 		new Builders.SlashCommandRoleOption()
 			.setName("new-role")
 			.setDescription("The role to migrate members to")
-			.setRequired(true)
+			.setRequired(true),
 	);
 	migrateMembersWithRole.addBooleanOption(
 		new Builders.SlashCommandBooleanOption()
 			.setName("remove-old")
 			.setDescription("Whether to remove the old role")
-			.setRequired(false)
+			.setRequired(false),
 	);
 	return [
 		{
@@ -90,7 +90,7 @@ export function provideCommands(): CommandDescriptor[] {
 			builder: new Builders.SlashCommandBuilder()
 				.setName("just-ask")
 				.setDescription(
-					'Send a link to the "Don\'t ask to ask" website'
+					'Send a link to the "Don\'t ask to ask" website',
 				),
 			handler: handleJustAskSlashCommand,
 			permission: CommandPermission.Public,
@@ -110,12 +110,12 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleAboutCommand(
-	interaction: Discord.CommandInteraction
+	interaction: Discord.CommandInteraction,
 ): Promise<void> {
 	let pkg: Record<string, string>;
 	try {
 		pkg = JSON.parse(
-			fs.readFileSync(__dirname + "/../../package.json").toString()
+			fs.readFileSync(__dirname + "/../../package.json").toString(),
 		);
 	} catch (e) {
 		pkg = {};
@@ -133,7 +133,7 @@ export async function handleAboutCommand(
 					`**Description:** ${pvar("description")}
 				**Version:** ${pvar("version")}
 				**License:** ${pvar("license")}
-				**Authors:**`
+				**Authors:**`,
 				)
 				.addFields(
 					[
@@ -144,7 +144,7 @@ export async function handleAboutCommand(
 						name: a[0],
 						value: "[GitHub](https://github.com/" + a[1] + ")",
 						inline: true,
-					}))
+					})),
 				)
 				.setFooter({
 					text:
@@ -158,7 +158,7 @@ export async function handleAboutCommand(
 const sayLogs: Discord.Collection<string, string> = new Discord.Collection();
 
 export async function handleSayCommand(
-	interaction: Discord.ChatInputCommandInteraction
+	interaction: Discord.ChatInputCommandInteraction,
 ): Promise<void> {
 	try {
 		const channel = (interaction.options.getChannel("channel", false) ||
@@ -181,11 +181,11 @@ export async function handleSayCommand(
 						message,
 						allowMentions,
 					},
-					"User used /say command"
+					"User used /say command",
 				);
 			}
 			await interaction.editReply(
-				utils.CheckMarkEmoji + "Successfully sent message."
+				utils.CheckMarkEmoji + "Successfully sent message.",
 			);
 			return;
 		}
@@ -200,8 +200,10 @@ export async function sendWhoSaid(
 	messageId: Discord.Snowflake,
 	interaction: Discord.CommandInteraction,
 	sender: (
-		...args: Parameters<typeof Discord.CommandInteraction.prototype.reply>
-	) => Promise<Discord.Message | undefined> // to allow optional chaining (?.)
+		...args: Parameters<
+			typeof Discord.CommandInteraction.prototype.editReply
+		>
+	) => Promise<Discord.Message | undefined>, // to allow optional chaining (?.)
 ): Promise<void> {
 	try {
 		const who = sayLogs.get(messageId);
@@ -218,7 +220,7 @@ export async function sendWhoSaid(
 }
 
 export async function handleWhoSaidSlashCommand(
-	interaction: Discord.ChatInputCommandInteraction
+	interaction: Discord.ChatInputCommandInteraction,
 ): Promise<void> {
 	try {
 		const messageId = interaction.options.getString("message-id", true);
@@ -227,24 +229,24 @@ export async function handleWhoSaidSlashCommand(
 		await sendWhoSaid(
 			split[split.length - 1],
 			interaction,
-			async (...args) => await interaction.editReply(...args)
+			async (...args) => await interaction.editReply(...args),
 		);
 	} catch (e) {
 		logger.error(e, "Error while handling Who Said command");
 		await interaction.editReply(
-			utils.XEmoji + "Something went wrong, maybe wrong message ID?"
+			utils.XEmoji + "Something went wrong, maybe wrong message ID?",
 		);
 	}
 }
 
 export async function handleWhoSaidContextMenuCommand(
-	interaction: Discord.ContextMenuCommandInteraction
+	interaction: Discord.ContextMenuCommandInteraction,
 ): Promise<void> {
 	if (interaction.isMessageContextMenuCommand()) {
 		sendWhoSaid(
 			interaction.targetMessage.id,
 			interaction,
-			async (...args) => interaction.editReply(...args)
+			async (...args) => interaction.editReply(...args),
 		);
 	}
 }
@@ -253,7 +255,7 @@ export async function sendJustAsk(
 	interaction: Discord.CommandInteraction,
 	sender: (
 		...args: Parameters<typeof Discord.Message.prototype.reply>
-	) => Promise<Discord.Message | undefined> // to allow optional chaining (?.)
+	) => Promise<Discord.Message | undefined>, // to allow optional chaining (?.)
 ): Promise<void> {
 	try {
 		const msg = await sender("https://dontasktoask.com/");
@@ -270,38 +272,40 @@ export async function sendJustAsk(
 }
 
 export async function handleJustAskSlashCommand(
-	interaction: Discord.ChatInputCommandInteraction
+	interaction: Discord.ChatInputCommandInteraction,
 ): Promise<void> {
 	if (interaction.channel) {
-		await sendJustAsk(
-			interaction,
-			async (...args) => await interaction.channel?.send(...args)
-		);
+		await sendJustAsk(interaction, async (...args) => {
+			const channel = interaction.channel;
+			if (channel?.isSendable()) {
+				return await channel.send(...args);
+			}
+		});
 	}
 }
 
 export async function handleJustAskContextMenuCommand(
-	interaction: Discord.ContextMenuCommandInteraction
+	interaction: Discord.ContextMenuCommandInteraction,
 ): Promise<void> {
 	if (interaction.isMessageContextMenuCommand()) {
 		await sendJustAsk(
 			interaction,
-			async (...args) => await interaction.targetMessage?.reply(...args)
+			async (...args) => await interaction.targetMessage?.reply(...args),
 		);
 	}
 }
 
 export async function handleMigrateMembersWithRole(
-	interaction: Discord.ChatInputCommandInteraction
+	interaction: Discord.ChatInputCommandInteraction,
 ): Promise<void> {
 	try {
 		const oldRole = interaction.options.getRole(
 			"old-role",
-			true
+			true,
 		) as Discord.Role;
 		const newRole = interaction.options.getRole(
 			"new-role",
-			true
+			true,
 		) as Discord.Role;
 		const removeOld = interaction.options.getBoolean("remove-old", false);
 
@@ -321,11 +325,11 @@ export async function handleMigrateMembersWithRole(
 
 		logger.info(
 			{ oldRole, newRole, count, removeOld },
-			"Migrated members from role to role"
+			"Migrated members from role to role",
 		);
 		await interaction.editReply(
 			utils.CheckMarkEmoji +
-				`Migrated ${count} members from ${oldRole} to ${newRole}`
+				`Migrated ${count} members from ${oldRole} to ${newRole}`,
 		);
 	} catch (e) {
 		logger.error(e, "Error while migrating members to new role");

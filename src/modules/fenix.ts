@@ -28,7 +28,7 @@ export async function callEndpoint(endpoint: string): Promise<unknown> {
 
 export async function getAboutInfo(): Promise<FenixTypings.AboutInfo> {
 	return (await callEndpoint(
-		"/api/fenix/v1/about"
+		"/api/fenix/v1/about",
 	)) as FenixTypings.AboutInfo;
 }
 
@@ -37,7 +37,7 @@ export async function getCurrentAcademicTerm(): Promise<{
 	semester: number;
 }> {
 	const match = (await getAboutInfo()).currentAcademicTerm.match(
-		/(\d+)º \w+ (\d+\/\d+)/
+		/(\d+)º \w+ (\d+\/\d+)/,
 	);
 	if (match === null) {
 		throw new Error("Could not get academic term!");
@@ -49,14 +49,14 @@ export async function getCurrentAcademicTerm(): Promise<{
 export async function getDegrees(): Promise<FenixTypings.ShortDegree[]> {
 	const curYear = (await getCurrentAcademicTerm()).year;
 	const degrees = (await callEndpoint(
-		"/api/fenix/v1/degrees/all"
+		"/api/fenix/v1/degrees/all",
 	)) as FenixTypings.ShortDegree[];
 	return degrees.filter((d) => d.academicTerms.includes(curYear));
 }
 
 export async function getDegreeCourses(
 	degreeId: string,
-	academicYear: string
+	academicYear: string,
 ): Promise<FenixTypings.FenixDegreeCourse[]> {
 	const degrees = await getDegrees();
 	const shortDegree = degrees.find((d) => d.id.toLowerCase() === degreeId);
@@ -68,7 +68,7 @@ export async function getDegreeCourses(
 	const degreeAcronym = shortDegree.acronym.toLowerCase();
 
 	const curriculumHtml = (await callEndpoint(
-		`/cursos/${degreeAcronym}/curriculo`
+		`/cursos/${degreeAcronym}/curriculo`,
 	)) as string;
 
 	const $ = cheerio.load(curriculumHtml);
@@ -79,7 +79,7 @@ export async function getDegreeCourses(
 				const hrefEl = $(".row div:first a", this).first();
 				const courseName = hrefEl.text()?.trim() || "";
 				const courseLink = hrefEl.attr("href")?.trim() || "";
-				const yearSemester = $(".row div div", null, this)
+				const yearSemester = $(".row div div", this)
 					.first()
 					.text()
 					?.trim();
@@ -89,7 +89,7 @@ export async function getDegreeCourses(
 				const semester =
 					parseInt(
 						yearSemester.match(/Sem\. (\d)/)?.[1] || "0",
-						10
+						10,
 					) ||
 					(parseInt(yearSemester.match(/P (\d)/)?.[1] || "0", 10) <= 2
 						? 1
@@ -107,7 +107,7 @@ export async function getDegreeCourses(
 			.filter(({ name }) => !name.startsWith("HASS "))
 			.map(async (course: FenixTypings.FenixDegreeCourse) => {
 				const coursePageHtml = (await callEndpoint(
-					course.acronym
+					course.acronym,
 				)) as string;
 				const $coursePage = cheerio.load(coursePageHtml);
 				const acronym =
@@ -137,18 +137,18 @@ export async function getDegreeCourses(
 					`${executionCourseUrl}/rss/announcement`;
 
 				return { ...course, acronym, announcementsFeedUrl: rssUrl };
-			})
+			}),
 	);
 
 	return utils.removeDuplicatesFromArray(
 		courses,
-		(courses) => courses.acronym
+		(courses) => courses.acronym,
 	);
 }
 
 export async function getRSSFeed<T extends FenixTypings.RSSFeedItem>(
 	url: string,
-	after: Date
+	after: Date,
 ): Promise<T[]> {
 	try {
 		const data = await callEndpoint(url);
@@ -162,7 +162,7 @@ export async function getRSSFeed<T extends FenixTypings.RSSFeedItem>(
 			.sort(
 				(a, b) =>
 					new Date(a.pubDate).getTime() -
-					new Date(b.pubDate).getTime()
+					new Date(b.pubDate).getTime(),
 			);
 	} catch (e) {
 		logger.error(e, "Could not get RSS feed for '%s'", url);

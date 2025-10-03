@@ -33,58 +33,58 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("Degree acronym")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addRoleOption(
 				new Builders.SlashCommandRoleOption()
 					.setName("role")
 					.setDescription("Degree role")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("tier")
 					.setDescription("Degree tier within the server")
 					.setRequired(true)
-					.addChoices(...tierChoices)
+					.addChoices(...tierChoices),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("fenix-acronym")
 					.setDescription(
-						"Acronym used by Fénix, if different than normal acronym"
+						"Acronym used by Fénix, if different than normal acronym",
 					)
-					.setRequired(false)
+					.setRequired(false),
 			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("degree-text-channel")
 					.setDescription("Use an existing degree text channel")
-					.setRequired(false)
+					.setRequired(false),
 			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("degree-voice-channel")
 					.setDescription("Use an existing degree voice channel")
-					.setRequired(false)
+					.setRequired(false),
 			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("course-selection-channel")
 					.setDescription("Use an existing course selection channel")
-					.setRequired(false)
+					.setRequired(false),
 			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("announcements-channel")
 					.setDescription("Use an existing announcements channel")
-					.setRequired(false)
-			)
+					.setRequired(false),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("list")
-			.setDescription("List all degrees")
+			.setDescription("List all degrees"),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -94,21 +94,21 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The acronym of the degree to be removed")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("delete")
 			.setDescription(
-				"Remove a degree (no channels/roles will be deleted)"
+				"Remove a degree (no channels/roles will be deleted)",
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The acronym of the degree to be removed")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -118,14 +118,14 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("Course acronym")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("new-name")
 					.setDescription("What to change the name to")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -135,14 +135,14 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The degree's acronym")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addRoleOption(
 				new Builders.SlashCommandRoleOption()
 					.setName("new-role")
 					.setDescription("What role to set")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -152,15 +152,15 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The degree's acronym")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("new-tier")
 					.setDescription("What tier to set")
 					.setRequired(true)
-					.addChoices(...tierChoices)
-			)
+					.addChoices(...tierChoices),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -170,7 +170,7 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The degree's acronym")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
@@ -186,14 +186,14 @@ export function provideCommands(): CommandDescriptor[] {
 					.addChoices({
 						name: "Course Selection",
 						value: "course-selection",
-					})
+					}),
 			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("new-channel")
 					.setDescription("New channel to set")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -203,18 +203,18 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription(
-						"The acronym of the degree to refresh. If unset, all degrees will be refreshed"
+						"The acronym of the degree to refresh. If unset, all degrees will be refreshed",
 					)
-					.setRequired(false)
+					.setRequired(false),
 			)
 			.addBooleanOption(
 				new Builders.SlashCommandBooleanOption()
 					.setName("delete-orphans")
 					.setDescription(
-						"Delete courses that no longer belong to this degree"
+						"Delete courses that no longer belong to this degree",
 					)
-					.setRequired(false)
-			)
+					.setRequired(false),
+			),
 	);
 	return [{ builder: cmd, handler: handleCommand }];
 }
@@ -229,7 +229,7 @@ export async function createDegree(
 	degreeTextChannel: Discord.GuildChannel | null,
 	degreeVoiceChannel: Discord.GuildChannel | null,
 	courseSelectionChannel: Discord.GuildChannel | null,
-	announcementsChannel: Discord.GuildChannel | null
+	announcementsChannel: Discord.GuildChannel | null,
 ): Promise<OrphanChannel[] | string> {
 	// snowflakes are orphan channels; FIXME: change to course.OrphanChannel[]
 	if (!tierChoices.map((arr) => arr.value).includes(tier.toString())) {
@@ -240,7 +240,7 @@ export async function createDegree(
 
 	const degrees = await fenix.getDegrees();
 	const shortDegree = degrees.find(
-		(d) => d.acronym.toLowerCase() === fenixAcronym?.toLowerCase()
+		(d) => d.acronym.toLowerCase() === fenixAcronym?.toLowerCase(),
 	);
 
 	if (shortDegree === undefined) {
@@ -261,7 +261,8 @@ export async function createDegree(
 			((await guild.channels.fetch())
 				.filter(
 					(c) =>
-						c?.type === ChannelType.GuildText && c?.name === catName
+						c?.type === ChannelType.GuildText &&
+						c?.name === catName,
 				)
 				.first() as Discord.CategoryChannel | undefined) ??
 			(await guild.channels.create({
@@ -341,7 +342,7 @@ export async function createDegree(
 								allow: [
 									Discord.PermissionFlagsBits.SendMessages,
 								],
-						  })
+							})
 						: restricted,
 				});
 			}
@@ -377,7 +378,7 @@ export async function createDegree(
 
 export async function handleCommand(
 	interaction: Discord.ChatInputCommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	if (!interaction.guild) return;
 
@@ -394,20 +395,20 @@ export async function handleCommand(
 					interaction.options.getString("fenix-acronym", false),
 					interaction.options.getChannel(
 						"degree-text-channel",
-						false
+						false,
 					) as Discord.GuildChannel | null,
 					interaction.options.getChannel(
 						"degree-voice-channel",
-						false
+						false,
 					) as Discord.GuildChannel | null,
 					interaction.options.getChannel(
 						"course-selection-channel",
-						false
+						false,
 					) as Discord.GuildChannel | null,
 					interaction.options.getChannel(
 						"announcements-channel",
-						false
-					) as Discord.GuildChannel | null
+						false,
+					) as Discord.GuildChannel | null,
 				);
 				if (typeof result === "string") {
 					logger.error({ result }, "Error while creating degree");
@@ -419,14 +420,14 @@ export async function handleCommand(
 							"Sucessfully created degree." +
 							(result.length
 								? `\nConsider deleting the following ${result.length} orphan channel(s):\n` +
-								  result.map((c) => `- <#${c.id}>`).join("\n")
-								: "")
+									result.map((c) => `- <#${c.id}>`).join("\n")
+								: ""),
 					);
 				}
 			} catch (e) {
 				logger.error(e, "Error while creating degree");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -441,21 +442,21 @@ export async function handleCommand(
 						new Discord.EmbedBuilder()
 							.setTitle("All Degrees")
 							.setDescription(
-								"Below are all known degrees, by acronym, Fénix ID and tier"
+								"Below are all known degrees, by acronym, Fénix ID and tier",
 							)
 							.addFields(
 								degrees.map((d) => ({
 									name: d.acronym,
 									value: `${d.fenixId} (Tier ${d.tier})`,
 									inline: true,
-								}))
+								})),
 							),
 					],
 				});
 			} catch (e) {
 				logger.error(e, "Error while listing degrees");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -471,7 +472,7 @@ export async function handleCommand(
 
 				if (degree === null) {
 					await interaction.editReply(
-						utils.XEmoji + "Could not find degree"
+						utils.XEmoji + "Could not find degree",
 					);
 				} else {
 					await interaction.editReply({
@@ -479,7 +480,7 @@ export async function handleCommand(
 							new Discord.EmbedBuilder()
 								.setTitle("Degree Information")
 								.setDescription(
-									"Below are all the available details on this degree."
+									"Below are all the available details on this degree.",
 								)
 								.addFields({
 									name: "Acronym",
@@ -540,7 +541,7 @@ export async function handleCommand(
 			} catch (e) {
 				logger.error(e, "Error while viewing a degree");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -554,12 +555,12 @@ export async function handleCommand(
 
 				logger.info({ acronym }, "Deleted a degree");
 				await interaction.editReply(
-					utils.CheckMarkEmoji + "Successfully removed."
+					utils.CheckMarkEmoji + "Successfully removed.",
 				);
 			} catch (e) {
 				logger.error(e, "Error while deleting a degree");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -578,12 +579,12 @@ export async function handleCommand(
 				logger.info({ acronym, newName }, "Renamed a degree");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Successfully renamed ${acronym} to ${newName}`
+						`Successfully renamed ${acronym} to ${newName}`,
 				);
 			} catch (e) {
 				logger.error(e, "Error while renaming a degree");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -602,12 +603,12 @@ export async function handleCommand(
 				logger.info({ acronym, newRole }, "Set role of degree");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Successfully set role of ${acronym} to <@&${newRole.id}>`
+						`Successfully set role of ${acronym} to <@&${newRole.id}>`,
 				);
 			} catch (e) {
 				logger.error(e, "Error while setting role of degree");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -631,16 +632,16 @@ export async function handleCommand(
 
 				logger.info(
 					{ acronym, newTier: numTier },
-					"Changed degree tier"
+					"Changed degree tier",
 				);
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Successfully set tier of ${acronym} to ${newTier}`
+						`Successfully set tier of ${acronym} to ${newTier}`,
 				);
 			} catch (e) {
 				logger.error(e, "Error while setting tier of degree");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -651,11 +652,11 @@ export async function handleCommand(
 				const acronym = interaction.options.getString("acronym", true);
 				const channelType = interaction.options.getString(
 					"channel-type",
-					true
+					true,
 				);
 				const newChannel = interaction.options.getChannel(
 					"new-channel",
-					true
+					true,
 				) as Discord.GuildChannel;
 
 				const key = {
@@ -667,7 +668,7 @@ export async function handleCommand(
 
 				if (key === undefined) {
 					await interaction.editReply(
-						utils.XEmoji + "Invalid channel type"
+						utils.XEmoji + "Invalid channel type",
 					);
 					return;
 				}
@@ -677,7 +678,7 @@ export async function handleCommand(
 					newChannel.type !== Discord.ChannelType.GuildVoice
 				) {
 					await interaction.editReply(
-						utils.XEmoji + "Must be a voice channel"
+						utils.XEmoji + "Must be a voice channel",
 					);
 					return;
 				} else if (
@@ -685,7 +686,7 @@ export async function handleCommand(
 					newChannel.type === Discord.ChannelType.GuildVoice
 				) {
 					await interaction.editReply(
-						utils.XEmoji + "Must not be a voice channel"
+						utils.XEmoji + "Must not be a voice channel",
 					);
 					return;
 				}
@@ -698,12 +699,12 @@ export async function handleCommand(
 				logger.info({ acronym, channelType, newChannel });
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Successfully set ${channelType} of ${acronym} to <@#${newChannel.id}>`
+						`Successfully set ${channelType} of ${acronym} to <@#${newChannel.id}>`,
 				);
 			} catch (e) {
 				logger.error(e, "Error while setting channel of degree");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -726,7 +727,7 @@ export async function handleCommand(
 					});
 					if (!degree) {
 						await interaction.editReply(
-							utils.XEmoji + `Degree \`${acronym}\` not found!`
+							utils.XEmoji + `Degree \`${acronym}\` not found!`,
 						);
 						return;
 					}
@@ -738,12 +739,12 @@ export async function handleCommand(
 					await courses.importCoursesFromDegree(
 						prisma,
 						degree.fenixId,
-						deleteOrphans
+						deleteOrphans,
 					);
 
 					logger.info(
 						{ acronym: degree.acronym, deleteOrphans },
-						"Refreshed degree's courses from Fénix"
+						"Refreshed degree's courses from Fénix",
 					);
 				}
 
@@ -751,15 +752,15 @@ export async function handleCommand(
 					utils.CheckMarkEmoji +
 						`Refreshed courses for degree(s): ${degrees
 							.map((degree) => `\`${degree.acronym}\``)
-							.join(", ")}`
+							.join(", ")}`,
 				);
 			} catch (e) {
 				logger.error(
 					e,
-					"Failed to refresh degrees' courses from Fénix"
+					"Failed to refresh degrees' courses from Fénix",
 				);
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 		}

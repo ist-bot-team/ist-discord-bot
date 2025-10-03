@@ -18,14 +18,14 @@ type UsersCharacterCount = Discord.Collection<Discord.Snowflake, number>;
 export async function getUsersCharacterCount(
 	guild: Discord.Guild,
 	onlyCountAfter?: Date,
-	cacheDate?: Date
+	cacheDate?: Date,
 ): Promise<
 	[
 		UsersCharacterCount,
 		number,
 		number,
 		Discord.BaseChannel[],
-		UsersCharacterCount
+		UsersCharacterCount,
 	]
 > {
 	const chars: UsersCharacterCount = new Discord.Collection();
@@ -35,8 +35,8 @@ export async function getUsersCharacterCount(
 
 	const channels = Array.from(
 		(await guild.channels.fetch()).filter(
-			(channel) => channel?.isTextBased() || channel?.isThread()
-		)
+			(channel) => channel?.isTextBased() || channel?.isThread(),
+		),
 	).map((o) => o[1]) as (Discord.TextChannel | Discord.ThreadChannel)[];
 	const promises = channels.map(async (channel) => {
 		const messages = await utils.fetchAllChannelMessages(channel);
@@ -48,18 +48,18 @@ export async function getUsersCharacterCount(
 				) {
 					const delta = msg.content.replace(
 						/[^\p{Letter}\p{Number}\p{Punctuation}]/gu,
-						""
+						"",
 					).length;
 					chars.set(
 						msg.author.id,
-						(chars.get(msg.author.id) ?? 0) + delta
+						(chars.get(msg.author.id) ?? 0) + delta,
 					);
 					msgCount++;
 
 					if (cacheDate && msg.createdAt <= cacheDate) {
 						addToCache.set(
 							msg.author.id,
-							(addToCache.get(msg.author.id) ?? 0) + delta
+							(addToCache.get(msg.author.id) ?? 0) + delta,
 						);
 					}
 				} else {
@@ -81,7 +81,7 @@ export async function getUsersCharacterCount(
 export async function sendLeaderboard(
 	sendChannel: Discord.TextChannel | Discord.ThreadChannel,
 	period: string,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<[number, number, Discord.BaseChannel[], number, Discord.Snowflake]> {
 	const now = new Date().getTime();
 	const day = 1000 * 60 * 60 * 24;
@@ -91,7 +91,7 @@ export async function sendLeaderboard(
 			await prisma.config.findFirst({
 				where: { key: "leaderboard:cache_stamp" },
 			})
-		)?.value
+		)?.value,
 	);
 	const cache = cacheStamp ? await prisma.leaderboardEntry.findMany() : [];
 
@@ -103,11 +103,11 @@ export async function sendLeaderboard(
 			period === "month"
 				? new Date(now - 30 * day)
 				: period === "week"
-				? new Date(now - 7 * day)
-				: cacheStamp
-				? new Date(cacheStamp)
-				: undefined,
-			cacheDate
+					? new Date(now - 7 * day)
+					: cacheStamp
+						? new Date(cacheStamp)
+						: undefined,
+			cacheDate,
 		);
 
 	const cacheMap: { [uid: string]: LeaderboardEntry } = {};
@@ -117,7 +117,7 @@ export async function sendLeaderboard(
 
 		chars.set(
 			entry.userId,
-			(chars.get(entry.userId) ?? 0) + entry.characterCount
+			(chars.get(entry.userId) ?? 0) + entry.characterCount,
 		);
 	}
 
@@ -148,13 +148,13 @@ export async function sendLeaderboard(
 						userId: entry.userId,
 						characterCount: entry.characterCount,
 					},
-				})
+				}),
 			),
 		]);
 	}
 
 	chars.sort((v1, v2, k1, k2) =>
-		v1 !== v2 ? v2 - v1 : parseInt(k2) - parseInt(k1)
+		v1 !== v2 ? v2 - v1 : parseInt(k2) - parseInt(k1),
 	);
 
 	const lines = [];
@@ -178,15 +178,15 @@ export async function sendLeaderboard(
 				.toString()
 				.padStart(
 					Math.ceil(Math.log10(MAX_PEOPLE)),
-					"0"
-				)}\` ${label} (${cs})`
+					"0",
+				)}\` ${label} (${cs})`,
 		);
 	}
 
 	lines.unshift(
 		"**__LEADERBOARD__** *(by character count)* `[" +
 			period.toUpperCase() +
-			"]`"
+			"]`",
 	);
 
 	const sent = await sendChannel.send({
@@ -207,7 +207,7 @@ export function provideCommands(): CommandDescriptor[] {
 	const cmd = new Builders.SlashCommandBuilder()
 		.setName("leaderboard")
 		.setDescription(
-			"Manage leaderboard that sorts server members by characters sent"
+			"Manage leaderboard that sorts server members by characters sent",
 		);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -217,18 +217,18 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("time-period")
 					.setDescription(
-						"How recent do messages have to be to be considered; defaults to all"
+						"How recent do messages have to be to be considered; defaults to all",
 					)
 					.setRequired(false)
 					.addChoices({ name: "All messages", value: "all" })
 					.addChoices({ name: "Last 30 days", value: "month" })
-					.addChoices({ name: "Last 7 days", value: "week" })
-			)
+					.addChoices({ name: "Last 7 days", value: "week" }),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("clear-cache")
-			.setDescription("Clear existing message cache")
+			.setDescription("Clear existing message cache"),
 	);
 	return [
 		{
@@ -240,7 +240,7 @@ export function provideCommands(): CommandDescriptor[] {
 
 export async function handleCommand(
 	interaction: Discord.ChatInputCommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	switch (interaction.options.getSubcommand()) {
 		case "send": {
@@ -253,7 +253,7 @@ export async function handleCommand(
 					interaction.options.getString("time-period", false) ??
 					"all";
 				await interaction.editReply(
-					`Will send a leaderboard (period: ${period}) to ${interaction.channel}, but calculations are necessary.\nThis may take a while...`
+					`Will send a leaderboard (period: ${period}) to ${interaction.channel}, but calculations are necessary.\nThis may take a while...`,
 				);
 
 				const [delta, [channels, msgs, failed, cached, msgId]] =
@@ -264,12 +264,12 @@ export async function handleCommand(
 									| Discord.TextChannel
 									| Discord.ThreadChannel,
 								period,
-								prisma
-							)
+								prisma,
+							),
 					)) as [number, ThenArg<ReturnType<typeof sendLeaderboard>>];
 				logger.info(
 					{ delta, channels, msgs, failed },
-					"Send leaderboard"
+					"Send leaderboard",
 				);
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
@@ -281,13 +281,13 @@ Took ${delta}ms, combed through ${channels} channels and ${msgs} messages.
 ${
 	failed.length
 		? utils.XEmoji +
-		  "Failed to go through the following channels: " +
-		  failed.map((c) => "<#" + c.id + ">").join(", ") +
-		  "; as such, did not cache anything"
+			"Failed to go through the following channels: " +
+			failed.map((c) => "<#" + c.id + ">").join(", ") +
+			"; as such, did not cache anything"
 		: "Did not fail to go through any channel; cached " +
-		  cached +
-		  " characters"
-}`
+			cached +
+			" characters"
+}`,
 				);
 			} catch (e) {
 				logger.error(e, "Error while sending leaderboard");
@@ -308,13 +308,13 @@ ${
 				logger.info("Cleared leaderboard cache");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Successfully reset cache; last stamp was ${stamp}`
+						`Successfully reset cache; last stamp was ${stamp}`,
 				);
 			} catch (e) {
 				logger.error(e, "Error while clearing cache of leaderboard");
 				await interaction.editReply(
 					utils.XEmoji +
-						"Something went wrong, maybe there was no cache?"
+						"Something went wrong, maybe there was no cache?",
 				);
 			}
 			break;

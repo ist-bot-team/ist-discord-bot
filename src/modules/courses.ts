@@ -25,7 +25,7 @@ export function provideCommands(): CommandDescriptor[] {
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("refresh-channels")
-			.setDescription("Refresh course channels")
+			.setDescription("Refresh course channels"),
 	);
 	cmd.addSubcommand(
 		[...new Array(5)].reduce(
@@ -34,35 +34,35 @@ export function provideCommands(): CommandDescriptor[] {
 					new Builders.SlashCommandChannelOption()
 						.setName(`category${i + 1}`)
 						.setDescription(`Category ${i + 1}`)
-						.setRequired(i === 0)
+						.setRequired(i === 0),
 				),
 			new Builders.SlashCommandSubcommandBuilder()
 				.setName("set-categories")
 				.setDescription(
-					"Set which categories the course channels should be created in"
-				)
-		)
+					"Set which categories the course channels should be created in",
+				),
+		),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("toggle-channel-visibility")
 			.setDescription(
-				"Show or hide a course channel (and role) to remove clutter. This will delete course channel and role"
+				"Show or hide a course channel (and role) to remove clutter. This will delete course channel and role",
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The display acroynm of the course")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addBooleanOption(
 				new Builders.SlashCommandBooleanOption()
 					.setName("delete-role")
 					.setDescription(
-						"If hiding channel, delete the course role as well (true by default)"
+						"If hiding channel, delete the course role as well (true by default)",
 					)
-					.setRequired(false)
-			)
+					.setRequired(false),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -72,16 +72,16 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("old-acronym")
 					.setDescription("The acronym of the course to be renamed")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("new-acronym")
 					.setDescription(
-						"The acronym to show on channel name and role (e.g. CDI-I)"
+						"The acronym to show on channel name and role (e.g. CDI-I)",
 					)
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -91,8 +91,8 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("acronym")
 					.setDescription("The acronym of the course in question")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommandGroup(
 		new Builders.SlashCommandSubcommandGroupBuilder()
@@ -102,22 +102,22 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("set")
 					.setDescription(
-						"Set the current academic year (e.g. 2020-2021)"
+						"Set the current academic year (e.g. 2020-2021)",
 					)
 					.addStringOption(
 						new Builders.SlashCommandStringOption()
 							.setName("academic-year")
 							.setDescription(
-								"The current academic year (e.g. 2020-2021)"
+								"The current academic year (e.g. 2020-2021)",
 							)
-							.setRequired(true)
-					)
+							.setRequired(true),
+					),
 			)
 			.addSubcommand(
 				new Builders.SlashCommandSubcommandBuilder()
 					.setName("get")
-					.setDescription("Get the current academic year")
-			)
+					.setDescription("Get the current academic year"),
+			),
 	);
 
 	return [{ builder: cmd, handler: handleCommand }];
@@ -125,7 +125,7 @@ export function provideCommands(): CommandDescriptor[] {
 
 export async function handleCommand(
 	interaction: Discord.ChatInputCommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	if (!interaction.guild) return;
 
@@ -137,7 +137,7 @@ export async function handleCommand(
 			try {
 				const orphanChannels = await refreshCourses(
 					prisma,
-					interaction.guild
+					interaction.guild,
 				);
 
 				logger.info("Refreshed courses channels");
@@ -146,15 +146,15 @@ export async function handleCommand(
 						"Sucessfully updated course channels." +
 						(orphanChannels.length
 							? `\nConsider deleting the following ${orphanChannels.length} orphan channel(s):\n` +
-							  orphanChannels
+								orphanChannels
 									.map((c) => `- <#${c.id}>`)
 									.join("\n")
-							: "")
+							: ""),
 				);
 			} catch (e) {
 				logger.error(e, "Error while refreshing courses channels");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -166,16 +166,16 @@ export async function handleCommand(
 					.map((_, i) =>
 						interaction.options.getChannel(
 							`category${i + 1}`,
-							i === 0
-						)
+							i === 0,
+						),
 					)
 					.filter(
-						(v) => v?.type === Discord.ChannelType.GuildCategory
+						(v) => v?.type === Discord.ChannelType.GuildCategory,
 					);
 
 				if (categories.length === 0) {
 					await interaction.editReply(
-						utils.XEmoji + "No category channels provided"
+						utils.XEmoji + "No category channels provided",
 					);
 				}
 
@@ -194,15 +194,15 @@ export async function handleCommand(
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
 						"Sucessfully updated course categories.\n" +
-						categories.map((c) => `- <#${c?.id}>`).join("\n")
+						categories.map((c) => `- <#${c?.id}>`).join("\n"),
 				);
 			} catch (e) {
 				logger.error(
 					e,
-					"Error while setting course channels' categories"
+					"Error while setting course channels' categories",
 				);
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -212,7 +212,7 @@ export async function handleCommand(
 			try {
 				const courseAcronym = interaction.options.getString(
 					"acronym",
-					true
+					true,
 				);
 				const deleteRole =
 					interaction.options.getBoolean("delete-role", false) ??
@@ -223,7 +223,7 @@ export async function handleCommand(
 				});
 				if (!course) {
 					await interaction.editReply(
-						utils.XEmoji + `Course \`${courseAcronym}\` not found!`
+						utils.XEmoji + `Course \`${courseAcronym}\` not found!`,
 					);
 					return;
 				}
@@ -242,7 +242,7 @@ export async function handleCommand(
 					try {
 						const courseChannel =
 							await interaction.guild.channels.fetch(
-								course.channelId || ""
+								course.channelId || "",
 							);
 						if (
 							courseChannel &&
@@ -254,45 +254,45 @@ export async function handleCommand(
 						if (deleteRole) {
 							const courseRole =
 								await interaction.guild.roles.fetch(
-									course.roleId || ""
+									course.roleId || "",
 								);
 							if (courseRole) {
 								courseRole.delete(
-									`${interaction.user.tag} has hidden course`
+									`${interaction.user.tag} has hidden course`,
 								);
 							}
 						}
 					} catch (e) {
 						logger.error(
 							e,
-							"Failed to delete channel and/or role while toggling course's channel visibility"
+							"Failed to delete channel and/or role while toggling course's channel visibility",
 						);
 						await interaction.editReply(
 							utils.XEmoji +
-								"Could not delete channel and/or role, but settings were updated correctly. Please delete the channel/role manually."
+								"Could not delete channel and/or role, but settings were updated correctly. Please delete the channel/role manually.",
 						);
 						return;
 					}
 					logger.info({ course }, "Course channel has been hidden");
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
-							`Course \`${course.name}\` is now hidden`
+							`Course \`${course.name}\` is now hidden`,
 					);
 				} else {
 					await refreshCourses(prisma, interaction.guild);
 					logger.info(
 						{ course },
-						"Course channel is now being shown"
+						"Course channel is now being shown",
 					);
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
-							`Course \`${course.name}\` is now being shown`
+							`Course \`${course.name}\` is now being shown`,
 					);
 				}
 			} catch (e) {
 				logger.error(e, "Error while toggling channel visibility");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 			break;
@@ -301,11 +301,11 @@ export async function handleCommand(
 			try {
 				const oldAcronym = interaction.options.getString(
 					"old-acronym",
-					true
+					true,
 				);
 				const newAcronym = interaction.options.getString(
 					"new-acronym",
-					true
+					true,
 				);
 
 				const course = await prisma.course.findUnique({
@@ -313,7 +313,7 @@ export async function handleCommand(
 				});
 				if (!course) {
 					await interaction.editReply(
-						utils.XEmoji + `Course \`${oldAcronym}\` not found!`
+						utils.XEmoji + `Course \`${oldAcronym}\` not found!`,
 					);
 					return;
 				}
@@ -326,10 +326,10 @@ export async function handleCommand(
 				try {
 					const courseChannel =
 						await interaction.guild.channels.fetch(
-							course.channelId || ""
+							course.channelId || "",
 						);
 					const roleChannel = await interaction.guild.roles.fetch(
-						course.roleId || ""
+						course.roleId || "",
 					);
 					if (courseChannel) {
 						courseChannel.edit({
@@ -341,26 +341,26 @@ export async function handleCommand(
 					if (roleChannel) {
 						roleChannel.setName(
 							newAcronym,
-							`Course rename by ${interaction.user.tag}`
+							`Course rename by ${interaction.user.tag}`,
 						);
 					}
 				} catch (e) {
 					logger.error(e, "Error while renamming course channel");
 					await interaction.editReply(
 						utils.XEmoji +
-							"Failed to rename channel and/or role, but renamed course on database. Please rename channel and/or role manully."
+							"Failed to rename channel and/or role, but renamed course on database. Please rename channel and/or role manully.",
 					);
 				}
 
 				logger.info({ oldAcronym, newAcronym }, "Renamed course");
 				await interaction.editReply(
-					utils.CheckMarkEmoji + "Course renamed succesfully!"
+					utils.CheckMarkEmoji + "Course renamed succesfully!",
 				);
 			} catch (e) {
 				logger.error(e, "Error while renamming course channel");
 				await interaction.editReply(
 					utils.XEmoji +
-						"Something went wrong. Maybe there is already another course with the desired acronym?"
+						"Something went wrong. Maybe there is already another course with the desired acronym?",
 				);
 			}
 
@@ -374,10 +374,10 @@ export async function handleCommand(
 						courses: {
 							some: {
 								course: {
-									OR: {
-										acronym: acronym,
-										displayAcronym: acronym,
-									},
+									OR: [
+										{ acronym: acronym },
+										{ displayAcronym: acronym },
+									],
 								},
 							},
 						},
@@ -389,7 +389,7 @@ export async function handleCommand(
 						new Discord.EmbedBuilder()
 							.setTitle("Degrees with Course")
 							.setDescription(
-								`Below are all degrees that need course \`${acronym}\`, as well as whether they have a tier high enough to justify having a channel for said course.`
+								`Below are all degrees that need course \`${acronym}\`, as well as whether they have a tier high enough to justify having a channel for said course.`,
 							)
 							.addFields(
 								degrees.map((d) => ({
@@ -398,14 +398,14 @@ export async function handleCommand(
 										d.tier >= 2 ? "✅" : "❌"
 									}`,
 									inline: true,
-								}))
+								})),
 							),
 					],
 				});
 			} catch (e) {
 				logger.error(e, "Error while listing degrees with course");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong"
+					utils.XEmoji + "Something went wrong",
 				);
 			}
 			break;
@@ -423,17 +423,17 @@ export async function handleCommand(
 
 						if (academicYear) {
 							await interaction.editReply(
-								`The current academic year is \`${academicYear}\``
+								`The current academic year is \`${academicYear}\``,
 							);
 						} else {
 							await interaction.editReply(
-								`No academic year is currently set`
+								`No academic year is currently set`,
 							);
 						}
 					} catch (e) {
 						logger.error(e, "Error while getting academic year");
 						await interaction.editReply(
-							utils.XEmoji + "Something went wrong."
+							utils.XEmoji + "Something went wrong.",
 						);
 					}
 					break;
@@ -442,7 +442,7 @@ export async function handleCommand(
 					try {
 						const academicYear = interaction.options.getString(
 							"academic-year",
-							true
+							true,
 						);
 
 						await prisma.config.upsert({
@@ -456,15 +456,15 @@ export async function handleCommand(
 
 						logger.info(
 							{ academicYear },
-							"Academic year has been set"
+							"Academic year has been set",
 						);
 						await interaction.editReply(
-							`The current academic year has been set to \`${academicYear}\``
+							`The current academic year has been set to \`${academicYear}\``,
 						);
 					} catch (e) {
 						logger.error(e, "Error while setting academic year");
 						await interaction.editReply(
-							utils.XEmoji + "Something went wrong."
+							utils.XEmoji + "Something went wrong.",
 						);
 					}
 					break;
@@ -478,7 +478,7 @@ export async function handleCommand(
 export async function importCoursesFromDegree(
 	prisma: PrismaClient,
 	degreeId: string,
-	force = false
+	force = false,
 ): Promise<void> {
 	const academicYear = (
 		await prisma.config.findUnique({ where: { key: "academic_year" } })
@@ -493,12 +493,12 @@ export async function importCoursesFromDegree(
 	logger.info(
 		{ degreeId },
 		"Got %d courses from Fénix for degree",
-		degreeCourses.length
+		degreeCourses.length,
 	);
 
 	if (force) {
 		const idsToKeep = degreeCourses.map(
-			(course) => `${degreeId}-${course.acronym}`
+			(course) => `${degreeId}-${course.acronym}`,
 		);
 		const deleteResult = await prisma.degreeCourse.deleteMany({
 			where: { degreeFenixId: degreeId, id: { notIn: idsToKeep } },
@@ -507,7 +507,7 @@ export async function importCoursesFromDegree(
 		logger.info(
 			{ degreeId },
 			"Deleted %d orphan courses for degree",
-			deleteResult.count
+			deleteResult.count,
 		);
 	}
 
@@ -556,7 +556,7 @@ export async function importCoursesFromDegree(
 
 export async function refreshCourses(
 	prisma: PrismaClient,
-	guild: Discord.Guild
+	guild: Discord.Guild,
 ): Promise<OrphanChannel[]> {
 	const reason = "Course channels refresh";
 
@@ -574,8 +574,8 @@ export async function refreshCourses(
 		await Promise.all(
 			categoriesId.map(
 				async (id) =>
-					(await guild.channels.fetch(id)) as Discord.CategoryChannel
-			)
+					(await guild.channels.fetch(id)) as Discord.CategoryChannel,
+			),
 		)
 	).filter((channel) => channel?.type === Discord.ChannelType.GuildCategory);
 	if (!categoriesChannels.length) {
@@ -615,7 +615,7 @@ export async function refreshCourses(
 		let courseChannel =
 			channels.get(course.channelId || "") ||
 			channels.find(
-				(v) => v.name === course.displayAcronym.toLowerCase()
+				(v) => v.name === course.displayAcronym.toLowerCase(),
 			);
 
 		if (!courseRole) {
@@ -656,7 +656,7 @@ export async function refreshCourses(
 		} else {
 			if (courseChannel.name !== course.displayAcronym.toLowerCase()) {
 				await courseChannel.setName(
-					course.displayAcronym.toLowerCase()
+					course.displayAcronym.toLowerCase(),
 				);
 			}
 			if (
@@ -666,7 +666,7 @@ export async function refreshCourses(
 			) {
 				await (courseChannel as Discord.TextChannel).setTopic(
 					courseChannelTopic,
-					reason
+					reason,
 				);
 			}
 			if (
@@ -703,7 +703,7 @@ export async function refreshCourses(
 
 export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 	prisma: PrismaClient,
-	channelId: Discord.Snowflake
+	channelId: Discord.Snowflake,
 ): Promise<(RoleGroup & { options: RoleGroupOption[] })[]> {
 	const courses = await prisma.degreeCourse.findMany({
 		where: {
@@ -718,7 +718,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 		include: { course: true },
 	});
 	courses.sort((a, b) =>
-		a.course.displayAcronym.localeCompare(b.course.displayAcronym)
+		a.course.displayAcronym.localeCompare(b.course.displayAcronym),
 	);
 
 	const byYear: Record<string, (DegreeCourse & { course: Course })[]> = {};
@@ -736,7 +736,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 				.map(async (year) => {
 					const yearCourses = utils.removeDuplicatesFromArray(
 						byYear[year],
-						(v) => v.course.roleId
+						(v) => v.course.roleId,
 					);
 					const groupId = `__dc-${channelId}-${year}`;
 
@@ -753,7 +753,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 								await prisma.courseRoleSelectionMessage.findFirst(
 									{
 										where: { injectedRoleGroupId: groupId },
-									}
+									},
 								)
 							)?.messageId ?? null,
 						options: yearCourses.map((c) => ({
@@ -764,7 +764,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 							roleGroupId: groupId,
 						})),
 					};
-				})
+				}),
 		);
 
 	if (groups.length) {
@@ -810,7 +810,7 @@ export async function generateRoleSelectionGroupsForCourseSelectionChannel(
 }
 
 export async function getRoleSelectionGroupsForInjection(
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<
 	ReturnType<typeof generateRoleSelectionGroupsForCourseSelectionChannel>
 > {
@@ -827,8 +827,11 @@ export async function getRoleSelectionGroupsForInjection(
 	return [
 		...(await Promise.all(
 			uniqueChannelIds.map((id) =>
-				generateRoleSelectionGroupsForCourseSelectionChannel(prisma, id)
-			)
+				generateRoleSelectionGroupsForCourseSelectionChannel(
+					prisma,
+					id,
+				),
+			),
 		)),
 	].flat();
 }
@@ -837,7 +840,7 @@ export async function handleRemoveCourseSelectionRoles(
 	courseSelectionChannelId: Discord.Snowflake,
 	roles: Discord.GuildMemberRoleManager,
 	selection: string,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<number> {
 	const courses = await prisma.degreeCourse.findMany({
 		where: {
@@ -857,7 +860,7 @@ export async function handleRemoveCourseSelectionRoles(
 	// duplicate removal is needed in case multiple degrees share a course selection channel
 	const rolesToRemove = utils
 		.removeDuplicatesFromArray(
-			courses.map((c) => c.course.roleId as Discord.Snowflake)
+			courses.map((c) => c.course.roleId as Discord.Snowflake),
 		)
 		.filter((r) => roles.cache.has(r)); // not needed for remove role, but to calculate returned length
 

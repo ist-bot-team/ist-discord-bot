@@ -37,7 +37,7 @@ const POLL_ACTION_ROW = new ActionRowBuilder<ButtonBuilder>().addComponents([
 const POLL_NO_ONE = "*No one*";
 
 export const handlePollButton = async (
-	interaction: ButtonInteraction
+	interaction: ButtonInteraction,
 ): Promise<void> => {
 	await interaction.deferReply({ ephemeral: true });
 
@@ -55,7 +55,7 @@ export const handlePollButton = async (
 	const newEmbed = getNewPollEmbed(
 		oldEmbeds[0] as Embed,
 		fieldIndex,
-		interaction.user.id
+		interaction.user.id,
 	);
 
 	interaction.message.edit({
@@ -69,45 +69,44 @@ export const handlePollButton = async (
 export const getNewPollEmbed = (
 	oldEmbed: Embed,
 	fieldIndex: number,
-	userId: Snowflake
+	userId: Snowflake,
 ): Embed => {
 	oldEmbed.fields?.map((field, i) => {
 		field.value =
 			field.value
 				.split("\n")
 				.filter(
-					(user) => user !== POLL_NO_ONE && user !== `<@${userId}>`
+					(user) => user !== POLL_NO_ONE && user !== `<@${userId}>`,
 				)
 				.join("\n") || (fieldIndex === i ? "" : POLL_NO_ONE);
 	});
 	if (oldEmbed.fields[fieldIndex])
-		oldEmbed.fields[
-			fieldIndex
-		].value = `${oldEmbed.fields[fieldIndex]?.value}\n<@${userId}>`;
+		oldEmbed.fields[fieldIndex].value =
+			`${oldEmbed.fields[fieldIndex]?.value}\n<@${userId}>`;
 
 	return oldEmbed;
 };
 
 export const unpinPoll = async (
 	poll: Poll,
-	channel: TextChannel
+	channel: TextChannel,
 ): Promise<void> => {
 	const pinnedMessages = await channel.messages.fetchPinned();
 	await Promise.all(
 		pinnedMessages.map((msg) => {
 			if (
 				msg.embeds?.some(
-					(msgEmbed) => msgEmbed.footer?.text === poll.id
+					(msgEmbed) => msgEmbed.footer?.text === poll.id,
 				)
 			)
 				return msg.unpin();
-		})
+		}),
 	);
 };
 
 export const sendPollEmbed = async (
 	poll: Poll,
-	channel: TextChannel
+	channel: TextChannel,
 ): Promise<void> => {
 	await unpinPoll(poll, channel);
 
@@ -129,18 +128,18 @@ export const sendPollEmbed = async (
 export const schedulePolls = async (
 	client: Client,
 	prisma: PrismaClient,
-	polls: (Poll & { cron: string })[]
+	polls: (Poll & { cron: string })[],
 ): Promise<void> => {
 	await Promise.all(
 		polls.map(async (poll) => {
 			const channel = await client.channels.fetch(
-				poll.channelId as Snowflake
+				poll.channelId as Snowflake,
 			);
 
 			if (!channel) {
 				logger.error(
 					{ channel: poll.channelId, poll: poll.id },
-					"Couldn't fetch channel for poll"
+					"Couldn't fetch channel for poll",
 				);
 				return;
 			}
@@ -158,13 +157,13 @@ export const schedulePolls = async (
 					logger.error(e, "Could not verify (& send) poll");
 				}
 			});
-		})
+		}),
 	);
 };
 
 export const scheduleAllScheduledPolls = async (
 	client: Client,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> => {
 	await schedulePolls(
 		client,
@@ -173,7 +172,7 @@ export const scheduleAllScheduledPolls = async (
 			where: {
 				type: "scheduled",
 			},
-		})) as (Poll & { cron: string })[]
+		})) as (Poll & { cron: string })[],
 	);
 };
 
@@ -189,28 +188,28 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("id")
 					.setDescription("Unique identifier")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("title")
 					.setDescription("Poll title")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addChannelOption(
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
 					.setDescription("Where polls will be sent")
-					.setRequired(true)
+					.setRequired(true),
 			)
 			.addStringOption(
 				new Builders.SlashCommandStringOption()
 					.setName("schedule")
 					.setDescription(
-						"Cron schedule string; BE VERY CAREFUL THIS IS CORRECT! If none, send one-shot poll."
+						"Cron schedule string; BE VERY CAREFUL THIS IS CORRECT! If none, send one-shot poll.",
 					)
-					.setRequired(false)
-			)
+					.setRequired(false),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -220,13 +219,13 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("id")
 					.setDescription("Unique identifier")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("list")
-			.setDescription("List existing polls")
+			.setDescription("List existing polls"),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -236,15 +235,15 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("id")
 					.setDescription("Unique identifier")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
 export async function handleCommand(
 	interaction: ChatInputCommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	switch (interaction.options.getSubcommand()) {
 		case "add": {
@@ -275,13 +274,13 @@ export async function handleCommand(
 				logger.info({ id, title, channel, cron }, "Added poll");
 				await interaction.editReply(
 					utils.CheckMarkEmoji +
-						`Successfully added${cron ? " and scheduled" : ""}.`
+						`Successfully added${cron ? " and scheduled" : ""}.`,
 				);
 			} catch (e) {
 				logger.error(e, "Failed to add poll");
 				await interaction.editReply(
 					utils.XEmoji +
-						"Something went wrong, maybe the ID already exists?"
+						"Something went wrong, maybe the ID already exists?",
 				);
 			}
 
@@ -295,7 +294,7 @@ export async function handleCommand(
 					where: { id },
 				})) as Poll;
 				const channel = (await interaction.client.channels.fetch(
-					p.channelId as Snowflake
+					p.channelId as Snowflake,
 				)) as TextChannel;
 				await unpinPoll(p, channel);
 
@@ -303,12 +302,12 @@ export async function handleCommand(
 
 				logger.info({ id }, "Removed poll");
 				await interaction.editReply(
-					utils.CheckMarkEmoji + "Successfully removed."
+					utils.CheckMarkEmoji + "Successfully removed.",
 				);
 			} catch (e) {
 				logger.error(e, "Failed to remove poll");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -324,21 +323,21 @@ export async function handleCommand(
 							.setDescription(
 								polls.length
 									? "Below is a list of all polls with their title and ID"
-									: "No polls found"
+									: "No polls found",
 							)
 							.addFields(
 								polls.map((p) => ({
 									name: p.title,
 									value: p.id,
 									inline: true,
-								}))
+								})),
 							),
 					],
 				});
 			} catch (e) {
 				logger.error(e, "Failed to list all polls");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
@@ -354,7 +353,7 @@ export async function handleCommand(
 
 				if (poll === null) {
 					await interaction.editReply(
-						utils.XEmoji + "No poll found with that ID."
+						utils.XEmoji + "No poll found with that ID.",
 					);
 				} else {
 					await interaction.editReply({
@@ -392,7 +391,7 @@ export async function handleCommand(
 			} catch (e) {
 				logger.error(e, "Failed to list poll");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 
