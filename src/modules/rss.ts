@@ -3,7 +3,7 @@ import Discord, {
 	HexColorString,
 	SendableChannels,
 } from "discord.js";
-import { Course, Degree, PrismaClient } from "@prisma/client";
+import { Course, Degree, PrismaClient } from "../prisma/generated/client";
 import cron from "node-cron";
 import TurndownService from "turndown";
 

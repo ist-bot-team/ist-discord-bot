@@ -1,6 +1,6 @@
 // Controller for channels where only images may be sent
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../prisma/generated/client";
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";
 

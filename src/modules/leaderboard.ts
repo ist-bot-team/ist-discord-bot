@@ -1,6 +1,6 @@
 // Guild leaderboard of users sorted by characters sent
 
-import { PrismaClient, LeaderboardEntry } from "@prisma/client";
+import { PrismaClient, LeaderboardEntry } from "../prisma/generated/client";
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";

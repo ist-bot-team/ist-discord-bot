@@ -7,7 +7,7 @@ import {
 	RoleGroupOption,
 	DegreeCourse,
 	Course,
-} from "@prisma/client";
+} from "../prisma/generated/client";
 
 import * as Discord from "discord.js";
 import * as Builders from "@discordjs/builders";

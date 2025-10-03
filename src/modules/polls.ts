@@ -15,7 +15,7 @@ import {
 import * as Builders from "@discordjs/builders";
 import cron from "node-cron";
 
-import { PrismaClient, Poll } from "@prisma/client";
+import { PrismaClient, Poll } from "../prisma/generated/client";
 import { CommandDescriptor } from "../bot.d";
 import * as utils from "./utils";
 import logger from "../logger";

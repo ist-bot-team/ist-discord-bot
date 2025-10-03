@@ -1,6 +1,10 @@
 // Handler for role selection
 
-import { PrismaClient, RoleGroup, RoleGroupOption } from "@prisma/client";
+import {
+	PrismaClient,
+	RoleGroup,
+	RoleGroupOption,
+} from "../prisma/generated/client";
 import Discord, {
 	ButtonBuilder,
 	SelectMenuBuilder,
