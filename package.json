@@ -51,7 +51,7 @@
 	"scripts": {
 		"prepare": "husky",
 		"build": "tsc",
-		"start": "node . | pino-pretty -c",
+		"start": "node --enable-source-maps . | pino-pretty -c",
 		"start:docker": "prisma migrate deploy && node .",
 		"start:docker:dev": "npm run start:docker | pino-pretty -c",
 		"prisma:generate": "prisma generate",

@@ -13,24 +13,16 @@ Discord bot to manage the IST Hub server -- join [here](https://discord.leic.pt)
 1. Create a `docker-compose.yml` file as below:
 
 ```yaml
-version: "3.8"
-
 services:
     ist-discord-bot:
         ## EITHER:
-        image: ghcr.io/ist-bot-team/ist-discord-bot:2
+        image: ghcr.io/ist-bot-team/ist-discord-bot:3
         ## OR:
         build:
             context: .
-            dockerfile: Dockerfile.dev
-            args:
-                DATABASE_URL: file:/app/data/bot.db
         ## END;
-        volumes:
-            - type: bind
-              source: ./data
-              target: /app/data
         environment:
+            DATABASE_URL: postgresql://istbot:istbot@postgres/istbot
             DISCORD_TOKEN: PLACE_BOT_TOKEN_HERE
             GUILD_ID: PLACE_MAIN_GUILD_ID_HERE # or "GLOBAL" to use in multiple guilds (1hr roll-out time)
             ADMIN_ID: PLACE_ADMIN_ROLE_ID_HERE
@@ -38,6 +30,20 @@ services:
             COMMAND_LOGS_CHANNEL_ID: PLACE_LOGGING_CHANNEL_ID_HERE
             TZ: Europe/Lisbon # default timezone for crontab and other date related stuff
         restart: unless-stopped
+
+    postgres:
+        image: postgres:18
+        ports:
+            - 127.0.0.1:5432:5432
+        environment:
+            POSTGRES_USER: istbot
+            POSTGRES_PASSWORD: istbot
+            POSTGRES_DB: istbot
+        volumes:
+            - pgdata:/var/lib/postgresql
+
+volumes:
+    pgdata:
 ```
 
 2. Create a folder named `data` for Docker to store things in
@@ -63,7 +69,7 @@ If this is not enabled, an error will be thrown on startup.
 If you're looking at the source code, you should probably run
 
 ```sh
-npx prisma generate
+pnpm prisma:generate
 ```
 
 first so you can have typings.
