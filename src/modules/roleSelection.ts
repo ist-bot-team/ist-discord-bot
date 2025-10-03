@@ -7,6 +7,7 @@ import {
 } from "../prisma/generated/client";
 import Discord, {
 	ButtonBuilder,
+	MessageFlags,
 	SelectMenuBuilder,
 	SelectMenuComponentOptionData,
 } from "discord.js";
@@ -323,7 +324,7 @@ export async function handleRoleSelectionMenu(
 	interaction: Discord.SelectMenuInteraction,
 	prisma: PrismaClient,
 ): Promise<void> {
-	await interaction.deferReply({ ephemeral: true });
+	await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 	const groupId = interaction.customId.split(":")[1];
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;
@@ -339,7 +340,7 @@ export async function handleRoleSelectionButton(
 	interaction: Discord.ButtonInteraction,
 	prisma: PrismaClient,
 ): Promise<void> {
-	await interaction.deferReply({ ephemeral: true });
+	await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 	const [_, groupId, selection] = interaction.customId.split(":");
 	const roles = interaction.member?.roles as Discord.GuildMemberRoleManager;

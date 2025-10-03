@@ -9,6 +9,7 @@ import {
 	Client,
 	Embed,
 	EmbedBuilder,
+	MessageFlags,
 	Snowflake,
 	TextChannel,
 } from "discord.js";
@@ -39,7 +40,7 @@ const POLL_NO_ONE = "*No one*";
 export const handlePollButton = async (
 	interaction: ButtonInteraction,
 ): Promise<void> => {
-	await interaction.deferReply({ ephemeral: true });
+	await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 	const action = interaction.customId.split(":")[1];
 	let fieldIndex = -1;

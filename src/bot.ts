@@ -6,6 +6,7 @@ import Discord, {
 	CommandInteraction,
 	GatewayIntentBits,
 	InteractionContextType,
+	MessageFlags,
 	RESTPostAPIApplicationCommandsJSONBody,
 	Routes,
 } from "discord.js";
@@ -270,7 +271,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 		if (interaction.isMessageComponent()) {
 			const prefix = interaction.customId.split(":")[0];
 
-			// TODO: consider moving `await interaction.deferReply({ ephemeral: true });` here
+			// TODO: consider moving `await interaction.deferReply({ flags: MessageFlags.Ephemeral });` here
 
 			if (interaction.isButton()) {
 				await buttonHandlers[prefix]?.(
@@ -287,7 +288,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 			interaction.isChatInputCommand() ||
 			interaction.isContextMenuCommand()
 		) {
-			await interaction.deferReply({ ephemeral: true });
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 			if (
 				!interaction.command?.guildId &&
