@@ -5,6 +5,7 @@ import Discord, {
 	Client,
 	CommandInteraction,
 	GatewayIntentBits,
+	InteractionContextType,
 	RESTPostAPIApplicationCommandsJSONBody,
 	Routes,
 } from "discord.js";
@@ -89,7 +90,7 @@ const menuHandlers: InteractionHandlers<Discord.SelectMenuInteraction> = {
 	roleSelection: roleSelection.handleRoleSelectionMenu,
 };
 
-let commandLogsChannel: Discord.TextBasedChannel | undefined;
+let commandLogsChannel: Discord.TextChannel | undefined;
 
 const startupChores: Chore[] = [
 	{
@@ -116,15 +117,15 @@ const startupChores: Chore[] = [
 					commands.push(
 						descriptor.builder
 							// bot should only be used on the server
-							.setDMPermission(false)
+							.setContexts(InteractionContextType.Guild)
 							// undefined leaves the default (everyone), 0 restricts to admins
 							.setDefaultMemberPermissions(
 								descriptor.permission ===
 									CommandPermission.Public
 									? undefined
-									: 0
+									: 0,
 							)
-							.toJSON()
+							.toJSON(),
 					);
 					commandHandlers[name] =
 						descriptor.handler as InteractionHandler<CommandInteraction>;
@@ -135,22 +136,22 @@ const startupChores: Chore[] = [
 			}
 
 			const rest = new REST({ version: "10" }).setToken(
-				DISCORD_TOKEN as string
+				DISCORD_TOKEN as string,
 			);
 
 			const useGlobalCommands =
 				GUILD_ID?.toLocaleLowerCase() === "global";
 			await rest.put(
 				Routes.applicationCommands(client?.user?.id as string),
-				{ body: useGlobalCommands ? commands : [] }
+				{ body: useGlobalCommands ? commands : [] },
 			);
 			if (!useGlobalCommands) {
 				await rest.put(
 					Routes.applicationGuildCommands(
 						client?.user?.id as string,
-						GUILD_ID as string
+						GUILD_ID as string,
 					),
-					{ body: commands }
+					{ body: commands },
 				);
 			}
 		},
@@ -222,13 +223,12 @@ const startupChores: Chore[] = [
 		fn: async () => {
 			try {
 				const c = await client.channels.fetch(
-					COMMAND_LOGS_CHANNEL_ID ?? ""
+					COMMAND_LOGS_CHANNEL_ID ?? "",
 				);
 				if (c?.type !== ChannelType.GuildText) {
 					throw new Error("Wrong type");
 				} else {
-					commandLogsChannel =
-						(await c.fetch()) as typeof commandLogsChannel;
+					commandLogsChannel = await c.fetch();
 				}
 			} catch (e) {
 				throw new Error("Failed to find channel");
@@ -250,14 +250,14 @@ client.on("ready", async () => {
 				logger.error(
 					e,
 					"An error occurred while executing chore '%s'",
-					chore.summary
-				)
+					chore.summary,
+				),
 			);
 		if (delta) {
 			logger.info(
 				`[${i + 1}/${startupChores.length}] ${
 					chore.complete
-				} (${delta}ms)`
+				} (${delta}ms)`,
 			);
 		}
 	}
@@ -275,12 +275,12 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 			if (interaction.isButton()) {
 				await buttonHandlers[prefix]?.(
 					interaction as Discord.ButtonInteraction,
-					prisma
+					prisma,
 				);
-			} else if (interaction.isSelectMenu()) {
+			} else if (interaction.isStringSelectMenu()) {
 				await menuHandlers[prefix]?.(
 					interaction as Discord.SelectMenuInteraction,
-					prisma
+					prisma,
 				);
 			}
 		} else if (
@@ -324,7 +324,7 @@ client.on("interactionCreate", async (interaction: Discord.Interaction) => {
 
 			await commandHandlers[interaction.commandName]?.(
 				interaction,
-				prisma
+				prisma,
 			);
 		}
 	} catch (e) {

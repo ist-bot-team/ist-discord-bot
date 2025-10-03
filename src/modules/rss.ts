@@ -1,7 +1,7 @@
 import Discord, {
 	EmbedBuilder,
 	HexColorString,
-	TextBasedChannel,
+	SendableChannels,
 } from "discord.js";
 import { Course, Degree, PrismaClient } from "@prisma/client";
 import cron from "node-cron";
@@ -15,14 +15,14 @@ const turndownService = new TurndownService();
 
 export function scheduleRSSFeedJob(
 	prisma: PrismaClient,
-	client: Discord.Client
+	client: Discord.Client,
 ): void {
 	cron.schedule("*/2 * * * *", runRSSFeedJob(prisma, client));
 }
 
 export function runRSSFeedJob(
 	prisma: PrismaClient,
-	client: Discord.Client
+	client: Discord.Client,
 ): () => Promise<void> {
 	return async function () {
 		const degreeCourse = await prisma.degreeCourse.findMany({
@@ -48,7 +48,7 @@ export function runRSSFeedJob(
 							course: course.course.name,
 							degree: course.degree.name,
 						},
-						"Failed to fetch and send announcements for course"
+						"Failed to fetch and send announcements for course",
 					);
 				}
 			});
@@ -67,17 +67,17 @@ type DegreeCourse = {
 async function fetchRSSForCourse(
 	course: DegreeCourse,
 	prisma: PrismaClient,
-	client: Discord.Client
+	client: Discord.Client,
 ): Promise<void> {
 	const degreeChannel = await client.channels.fetch(
-		course.degree.degreeTextChannelId || ""
+		course.degree.degreeTextChannelId || "",
 	);
-	if (!degreeChannel?.isTextBased()) return;
+	if (!degreeChannel?.isSendable()) return;
 
 	const announcements =
 		await FenixAPI.getRSSFeed<FenixTypings.RSSCourseAnnouncement>(
 			course.announcementsFeedUrl || "",
-			course.feedLastUpdated
+			course.feedLastUpdated,
 		);
 
 	for (const announcement of announcements) {
@@ -95,8 +95,8 @@ async function fetchRSSForCourse(
 
 async function sendAnnouncementMessage(
 	course: DegreeCourse,
-	channel: TextBasedChannel,
-	announcement: FenixTypings.RSSCourseAnnouncement
+	channel: SendableChannels,
+	announcement: FenixTypings.RSSCourseAnnouncement,
 ) {
 	const roleMention = course.course.roleId
 		? ` <@&${course.course.roleId}>`
@@ -122,7 +122,7 @@ async function sendAnnouncementMessage(
 			courseName: course.course.name,
 			channel,
 		},
-		"Sending course announcement"
+		"Sending course announcement",
 	);
 
 	await channel.send({
