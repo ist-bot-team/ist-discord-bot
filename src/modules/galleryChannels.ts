@@ -11,7 +11,7 @@ import logger from "../logger";
 export async function handleMessage(
 	message: Discord.Message,
 	prisma: PrismaClient,
-	galleries?: Discord.Snowflake[]
+	galleries?: Discord.Snowflake[],
 ): Promise<boolean> {
 	if (
 		message.author.bot ||
@@ -32,7 +32,7 @@ export async function handleMessage(
 		) {
 			logger.info(
 				{ message },
-				"Deleting non-image message on gallery channel"
+				"Deleting non-image message on gallery channel",
 			);
 			const sermon = await message.reply({
 				content: `This is a gallery channel, ${message.author}, so only images may be sent here.`,
@@ -42,14 +42,14 @@ export async function handleMessage(
 			await message.delete().catch((err) => {
 				logger.error(
 					{ err },
-					"Failed to delete message on gallery channel"
+					"Failed to delete message on gallery channel",
 				);
 			});
 			setTimeout(async () => {
 				await sermon.delete().catch((err) => {
 					logger.error(
 						{ err },
-						"Failed to delete sermon on gallery channel"
+						"Failed to delete sermon on gallery channel",
 					);
 				});
 			}, 5000);
@@ -62,7 +62,7 @@ export async function handleMessage(
 
 export async function parseExistingMessages(
 	prisma: PrismaClient,
-	channels: (Discord.TextChannel | Discord.ThreadChannel)[]
+	channels: (Discord.TextChannel | Discord.ThreadChannel)[],
 ): Promise<number> {
 	let count = 0;
 	for (const channel of channels) {
@@ -97,8 +97,8 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
 					.setDescription("Existing messages will be preserved")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -108,13 +108,13 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
 					.setDescription("New messages will no longer be moderated")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("list")
-			.setDescription("List existing gallery channels")
+			.setDescription("List existing gallery channels"),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -124,10 +124,10 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
 					.setDescription(
-						"If specified, only this channel will be cleaned"
+						"If specified, only this channel will be cleaned",
 					)
-					.setRequired(false)
-			)
+					.setRequired(false),
+			),
 	);
 	return [
 		{
@@ -139,7 +139,7 @@ export function provideCommands(): CommandDescriptor[] {
 
 async function updateGalleries(
 	prisma: PrismaClient,
-	newVal: Discord.Snowflake[]
+	newVal: Discord.Snowflake[],
 ) {
 	const value = newVal.join(",");
 	await prisma.config.upsert({
@@ -154,7 +154,7 @@ async function updateGalleries(
 
 export async function handleCommand(
 	interaction: Discord.ChatInputCommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	const galleries = await utils.fetchGalleries(prisma);
 
@@ -163,25 +163,25 @@ export async function handleCommand(
 			try {
 				const channel = interaction.options.getChannel(
 					"channel",
-					true
+					true,
 				).id;
 
 				if (galleries.includes(channel)) {
 					await interaction.editReply(
-						utils.XEmoji + "Channel is already a gallery."
+						utils.XEmoji + "Channel is already a gallery.",
 					);
 				} else {
 					logger.info({ channel }, "Added a gallery channel");
 					galleries.push(channel);
 					await updateGalleries(prisma, galleries);
 					await interaction.editReply(
-						utils.CheckMarkEmoji + "Gallery successfully added."
+						utils.CheckMarkEmoji + "Gallery successfully added.",
 					);
 				}
 			} catch (e) {
 				logger.error(e, "Error while adding a gallery channel");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 			break;
@@ -190,27 +190,27 @@ export async function handleCommand(
 			try {
 				const channel = interaction.options.getChannel(
 					"channel",
-					true
+					true,
 				).id;
 
 				if (!galleries.includes(channel)) {
 					await interaction.editReply(
-						utils.XEmoji + "Channel is not a gallery."
+						utils.XEmoji + "Channel is not a gallery.",
 					);
 				} else {
 					await updateGalleries(
 						prisma,
-						galleries.filter((c) => c != channel)
+						galleries.filter((c) => c != channel),
 					);
 					logger.info({ channel }, "Removed a gallery channel");
 					await interaction.editReply(
-						utils.CheckMarkEmoji + "Gallery successfully removed."
+						utils.CheckMarkEmoji + "Gallery successfully removed.",
 					);
 				}
 			} catch (e) {
 				logger.error(e, "Error while removing a gallery channel");
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 			break;
@@ -220,14 +220,14 @@ export async function handleCommand(
 				"**Gallery Channels**\n\n" +
 					(galleries.length
 						? galleries.map((c) => `- <#${c}>`).join("\n")
-						: "*None*")
+						: "*None*"),
 			);
 			break;
 		case "clean": {
 			try {
 				const channel = interaction.options.getChannel(
 					"channel",
-					false
+					false,
 				) as Discord.GuildChannel | null;
 				let channels: (Discord.TextChannel | Discord.ThreadChannel)[] =
 					[];
@@ -241,7 +241,7 @@ export async function handleCommand(
 							channels.push(
 								cf as
 									| Discord.TextChannel
-									| Discord.ThreadChannel
+									| Discord.ThreadChannel,
 							);
 						}
 					}
@@ -254,19 +254,19 @@ export async function handleCommand(
 				logger.info(
 					{ channels },
 					"Cleaned %d messages from gallery channels",
-					n
+					n,
 				);
 				await interaction.editReply(
-					utils.CheckMarkEmoji + `Cleaned \`${n}\` messages.`
+					utils.CheckMarkEmoji + `Cleaned \`${n}\` messages.`,
 				);
 				break;
 			} catch (e) {
 				logger.error(
 					e,
-					"Error while cleaning gallery channel messages"
+					"Error while cleaning gallery channel messages",
 				);
 				await interaction.editReply(
-					utils.XEmoji + "Something went wrong."
+					utils.XEmoji + "Something went wrong.",
 				);
 			}
 		}

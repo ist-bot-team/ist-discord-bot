@@ -9,7 +9,7 @@ import {
 
 export type InteractionHandler<T extends Discord.BaseInteraction> = (
 	interaction: T,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ) => Promise<void>;
 
 export type InteractionHandlers<T extends Discord.BaseInteraction> = {
@@ -22,7 +22,7 @@ export type ApplicationCommandBuilder =
 
 interface GenericCommandDescriptor<
 	B extends ApplicationCommandBuilder,
-	I extends Discord.CommandInteraction
+	I extends Discord.CommandInteraction,
 > {
 	builder: B;
 	handler: InteractionHandler<I>;

@@ -16,9 +16,9 @@ export function provideCommands(): CommandDescriptor[] {
 		new Builders.SlashCommandUserOption()
 			.setName("target")
 			.setDescription(
-				"Must have permissions to run sudo themselves; defaults to self"
+				"Must have permissions to run sudo themselves; defaults to self",
 			)
-			.setRequired(false)
+			.setRequired(false),
 	);
 	return [
 		{
@@ -29,7 +29,7 @@ export function provideCommands(): CommandDescriptor[] {
 			builder: new Builders.SlashCommandBuilder()
 				.setName("reset-admin")
 				.setDescription(
-					"Remove enhanced administrator permissions from everyone"
+					"Remove enhanced administrator permissions from everyone",
 				),
 			handler: handleResetAdminCommand,
 		},
@@ -37,7 +37,7 @@ export function provideCommands(): CommandDescriptor[] {
 }
 
 export async function handleSudoCommand(
-	interaction: Discord.ChatInputCommandInteraction
+	interaction: Discord.ChatInputCommandInteraction,
 ): Promise<void> {
 	try {
 		const target = interaction.options.getMember("target");
@@ -49,7 +49,7 @@ export async function handleSudoCommand(
 
 		if (!roles.cache.has(aId) && !roles.cache.has(apId)) {
 			await interaction.editReply(
-				utils.XEmoji + "User does not have administrator permissions."
+				utils.XEmoji + "User does not have administrator permissions.",
 			);
 			return;
 		}
@@ -57,24 +57,24 @@ export async function handleSudoCommand(
 		if (roles.cache.has(apId)) {
 			await roles.remove(apId);
 			await interaction.editReply(
-				utils.CheckMarkEmoji + "Successfully removed `Admin+` role."
+				utils.CheckMarkEmoji + "Successfully removed `Admin+` role.",
 			);
 		} else {
 			await roles.add(apId);
 			await interaction.editReply(
-				utils.CheckMarkEmoji + "Successfully added `Admin+` role."
+				utils.CheckMarkEmoji + "Successfully added `Admin+` role.",
 			);
 		}
 	} catch (e) {
 		logger.error(e, "Failed to toggle sudo for user");
 		await interaction.editReply(
-			utils.XEmoji + "Failed to toggle `Admin+` role."
+			utils.XEmoji + "Failed to toggle `Admin+` role.",
 		);
 	}
 }
 
 export async function handleResetAdminCommand(
-	interaction: Discord.ChatInputCommandInteraction
+	interaction: Discord.ChatInputCommandInteraction,
 ): Promise<void> {
 	try {
 		const role = await (
@@ -83,19 +83,19 @@ export async function handleResetAdminCommand(
 
 		if (!role) {
 			await interaction.editReply(
-				utils.XEmoji + "Could not locate the `Admin+` role"
+				utils.XEmoji + "Could not locate the `Admin+` role",
 			);
 		}
 
 		role?.members.forEach((member) => member.roles.remove(role));
 
 		await interaction.editReply(
-			utils.CheckMarkEmoji + "Successfully reset the `Admin+` role."
+			utils.CheckMarkEmoji + "Successfully reset the `Admin+` role.",
 		);
 	} catch (e) {
 		logger.error(e, "Failed to reset sudo for user");
 		await interaction.editReply(
-			utils.XEmoji + "Failed to reset the `Admin+` role."
+			utils.XEmoji + "Failed to reset the `Admin+` role.",
 		);
 	}
 }

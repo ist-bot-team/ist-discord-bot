@@ -10,7 +10,7 @@ import logger from "../logger";
 
 async function getWelcomeChannel(
 	prisma: PrismaClient,
-	client: Discord.Client
+	client: Discord.Client,
 ): Promise<Discord.TextChannel | null> {
 	const id = (
 		await prisma.config.findFirst({
@@ -25,7 +25,7 @@ async function getWelcomeChannel(
 
 export async function handleGuildJoin(
 	member: Discord.GuildMember,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	const channel = await getWelcomeChannel(prisma, member.client);
 	const message = (
@@ -48,8 +48,8 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandChannelOption()
 					.setName("channel")
 					.setDescription("Where welcome messages will be sent")
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
@@ -59,33 +59,33 @@ export function provideCommands(): CommandDescriptor[] {
 				new Builders.SlashCommandStringOption()
 					.setName("message")
 					.setDescription(
-						"Message that will be sent; use $USER to tag the new member"
+						"Message that will be sent; use $USER to tag the new member",
 					)
-					.setRequired(true)
-			)
+					.setRequired(true),
+			),
 	);
 	cmd.addSubcommand(
 		new Builders.SlashCommandSubcommandBuilder()
 			.setName("view")
-			.setDescription("View welcome message settings")
+			.setDescription("View welcome message settings"),
 	);
 	return [{ builder: cmd, handler: handleCommand }];
 }
 
 export async function handleCommand(
 	interaction: Discord.ChatInputCommandInteraction,
-	prisma: PrismaClient
+	prisma: PrismaClient,
 ): Promise<void> {
 	try {
 		switch (interaction.options.getSubcommand()) {
 			case "set-channel": {
 				const channel = interaction.options.getChannel(
 					"channel",
-					true
+					true,
 				) as Discord.GuildChannel;
 				if (!channel.isTextBased()) {
 					await interaction.editReply(
-						utils.XEmoji + "Channel must be a text channel."
+						utils.XEmoji + "Channel must be a text channel.",
 					);
 				} else {
 					await prisma.config.upsert({
@@ -99,7 +99,7 @@ export async function handleCommand(
 					logger.info({ channel }, "Set welcome channel");
 					await interaction.editReply(
 						utils.CheckMarkEmoji +
-							`Welcome channel successfully set as <#${channel.id}>.`
+							`Welcome channel successfully set as <#${channel.id}>.`,
 					);
 				}
 				break;
@@ -114,7 +114,7 @@ export async function handleCommand(
 				});
 				logger.info({ message }, "Set welcome message");
 				await interaction.editReply(
-					utils.CheckMarkEmoji + `Welcome message successfully set.`
+					utils.CheckMarkEmoji + `Welcome message successfully set.`,
 				);
 				break;
 			}
