@@ -55,11 +55,11 @@
 		"start:docker": "prisma migrate deploy && node .",
 		"start:docker:dev": "npm run start:docker | pino-pretty -c",
 		"prisma:generate": "prisma generate",
-		"format": "prettier --write --ignore-unknown **/*",
-		"format:check": "prettier --check --ignore-unknown **/*"
+		"format": "prettier --write --ignore-unknown src/**/*",
+		"format:check": "prettier --check --ignore-unknown src/**/*"
 	},
 	"lint-staged": {
-		"**/*": "prettier --write --ignore-unknown"
+		"src/**/*": "prettier --write --ignore-unknown"
 	},
 	"prisma": {
 		"schema": "src/prisma/schema.prisma"
