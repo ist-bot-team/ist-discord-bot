@@ -32,7 +32,16 @@ in
 stdenvNoCC.mkDerivation (finalAttrs: {
   pname = "ist-discord-bot";
   version = (lib.importJSON ../package.json).version;
-  src = ../.;
+  src = lib.fileset.toSource {
+    root = ../.;
+    fileset = lib.fileset.unions [
+      ../src
+      ../package.json
+      ../pnpm-lock.yaml
+      ../tsconfig.json
+      ../prisma.config.ts
+    ];
+  };
 
   nativeBuildInputs = [
     makeWrapper
