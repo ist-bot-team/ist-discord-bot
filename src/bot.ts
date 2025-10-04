@@ -239,7 +239,7 @@ const startupChores: Chore[] = [
 	},
 ];
 
-client.on("ready", async () => {
+client.on("clientReady", async () => {
 	logger.info(`Logged in as ${client.user?.tag}!`);
 
 	logger.info("Duty before self: starting chores...");
