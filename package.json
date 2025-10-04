@@ -60,8 +60,5 @@
 	},
 	"lint-staged": {
 		"src/**/*": "prettier --write --ignore-unknown"
-	},
-	"prisma": {
-		"schema": "src/prisma/schema.prisma"
 	}
 }
