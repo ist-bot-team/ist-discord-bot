@@ -94,6 +94,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       } \
       --chdir "$packageOut" \
       --run "$packageOut/node_modules/.bin/prisma migrate deploy --schema $packageOut/prisma/schema.prisma" \
+      --add-flags "--enable-source-maps" \
       --add-flags "$packageOut"/dist/bot.js
 
     runHook postInstall
