@@ -12,6 +12,7 @@ import Discord, {
 } from "discord.js";
 import { REST } from "@discordjs/rest";
 import { PrismaClient } from "./prisma/generated/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 import {
 	InteractionHandlers,
@@ -54,7 +55,10 @@ export enum CommandPermission {
 	Admin,
 }
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+	connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 const client = new Client({
 	intents: [
