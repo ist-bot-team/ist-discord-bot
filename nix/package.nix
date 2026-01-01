@@ -1,26 +1,28 @@
 {
   fetchFromGitHub,
+  fetchPnpmDeps,
   lib,
   makeWrapper,
   nodejs,
   openssl,
+  pnpmConfigHook,
   pnpm_10,
-  prisma-engines,
+  prisma-engines_7,
   rustPlatform,
   stdenvNoCC,
   ...
 }:
 let
   pnpm = pnpm_10;
-  prisma-engines' = prisma-engines.overrideAttrs (old: rec {
-    version = "6.16.3";
+  prisma-engines' = prisma-engines_7.overrideAttrs (old: rec {
+    version = "7.2.0";
     src = fetchFromGitHub {
       owner = "prisma";
       repo = "prisma-engines";
       tag = version;
-      hash = "sha256-vAOidJspGEbk9jzw38ax/fAm9OnQobnmXg8i4kPR0lg=";
+      hash = "sha256-1CwpUtNuqxGNjBmmmo/Aet8XrmnCQfDToI7vZaNupDI=";
     };
-    cargoHash = "sha256-tNsc6z0CC5Cvj6tJBSXxV4D3ql7Ji3NCOn8NCVE3Ymg=";
+    cargoHash = "sha256-U5d/HkuWnD/XSrAJr5AYh+WPVGDOcK/e4sC0udPZoyU=";
 
     cargoDeps = rustPlatform.fetchCargoVendor {
       inherit (old) pname;
@@ -46,22 +48,24 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   nativeBuildInputs = [
     makeWrapper
     nodejs
-    pnpm.configHook
+    pnpm
+    pnpmConfigHook
   ];
 
-  pnpmDeps = pnpm.fetchDeps {
+  pnpmDeps = fetchPnpmDeps {
     inherit (finalAttrs)
       pname
       version
       src
       ;
-    fetcherVersion = 2;
-    hash = "sha256-fEPHJJWayx6YDk2O3+3E0HsmD6pw4OtKYq7cDBudg4k=";
+    fetcherVersion = 3;
+    hash = "sha256-M3x+qncWk/pdvrvB1AkwByhK9L5XTZZtbtvwPfchwyY=";
   };
 
   # Allow prisma-cli to find prisma-engines without having to download them
   env.PRISMA_QUERY_ENGINE_LIBRARY = "${prisma-engines'}/lib/libquery_engine.node";
   env.PRISMA_SCHEMA_ENGINE_BINARY = "${prisma-engines'}/bin/schema-engine";
+  env.DATABASE_URL = "postgresql://";
 
   buildPhase = ''
     runHook preBuild
