@@ -65,7 +65,6 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   # Allow prisma-cli to find prisma-engines without having to download them
   env.PRISMA_QUERY_ENGINE_LIBRARY = "${prisma-engines'}/lib/libquery_engine.node";
   env.PRISMA_SCHEMA_ENGINE_BINARY = "${prisma-engines'}/bin/schema-engine";
-  env.DATABASE_URL = "postgresql://";
 
   buildPhase = ''
     runHook preBuild
