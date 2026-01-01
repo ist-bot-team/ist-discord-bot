@@ -21,7 +21,7 @@
 	"dependencies": {
 		"@discordjs/builders": "^1.11.3",
 		"@discordjs/rest": "^2.6.0",
-		"@prisma/client": "6.16.3",
+		"@prisma/client": "7.2.0",
 		"@types/better-sqlite3": "^7.6.13",
 		"axios": "^1.12.2",
 		"cheerio": "1.1.2",
@@ -29,7 +29,7 @@
 		"node-cron": "^4.2.1",
 		"path": "^0.12.7",
 		"pino": "^10.0.0",
-		"prisma": "6.16.3",
+		"prisma": "7.2.0",
 		"rss-parser": "^3.13.0",
 		"turndown": "^7.2.1"
 	},
