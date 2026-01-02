@@ -90,6 +90,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
     mkdir -p "$packageOut/prisma"
     cp src/prisma/schema.prisma "$packageOut/prisma"
     cp -r src/prisma/migrations "$packageOut/prisma"
+    cp prisma.config.ts "$packageOut"
 
     # Run database migrations before starting ist-discord-bot.
     # Add openssl to PATH since it is required for prisma to make SSL connections.
