@@ -1,6 +1,5 @@
 // Handle everything that uses Fénix APIs
 
-import axios from "axios";
 import * as cheerio from "cheerio";
 import RSSParser from "rss-parser";
 import logger from "../logger";
@@ -10,16 +9,27 @@ import * as utils from "./utils";
 
 const parser = new RSSParser();
 
-export const axiosClient = axios.create({
-	baseURL: "https://fenix.tecnico.ulisboa.pt",
-	params: {
-		lang: "pt-PT",
-	},
-});
+const BASE_URL = "https://fenix.tecnico.ulisboa.pt";
 
 export async function callEndpoint(endpoint: string): Promise<unknown> {
 	try {
-		return (await axiosClient.get(endpoint)).data;
+		const url = new URL(endpoint, BASE_URL);
+		if (!url.searchParams.has("lang")) {
+			url.searchParams.set("lang", "pt-PT");
+		}
+		const response = await fetch(url);
+		if (!response.ok) {
+			throw new Error(
+				`HTTP request did not return success code. Status: ${response.status}`,
+			);
+		}
+		if (
+			response.headers.get("content-type")?.startsWith("application/json")
+		) {
+			return response.json();
+		} else {
+			return response.text();
+		}
 	} catch (e) {
 		logger.error(e, `Fénix broke while calling endpoint '%s'`, endpoint);
 		throw e; // propagate
@@ -68,7 +78,7 @@ export async function getDegreeCourses(
 	const degreeAcronym = shortDegree.acronym.toLowerCase();
 
 	const curriculumHtml = (await callEndpoint(
-		`/cursos/${degreeAcronym}/curriculo`,
+		`/cursos/${encodeURIComponent(degreeAcronym)}/curriculo`,
 	)) as string;
 
 	const $ = cheerio.load(curriculumHtml);
