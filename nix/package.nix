@@ -59,7 +59,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       src
       ;
     fetcherVersion = 3;
-    hash = "sha256-jSng9eZOJ9XH4sq2uMym91JT8/WuvGLJtFN3VL+R2PI=";
+    hash = "sha256-AhNKk0GCGJ0XM19puCELJqzpqVgL1l3N3bVgnFVLz/4=";
   };
 
   # Allow prisma-cli to find prisma-engines without having to download them
