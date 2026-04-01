@@ -22,14 +22,14 @@
 		"@discordjs/builders": "^1.11.3",
 		"@discordjs/rest": "^2.6.0",
 		"@prisma/adapter-pg": "^7.2.0",
-		"@prisma/client": "7.2.0",
+		"@prisma/client": "7.6.0",
 		"@types/better-sqlite3": "^7.6.13",
-		"cheerio": "1.1.2",
+		"cheerio": "1.2.0",
 		"discord.js": "^14.22.1",
 		"node-cron": "^4.2.1",
 		"path": "^0.12.7",
 		"pino": "^10.0.0",
-		"prisma": "7.2.0",
+		"prisma": "7.6.0",
 		"rss-parser": "^3.13.0",
 		"turndown": "^7.2.1"
 	},
@@ -40,13 +40,13 @@
 		"@types/turndown": "^5.0.5",
 		"@typescript-eslint/eslint-plugin": "^8.45.0",
 		"@typescript-eslint/parser": "^8.45.0",
-		"eslint": "^9.36.0",
+		"eslint": "^10.0.0",
 		"eslint-config-prettier": "^10.1.8",
 		"husky": "^9.1.7",
 		"lint-staged": "^16.2.3",
 		"pino-pretty": "^13.1.1",
 		"prettier": "^3.6.2",
-		"typescript": "^5.9.3"
+		"typescript": "^6.0.0"
 	},
 	"scripts": {
 		"prepare": "husky",
