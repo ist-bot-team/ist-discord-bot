@@ -15,18 +15,19 @@
 let
   pnpm = pnpm_11;
   prisma-engines' = prisma-engines_7.overrideAttrs (old: rec {
-    version = "7.2.0";
+    version = "7.8.0";
     src = fetchFromGitHub {
       owner = "prisma";
       repo = "prisma-engines";
       tag = version;
-      hash = "sha256-1CwpUtNuqxGNjBmmmo/Aet8XrmnCQfDToI7vZaNupDI=";
+      hash = "sha256-nquIcOmFz+ikD0x/YEPZ5NVKCFPCdR5MSCHldn+b9jI=";
     };
-    cargoHash = "sha256-U5d/HkuWnD/XSrAJr5AYh+WPVGDOcK/e4sC0udPZoyU=";
+    cargoHash = "sha256-uiFvzxwVJXCW9LUDFRC6ZkzSa7LQk+9ZJcaJw8mrBX4=";
 
     cargoDeps = rustPlatform.fetchCargoVendor {
       inherit (old) pname;
       inherit src version;
+      patches = old.cargoDeps.vendorStaging.patches or [ ];
       hash = cargoHash;
     };
   });
@@ -60,7 +61,7 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       src
       ;
     fetcherVersion = 3; # TODO: bump to 4 once https://github.com/NixOS/nixpkgs/pull/522703 is backported
-    hash = "sha256-Xk5GMhfJ5knGaOXlEAUAtDvEuR29COeIWQj86E5jasU=";
+    hash = "sha256-zsZt3M1b+DNHG7jzJcFwesWCR3oFuB58qRWZolq6xTU=";
   };
 
   # Allow prisma-cli to find prisma-engines without having to download them
