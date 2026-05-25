@@ -31,7 +31,7 @@
         pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs
-            pnpm
+            pnpm_11
           ];
           shellHook = with pkgs; ''
             export PRISMA_SCHEMA_ENGINE_BINARY="${prisma-engines}/bin/schema-engine"

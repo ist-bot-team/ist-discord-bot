@@ -6,14 +6,14 @@
   nodejs,
   openssl,
   pnpmConfigHook,
-  pnpm_10,
+  pnpm_11,
   prisma-engines_7,
   rustPlatform,
   stdenvNoCC,
   ...
 }:
 let
-  pnpm = pnpm_10;
+  pnpm = pnpm_11;
   prisma-engines' = prisma-engines_7.overrideAttrs (old: rec {
     version = "7.2.0";
     src = fetchFromGitHub {
@@ -53,12 +53,13 @@ stdenvNoCC.mkDerivation (finalAttrs: {
   ];
 
   pnpmDeps = fetchPnpmDeps {
+    inherit pnpm;
     inherit (finalAttrs)
       pname
       version
       src
       ;
-    fetcherVersion = 3;
+    fetcherVersion = 3; # TODO: bump to 4 once https://github.com/NixOS/nixpkgs/pull/522703 is backported
     hash = "sha256-Xk5GMhfJ5knGaOXlEAUAtDvEuR29COeIWQj86E5jasU=";
   };
 
