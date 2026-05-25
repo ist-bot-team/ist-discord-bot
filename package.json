@@ -15,8 +15,8 @@
 	"author": "IST Bot Team",
 	"license": "MIT",
 	"engines": {
-		"node": ">=18.0.0",
-		"pnpm": ">=10.0.0"
+		"node": ">=24.0.0",
+		"pnpm": ">=11.0.0 <12.0.0"
 	},
 	"dependencies": {
 		"@discordjs/builders": "^1.11.3",
