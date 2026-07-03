@@ -261,8 +261,7 @@ export async function handleCommand(
 						async () =>
 							await sendLeaderboard(
 								interaction.channel as
-									| Discord.TextChannel
-									| Discord.ThreadChannel,
+									Discord.TextChannel | Discord.ThreadChannel,
 								period,
 								prisma,
 							),
