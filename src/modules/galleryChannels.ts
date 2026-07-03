@@ -240,8 +240,7 @@ export async function handleCommand(
 						if (cf && (cf.isTextBased() || cf.isThread())) {
 							channels.push(
 								cf as
-									| Discord.TextChannel
-									| Discord.ThreadChannel,
+									Discord.TextChannel | Discord.ThreadChannel,
 							);
 						}
 					}
