@@ -60,8 +60,8 @@ stdenvNoCC.mkDerivation (finalAttrs: {
       version
       src
       ;
-    fetcherVersion = 3; # TODO: bump to 4 once https://github.com/NixOS/nixpkgs/pull/522703 is backported
-    hash = "sha256-zsZt3M1b+DNHG7jzJcFwesWCR3oFuB58qRWZolq6xTU=";
+    fetcherVersion = 4;
+    hash = "sha256-0M86RnzZi+gIHflnRLGxhEBsYx13AXhlehRNP2sXcfA=";
   };
 
   # Allow prisma-cli to find prisma-engines without having to download them
