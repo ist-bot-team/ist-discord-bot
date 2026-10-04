@@ -15,14 +15,14 @@
 let
   pnpm = pnpm_11;
   prisma-engines' = prisma-engines_7.overrideAttrs (old: rec {
-    version = "7.8.0";
+    version = "7.10.0";
     src = fetchFromGitHub {
       owner = "prisma";
       repo = "prisma-engines";
       tag = version;
-      hash = "sha256-nquIcOmFz+ikD0x/YEPZ5NVKCFPCdR5MSCHldn+b9jI=";
+      hash = "sha256-GRpfrAZrpAgW06v5IaY44JguA1fGyJJ3fxC+pCfg18c=";
     };
-    cargoHash = "sha256-uiFvzxwVJXCW9LUDFRC6ZkzSa7LQk+9ZJcaJw8mrBX4=";
+    cargoHash = "sha256-zLl2ErsCTXZVShPFLH94GLJ0q2FrMnfnecnfKD7VDL4=";
 
     cargoDeps = rustPlatform.fetchCargoVendor {
       inherit (old) pname;
