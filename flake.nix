@@ -4,7 +4,7 @@
   };
 
   outputs =
-    { nixpkgs, ... }:
+    { nixpkgs, self, ... }:
     let
       forAllSystems =
         function:
@@ -26,9 +26,28 @@
         default = ist-discord-bot;
       };
 
-      devShell = forAllSystems (
+      checks = forAllSystems (
         pkgs:
-        pkgs.mkShell {
+        let
+          inherit (pkgs.stdenv.hostPlatform) system;
+          inherit (self.packages.${system}) ist-discord-bot;
+        in
+        {
+          pnpm-deps = ist-discord-bot.pnpmDeps;
+          prisma-engines-correct-version =
+            let
+              currentVersion = ist-discord-bot.passthru.prisma-engines.version;
+              expectedVersion = (pkgs.lib.importJSON ./package.json).dependencies.prisma;
+            in
+            assert currentVersion == expectedVersion;
+            pkgs.runCommand "prisma-engines-correct-version-check" {} ''
+              touch $out
+            '';
+        }
+      );
+
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
           buildInputs = with pkgs; [
             nodejs
             pnpm_11
@@ -40,7 +59,7 @@
             export PRISMA_INTROSPECTION_ENGINE_BINARY="${prisma-engines}/bin/introspection-engine"
             export PRISMA_FMT_BINARY="${prisma-engines}/bin/prisma-fmt"
           '';
-        }
-      );
+        };
+      });
     };
 }
